@@ -1,0 +1,28 @@
+venv/
+env/
+.env
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Archivos subidos por usuarios (membretadas, debug, etc.)
+/backend/media/
+
+# Archivos estáticos generados
+/backend/staticfiles/
+/backend/mediafiles/
+
+# Frontend
+node_modules/
+/frontend/dist/
+/frontend/.env
+
+# Editores
+.vscode/
+.idea/
+*.DS_Store
+
+# Python
+*.egg-info/
+.coverage
+htmlcov/

@@ -1,0 +1,13 @@
+django
+djangorestframework
+celery
+redis
+django-celery-beat
+django-celery-results
+imapclient
+pyzmail36
+python-decouple
+pdfplumber
+pdf2image
+pytesseract
+Pillow
