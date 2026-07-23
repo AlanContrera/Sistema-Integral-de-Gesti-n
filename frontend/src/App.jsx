@@ -1,9 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Landmark, Bot, Calculator, Settings } from 'lucide-react';
+import { Landmark, Bot, Calculator, Settings, LogIn } from 'lucide-react';
 import ModuloPagos from './pages/ModuloPagos';
 import ModuloCotizador from './pages/ModuloCotizador';
 import { Toaster } from 'react-hot-toast';
+import Login from './pages/Login';
 
 function MenuPrincipal() {
   const navigate = useNavigate();
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/" element={<MenuPrincipal />} />
           <Route path="/pagos/*" element={<ModuloPagos />} />
           <Route path="/cotizador/*" element={<ModuloCotizador />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </Router> </>
   );

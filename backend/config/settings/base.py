@@ -16,6 +16,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # GEMINI AI
 GEMINI_API_KEY = config('GEMINI_API_KEY')
 
+AUTH_USER_MODEL = 'usuarios.Usuario'
+
 
 # --- SEGURIDAD ---
 SECRET_KEY = config('SECRET_KEY')
@@ -42,6 +44,9 @@ INSTALLED_APPS = [
     'apps.pagos',
     'apps.comisiones',
     'apps.cotizador',
+    'apps.usuarios',
+        'apps.reclutamiento',
+
     'corsheaders',
 ]
 
@@ -144,3 +149,11 @@ CORS_ALLOWED_ORIGINS = [
     'http://192.168.10.188:5173'
 ]
 
+# ==========================================
+# CONFIGURACIÓN DE SEGURIDAD JWT Y API
+# ==========================================
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}

@@ -1,4 +1,4 @@
-# Sistema Integral de Gestión (App_Facturacion)
+# Sistema Integral de Gestión 
 
 Plataforma unificada (Sistema Englobado) para la automatización de procesos financieros, administrativos, facturación y procesamiento de pagos mediante recolección automática de correos IMAP y extracción inteligente de datos con IA.
 
