@@ -1,10 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Landmark, Bot, Calculator, Settings, LogIn } from 'lucide-react';
+import { Landmark, Bot, Calculator, Settings, LogIn, Users } from 'lucide-react';
 import ModuloPagos from './pages/ModuloPagos';
 import ModuloCotizador from './pages/ModuloCotizador';
+import ModuloReclutamiento from './pages/ModuloReclutamiento'; // <--- ESTA FALTABA
+import RutaProtegida from './components/RutaProtegida';        // <--- Y ESTA TAMBIÉN
 import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
+
 
 function MenuPrincipal() {
   const navigate = useNavigate();
@@ -57,17 +60,22 @@ function MenuPrincipal() {
           </div>
         </div>
 
-        {/* Módulo 3: Asistente IA (PRÓXIMAMENTE) */}
-        <div style={{ background: '#F1F5F9', borderRadius: '24px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px dashed #CBD5E1', opacity: 0.8, position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '24px', right: '24px', background: '#E2E8F0', color: '#64748B', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', letterSpacing: '0.5px' }}>PRÓXIMAMENTE</div>
-          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}>
-            <Bot size={32} />
+        {/* Módulo 3: Reclutamiento (NUEVO) */}
+        <div
+          onClick={() => navigate('/reclutamiento')}
+          style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', cursor: 'pointer', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', transition: 'transform 0.2s ease, box-shadow 0.2s ease', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid #E2E8F0', position: 'relative', overflow: 'hidden' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 20px 40px -10px rgba(0,0,0,0.1)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.05)' }}
+        >
+          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'linear-gradient(135deg, #F59E0B, #D97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', boxShadow: '0 8px 16px -4px rgba(245, 158, 11, 0.3)' }}>
+            <Users size={32} />
           </div>
           <div>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', color: '#475569', fontWeight: '700' }}>Asistente de Inteligencia Artificial</h2>
-            <p style={{ margin: 0, color: '#94A3B8', fontSize: '15px', lineHeight: 1.5 }}>Consulta reportes, análisis y estadísticas pidiéndoselos directamente a la IA en lenguaje natural.</p>
+            <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', color: '#0F172A', fontWeight: '700' }}>Reclutamiento</h2>
+            <p style={{ margin: 0, color: '#64748B', fontSize: '15px', lineHeight: 1.5 }}>Gestión integral de vacantes, candidatos y entrevistas con generación automática de reportes ejecutivos.</p>
           </div>
         </div>
+
 
 
         {/* Configuración (PRÓXIMAMENTE) */}
@@ -95,6 +103,7 @@ export default function App() {
           <Route path="/" element={<MenuPrincipal />} />
           <Route path="/pagos/*" element={<ModuloPagos />} />
           <Route path="/cotizador/*" element={<ModuloCotizador />} />
+          <Route path="/reclutamiento/*" element={<RutaProtegida><ModuloReclutamiento /></RutaProtegida>} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </Router> </>

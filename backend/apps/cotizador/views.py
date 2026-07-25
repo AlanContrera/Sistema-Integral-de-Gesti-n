@@ -120,6 +120,13 @@ class GenerarCotizacionView(APIView):
                 "uso_cfdi": buscar_valor_derecha("USO CFDI") or (df.iloc[11, 7] if not pd.isna(df.iloc[11, 7]) else "")
             }
 
+            # Limpiar saltos de línea (que causan los cuadros negros en el PDF)
+            for key, val in datos_generales.items():
+                if pd.notna(val):
+                    datos_generales[key] = str(val).replace('\n', ' ').replace('\r', '').strip()
+                else:
+                    datos_generales[key] = ""
+
             # 3. Mapeo dinámico de columnas y búsqueda de encabezados
             fila_headers_idx = -1
             for r in range(15, 23):

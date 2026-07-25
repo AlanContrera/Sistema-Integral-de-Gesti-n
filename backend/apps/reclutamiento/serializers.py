@@ -27,6 +27,7 @@ class VacanteSerializer(serializers.ModelSerializer):
 class CandidatoSerializer(serializers.ModelSerializer):
     vacante_nombre = serializers.CharField(source='vacante.nombre_puesto', read_only=True)
     cliente_nombre = serializers.CharField(source='vacante.cliente', read_only=True)
+    categoria_puesto_id = serializers.IntegerField(source='vacante.categoria_puesto_id', read_only=True)
 
     class Meta:
         model = Candidato

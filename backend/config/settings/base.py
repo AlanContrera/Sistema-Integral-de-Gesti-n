@@ -21,7 +21,7 @@ AUTH_USER_MODEL = 'usuarios.Usuario'
 
 # --- SEGURIDAD ---
 SECRET_KEY = config('SECRET_KEY')
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
+ALLOWED_HOSTS = ['*']
 
 
 # --- APLICACIONES INSTALADAS ---

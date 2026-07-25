@@ -24,10 +24,48 @@ class PlantillaPreguntaViewSet(viewsets.ModelViewSet):
     serializer_class = PlantillaPreguntaSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        queryset = PlantillaPregunta.objects.all()
+        categoria_id = self.request.query_params.get('categoria', None)
+        if categoria_id is not None:
+            queryset = queryset.filter(categoria_id=categoria_id)
+        return queryset
+
 class VacanteViewSet(viewsets.ModelViewSet):
     queryset = Vacante.objects.all()
     serializer_class = VacanteSerializer
     permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'])
+    def autocompletar(self, request):
+        categoria_id = request.query_params.get('categoria_id')
+        if not categoria_id:
+            from rest_framework.response import Response
+            return Response({'error': 'categoria_id requerido'}, status=400)
+            
+        try:
+            categoria = CategoriaPreguntas.objects.get(id=categoria_id)
+        except CategoriaPreguntas.DoesNotExist:
+            from rest_framework.response import Response
+            return Response({'error': 'Categoria no encontrada'}, status=404)
+            
+        preguntas = categoria.preguntas.all()
+        
+        funciones = [f"• {p.pregunta}" for p in preguntas if 'Funciones' in p.rubro]
+        responsabilidades = [f"• {p.pregunta}" for p in preguntas if 'Responsabilidades' in p.rubro]
+        comp_tecnicas = [f"• {p.pregunta}" for p in preguntas if 'Competencias técnicas' in p.rubro]
+        comp_blandas = [f"• {p.pregunta}" for p in preguntas if 'Competencias blandas' in p.rubro]
+        kpis = [f"• {p.pregunta}" for p in preguntas if 'Factores clave' in p.rubro]
+        
+        from rest_framework.response import Response
+        return Response({
+            'sueldo_promedio_base': categoria.sueldo_promedio_base,
+            'funciones': '\n'.join(funciones),
+            'responsabilidades': '\n'.join(responsabilidades),
+            'competencias_tecnicas': '\n'.join(comp_tecnicas),
+            'competencias_blandas': '\n'.join(comp_blandas),
+            'kpis': '\n'.join(kpis),
+        })
 
 class CandidatoViewSet(viewsets.ModelViewSet):
     queryset = Candidato.objects.all()

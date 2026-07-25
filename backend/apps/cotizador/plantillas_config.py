@@ -37,7 +37,7 @@ MAPA_PLANTILLAS = {
         "coords": {"x_tabla_inicio": 40, "cliente": (40, 630), "folio_centro": (300, 665)}, "tema": "BERGUN"},
 
     "BERZAN": {"pdf": "MEMBRETADA_BERZAN.pdf", 
-        "coords": {"x_tabla_inicio": 40, "cliente": (40, 650), "fecha_folio": (400, 680)}, "tema": "BERZAN"},
+        "coords": {"x_tabla_inicio": 40, "cliente": (40, 590), "fecha_folio": (400, 680)}, "tema": "BERZAN"},
 
     "CALAFELL": {"pdf": "MEMBRETADA_CALAFELL.pdf", 
         "coords": {"x_tabla_inicio": 40, "cliente": (120, 560), "fecha_folio": (40, 680)}, "tema": "CALAFELL"},
