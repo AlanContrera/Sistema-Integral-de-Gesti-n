@@ -1,8 +1,8 @@
 # CONTEXTO MAESTRO - Sistema Integral (App_Facturacion)
 
-> **Última actualización:** 2026-07-21
-> **Estado general del proyecto:** 🟢 En construcción — Módulo 4 pulido, Preparando Motor de Cálculos (Módulo 3) y Módulo 5 (Cotizador) finalizado con soporte de más de 40 plantillas simultáneas.
-> **Sesión actual enfocada en:** Refactorización del código de generación de cotizaciones en PDF.
+> **Última actualización:** 2026-07-27
+> **Estado general del proyecto:** 🟢 En construcción — Módulo 4 pulido, Motor de Cálculos (Módulo 3) y Módulo 5 (Cotizador) finalizado. Módulo 6 (Reclutamiento) completado en su fase inicial (Perfilador y Reporte PDF).
+> **Sesión actual enfocada en:** Finalización de sesión de Módulo Reclutamiento.
 
 ## Objetivo General
 
@@ -97,6 +97,7 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 | 2026-07-15 | Motor Heurístico y Paginación de PDF | Se implementó un algoritmo de paginación dinámica (`Table.split()`) para tablas largas. Se construyó un motor heurístico de extracción sin índices que procesa archivos Excel incluso sin fila de encabezados, asignando valores lógicamente. Se integró un Gestor de Membretadas en formato Modal dentro de React. |
 | 2026-07-20 | Integración de Diseños Personalizados (PDF) | Se configuraron 7 estilos de plantillas (KALE, ASESORES GBR, GLOBALEARTH, GOVIDA, LEVICTUS, LEXIC, LIMGRATSA) en el generador de PDF, adaptando coordenadas, estilos de tabla, colores, alineaciones y lógica condicional de renderizado. |
 | 2026-07-21 | Refactorización de Views y Temas | Se centralizó la configuración visual de la tabla y las coordenadas. El sistema soporta dinámicamente más de 40 diseños empresariales (CRISAC, VIMEX, TORRES, DERSA, etc.) mediante diccionarios en `temas_config.py`, logrando un código backend modular, optimizado y sin redundancias en la vista. |
+| 2026-07-27 | Módulo de Reclutamiento (Flujo de Candidato) | Se construyó el sistema de Entrevistas (Inicial y Profunda) con cálculos dinámicos de semáforos, porcentajes de match por habilidades y dictamen automatizado. Se desarrolló la exportación a PDF del "Reporte Ejecutivo", convirtiendo tablas tipo Excel en un dossier de formato Consultoría Premium (una o dos hojas limpias) utilizando HTML2PDF con saltos de página inteligentes. |
 
 ## Notas de Sesión
 

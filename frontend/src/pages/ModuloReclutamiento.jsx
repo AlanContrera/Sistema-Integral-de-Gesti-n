@@ -4,6 +4,7 @@ import { Briefcase, Users, FileText, LogOut } from 'lucide-react'; // Íconos qu
 import VistaVacantes from './VistaVacantes';
 import VistaCandidatos from './VistaCandidatos';
 import FlujoCandidato from './FlujoCandidato';
+import TableroVacante from './TableroVacante';
 
 const ModuloReclutamiento = () => {
     const location = useLocation(); // Para saber qué menú pintar de azul (activo)
@@ -72,6 +73,7 @@ const ModuloReclutamiento = () => {
                     <Route path="vacantes" element={<VistaVacantes />} />
                     <Route path="candidatos" element={<VistaCandidatos />} />
                     <Route path="candidato/:id" element={<FlujoCandidato />} />
+                    <Route path="vacantes/:id" element={<TableroVacante />} />
 
                     <Route path="*" element={
                         <div>

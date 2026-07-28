@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchConToken } from '../services/api';
 import { Plus, Search, MapPin, DollarSign, Briefcase } from 'lucide-react';
-import WizardVacante from '../components/WizardVacante';
+import FormularioPerfilador from '../components/FormularioPerfilador';
 
 const VistaVacantes = () => {
     const [vacantes, setVacantes] = useState([]);
@@ -9,7 +9,7 @@ const VistaVacantes = () => {
     const [error, setError] = useState(null);
     const [mostrarModal, setMostrarModal] = useState(false);
     const [nuevaVacante, setNuevaVacante] = useState({
-        cliente: '', nombre_puesto: '', sueldo_ofertado: '', 
+        cliente: '', nombre_puesto: '', sueldo_ofertado: '',
         modalidad: 'presencial', experiencia_minima: '', escolaridad_requerida: ''
     });
 
@@ -65,12 +65,12 @@ const VistaVacantes = () => {
                     <h1 style={{ fontSize: '28px', color: '#1E293B', fontWeight: '800', marginBottom: '4px' }}>Vacantes</h1>
                     <p style={{ color: '#64748B', fontSize: '15px' }}>Gestiona las vacantes de tus clientes.</p>
                 </div>
-                <button 
+                <button
                     onClick={() => setMostrarModal(true)}
-                    style={{ 
-                        display: 'flex', alignItems: 'center', gap: '8px', 
-                        backgroundColor: '#0EA5E9', color: 'white', 
-                        padding: '10px 20px', borderRadius: '8px', 
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        backgroundColor: '#0EA5E9', color: 'white',
+                        padding: '10px 20px', borderRadius: '8px',
                         border: 'none', fontWeight: '600', cursor: 'pointer',
                         boxShadow: '0 4px 6px -1px rgba(14, 165, 233, 0.2)'
                     }}
@@ -84,9 +84,9 @@ const VistaVacantes = () => {
             <div style={{ backgroundColor: 'white', padding: '16px', borderRadius: '12px', display: 'flex', gap: '16px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
                     <Search size={18} style={{ position: 'absolute', left: '16px', top: '12px', color: '#94A3B8' }} />
-                    <input 
-                        type="text" 
-                        placeholder="Buscar por puesto o cliente..." 
+                    <input
+                        type="text"
+                        placeholder="Buscar por puesto o cliente..."
                         style={{ width: '100%', padding: '10px 16px 10px 44px', borderRadius: '8px', border: '1px solid #E2E8F0', outline: 'none', fontSize: '15px' }}
                     />
                 </div>
@@ -112,7 +112,7 @@ const VistaVacantes = () => {
                     {vacantes.map((vacante) => {
                         const statusColors = getStatusColor(vacante.estatus);
                         return (
-                            <div key={vacante.id} style={{ 
+                            <div key={vacante.id} style={{
                                 backgroundColor: 'white', borderRadius: '12px', padding: '20px',
                                 boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)',
                                 border: '1px solid #F1F5F9', display: 'flex', flexDirection: 'column'
@@ -122,9 +122,9 @@ const VistaVacantes = () => {
                                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1E293B' }}>{vacante.nombre_puesto}</h3>
                                         <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B', fontWeight: '500' }}>{vacante.cliente}</p>
                                     </div>
-                                    <span style={{ 
-                                        backgroundColor: statusColors.bg, color: statusColors.text, 
-                                        padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', textTransform: 'capitalize' 
+                                    <span style={{
+                                        backgroundColor: statusColors.bg, color: statusColors.text,
+                                        padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', textTransform: 'capitalize'
                                     }}>
                                         {vacante.estatus}
                                     </span>
@@ -146,12 +146,12 @@ const VistaVacantes = () => {
                                 </div>
 
                                 <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'flex-end' }}>
-                                    <button style={{ 
-                                        backgroundColor: 'transparent', color: '#0EA5E9', border: 'none', 
-                                        fontWeight: '600', cursor: 'pointer', fontSize: '14px' 
-                                    }}>
+                                    <button
+                                        onClick={() => window.location.href = `/reclutamiento/vacantes/${vacante.id}`}
+                                        style={{ backgroundColor: 'transparent', color: '#0EA5E9', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>
                                         Ver Detalles &rarr;
                                     </button>
+
                                 </div>
                             </div>
                         );
@@ -161,7 +161,7 @@ const VistaVacantes = () => {
 
             {/* Modal Nueva Vacante */}
             {mostrarModal && (
-                <WizardVacante 
+                <FormularioPerfilador
                     onClose={() => setMostrarModal(false)}
                     onGuardado={() => {
                         setMostrarModal(false);

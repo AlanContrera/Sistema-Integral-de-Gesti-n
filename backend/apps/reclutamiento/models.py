@@ -39,6 +39,8 @@ class CategoriaPreguntas(models.Model):
     nombre = models.CharField(max_length=200, unique=True)
     descripcion = models.TextField(blank=True, null=True)
     sueldo_promedio_base = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    giro_industria = models.CharField(max_length=150, blank=True, null=True, help_text="Giro o industria (ej. Industrial, Construcción, TI)")
+
 
     class Meta:
         verbose_name = 'Categoría de Puesto'
@@ -295,13 +297,15 @@ class EntrevistaInicial(models.Model):
         return f"Inicial - {self.candidato.nombre_completo}"
 
     def save(self, *args, **kwargs):
-        # Lógica de semáforo de Entrevista Inicial
+        # Lógica de semáforo de Entrevista Inicial según tu Excel Original (10 Preguntas)
         if self.respuestas:
             positivas = 0
             riesgos = 0
             
-            factores_criticos = ['escolaridad', 'experiencia', 'carrera', 'herramientas']
+            # Los 4 dropdowns de "Factores Críticos"
+            factores_criticos = ['f_escolaridad', 'f_experiencia', 'f_carrera', 'f_herramientas']
             cumplen_criticos = True
+            
             for f in factores_criticos:
                 val = str(self.respuestas.get(f, '')).lower()
                 if val == 'cumple':
@@ -310,45 +314,46 @@ class EntrevistaInicial(models.Model):
                     riesgos += 1
                     cumplen_criticos = False
                     
-            traslado = str(self.respuestas.get('traslado', '')).lower()
+            # Pregunta 8 (Traslado - texto libre) evalúa si el reclutador escribió "si"
+            traslado = str(self.respuestas.get('p8', '')).lower()
             if 'si' in traslado or 'sí' in traslado:
                 positivas += 1
             elif 'no' in traslado or 'lejos' in traslado:
                 riesgos += 1
                 
-            expectativa_str = str(self.respuestas.get('expectativa_salarial', '0')).replace('$', '').replace(',', '')
-            try:
-                expectativa = float(expectativa_str)
-                oferta_max = float(self.candidato.vacante.sueldo_ofertado) * 1.10
-                if expectativa <= oferta_max:
-                    positivas += 1
-                else:
-                    riesgos += 1
-            except:
-                pass
-                
-            motivacion = str(self.respuestas.get('motivacion', '')).strip()
+            # Pregunta 9 (Sueldo - texto libre) extrae el número y lo compara
+            expectativa_str = str(self.respuestas.get('p9', '0')).replace('$', '').replace(',', '')
+            import re
+            numeros = re.findall(r'\d+', expectativa_str)
+            if numeros:
+                try:
+                    expectativa = float(numeros[0])
+                    oferta_max = float(self.candidato.vacante.sueldo_ofertado) * 1.10
+                    if expectativa <= oferta_max:
+                        positivas += 1
+                    else:
+                        riesgos += 1
+                except:
+                    pass
+                    
+            # Pregunta 10 (Motivadores - texto libre) da punto si no está vacío
+            motivacion = str(self.respuestas.get('p10', '')).strip()
             if len(motivacion) > 0:
                 positivas += 1
                 
-            if riesgos >= 2 or not cumplen_criticos:
+            # Calcular Semáforo
+            if riesgos >= 1 or not cumplen_criticos:
                 self.semaforo = 'rojo'
                 self.resultado = self.Resultado.NO_VIABLE
-                notas_auto = f"Automático: No pasar a profunda. Señales de riesgo: {riesgos}. Cumple críticos: {cumplen_criticos}."
-            elif positivas >= 5 and riesgos <= 1 and cumplen_criticos:
+                self.notas = f"Alerta Roja: El candidato no cumple 1 o más factores críticos (Escolaridad, Experiencia, Carrera, Herramientas, Sueldo o Traslado)."
+            elif positivas >= 5:
                 self.semaforo = 'verde'
                 self.resultado = self.Resultado.VIABLE
-                notas_auto = f"Automático: Pasar a profunda. Señales positivas: {positivas}."
+                self.notas = "Candidato 100% Viable. Cumple los 4 factores críticos y las condiciones de la vacante."
             else:
                 self.semaforo = 'amarillo'
                 self.resultado = self.Resultado.OBSERVACION
-                notas_auto = f"Automático: En duda. Validar con reclutador."
-                
-            if self.notas:
-                if "Automático:" not in self.notas:
-                    self.notas = notas_auto + "\n" + self.notas
-            else:
-                self.notas = notas_auto
+                self.notas = "En duda: Hay datos faltantes o información ambigua. Validar con el reclutador."
                 
         super().save(*args, **kwargs)
 

@@ -9,6 +9,8 @@ from decouple import config
 # --- PROGRAMACIÓN DE TAREAS PERIÓDICAS (Celery Beat) ---
 from celery.schedules import crontab
 import os
+from datetime import timedelta
+
 
 # Raiz del backend (dos niveles arriba de este archivo: settings/ -> config/ -> backend/)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -156,4 +158,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=12),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
 }

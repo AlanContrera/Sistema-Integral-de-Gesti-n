@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from rest_framework.decorators import action
 from .utils_pdf import generar_pdf_reporte_cliente
 from .utils_pdf import generar_pdf_propuesta_cliente
+from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import (
@@ -18,6 +19,14 @@ class CategoriaPreguntasViewSet(viewsets.ModelViewSet):
     queryset = CategoriaPreguntas.objects.all()
     serializer_class = CategoriaPreguntasSerializer
     permission_classes = [IsAuthenticated]
+
+    # --- NUEVA FUNCIÓN PARA OBTENER LOS GIROS ÚNICOS ---
+    @action(detail=False, methods=['get'])
+    def giros_unicos(self, request):
+        # Obtiene una lista de giros únicos que no estén vacíos ni sean nulos
+        giros = CategoriaPreguntas.objects.exclude(giro_industria__isnull=True).exclude(giro_industria='').values_list('giro_industria', flat=True).distinct()
+        return Response(sorted(set(giros)))
+
 
 class PlantillaPreguntaViewSet(viewsets.ModelViewSet):
     queryset = PlantillaPregunta.objects.all()
@@ -60,6 +69,7 @@ class VacanteViewSet(viewsets.ModelViewSet):
         from rest_framework.response import Response
         return Response({
             'sueldo_promedio_base': categoria.sueldo_promedio_base,
+            'giro_industria': categoria.giro_industria or '',
             'funciones': '\n'.join(funciones),
             'responsabilidades': '\n'.join(responsabilidades),
             'competencias_tecnicas': '\n'.join(comp_tecnicas),
