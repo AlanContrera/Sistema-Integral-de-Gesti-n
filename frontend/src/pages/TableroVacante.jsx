@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchConToken } from '../services/api';
-import { ArrowLeft, Users, ClipboardList, Plus, User } from 'lucide-react';
+import { ArrowLeft, Users, ClipboardList, Plus, User, CheckCircle, Clock, XCircle, FileText, Send } from 'lucide-react';
 import FormularioPerfilador from '../components/FormularioPerfilador';
 
 const TableroVacante = () => {
@@ -13,7 +13,6 @@ const TableroVacante = () => {
     const [cargando, setCargando] = useState(true);
     const [tabActiva, setTabActiva] = useState('tablero');
 
-    // Estado para el modal de Nuevo Candidato
     const [mostrarModal, setMostrarModal] = useState(false);
     const [nuevoCandidato, setNuevoCandidato] = useState({
         nombre_completo: '', correo: '', telefono: '', zona_ubicacion: '',
@@ -33,7 +32,6 @@ const TableroVacante = () => {
 
             if (resVac.ok) setVacante(await resVac.json());
             if (resCand.ok) setCandidatos(await resCand.json());
-
         } catch (error) {
             console.error(error);
         } finally {
@@ -41,7 +39,6 @@ const TableroVacante = () => {
         }
     };
 
-    // Crear Candidato
     const handleCrearCandidato = async (e) => {
         e.preventDefault();
         try {
@@ -55,39 +52,30 @@ const TableroVacante = () => {
 
             setMostrarModal(false);
             setNuevoCandidato({ nombre_completo: '', correo: '', telefono: '', zona_ubicacion: '' });
-            cargarDatos(); // Recargar lista
+            cargarDatos();
         } catch (err) {
             alert(err.message);
         }
     };
 
-    // Actualizar Estatus (Drag and Drop)
-    const handleDrop = async (e, nuevoEstatus) => {
-        e.preventDefault();
-        const candidatoId = e.dataTransfer.getData('candidatoId');
-
-        // Actualizamos estado local rápido visualmente
-        setCandidatos(prev => prev.map(c => c.id === parseInt(candidatoId) ? { ...c, estatus: nuevoEstatus } : c));
-
-        try {
-            await fetchConToken(`/reclutamiento/candidatos/${candidatoId}/`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estatus: nuevoEstatus })
-            });
-        } catch (error) {
-            console.error('Error al actualizar estatus:', error);
-            cargarDatos(); // Si falla, recargamos la BD real
-        }
+    // Función auxiliar para renderizar los Badges de Estatus
+    // (TableroVacante.jsx - Reemplaza la función renderBadgeEstatus)
+    const renderBadgeEstatus = (estatus) => {
+        const config = {
+            'nuevo': { color: '#3B82F6', bg: '#DBEAFE', text: 'Nuevo Prospecto', icon: <User size={14} /> },
+            'en_proceso': { color: '#EAB308', bg: '#FEF9C3', text: 'Filtro Inicial Aprobado', icon: <Clock size={14} /> },
+            'viable': { color: '#22C55E', bg: '#DCFCE7', text: 'Profunda Concluida (Viable)', icon: <CheckCircle size={14} /> },
+            'enviado_cliente': { color: '#A855F7', bg: '#F3E8FF', text: 'Presentado al Cliente', icon: <Send size={14} /> },
+            'no_viable': { color: '#EF4444', bg: '#FEE2E2', text: 'Descartado', icon: <XCircle size={14} /> }
+        };
+        const c = config[estatus] || config['nuevo'];
+        return (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: c.bg, color: c.color, padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
+                {c.icon} {c.text}
+            </span>
+        );
     };
 
-    const columnas = [
-        { id: 'nuevo', titulo: 'Nuevos', color: '#DBEAFE', border: '#3B82F6' },
-        { id: 'en_proceso', titulo: 'Entrevistas', color: '#FEF9C3', border: '#EAB308' },
-        { id: 'viable', titulo: 'Viables', color: '#DCFCE7', border: '#22C55E' },
-        { id: 'enviado_cliente', titulo: 'Enviados (CTE)', color: '#F3E8FF', border: '#A855F7' },
-        { id: 'no_viable', titulo: 'Descartados', color: '#FEE2E2', border: '#EF4444' }
-    ];
 
     if (cargando) return <div style={{ padding: '40px' }}>Cargando vacante...</div>;
     if (!vacante) return <div style={{ padding: '40px' }}>Vacante no encontrada.</div>;
@@ -101,7 +89,6 @@ const TableroVacante = () => {
 
     return (
         <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <button onClick={() => navigate('/reclutamiento/vacantes')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}>
@@ -121,7 +108,7 @@ const TableroVacante = () => {
 
             <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', marginBottom: '24px' }}>
                 <div style={navStyle(tabActiva === 'tablero')} onClick={() => setTabActiva('tablero')}>
-                    <Users size={18} /> Tablero Kanban (Candidatos)
+                    <Users size={18} /> Gestión de Candidatos (ATS)
                 </div>
                 <div style={navStyle(tabActiva === 'perfilador')} onClick={() => setTabActiva('perfilador')}>
                     <ClipboardList size={18} /> Consultar / Editar Perfilador
@@ -129,42 +116,47 @@ const TableroVacante = () => {
             </div>
 
             {tabActiva === 'tablero' && (
-                <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '20px', minHeight: '600px' }}>
-                    {columnas.map(col => (
-                        <div
-                            key={col.id}
-                            onDragOver={e => e.preventDefault()}
-                            onDrop={e => handleDrop(e, col.id)}
-                            style={{ flex: '0 0 300px', backgroundColor: '#F8FAFC', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column' }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: `2px solid ${col.border}`, paddingBottom: '8px' }}>
-                                <span style={{ fontWeight: 'bold', color: '#1E293B' }}>{col.titulo}</span>
-                                <span style={{ backgroundColor: col.color, color: col.border, padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
-                                    {candidatos.filter(c => c.estatus === col.id).length}
-                                </span>
-                            </div>
-
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {candidatos.filter(c => c.estatus === col.id).map(cand => (
-                                    <div
-                                        key={cand.id}
-                                        draggable
-                                        onDragStart={e => e.dataTransfer.setData('candidatoId', cand.id)}
-                                        style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', cursor: 'grab', borderLeft: `4px solid ${col.border}` }}
-                                    >
-                                        <div style={{ fontWeight: 'bold', color: '#0F172A', marginBottom: '4px', fontSize: '15px' }}>{cand.nombre_completo}</div>
-                                        <div style={{ fontSize: '13px', color: '#64748B', marginBottom: '12px' }}>{cand.correo}</div>
-                                        <button
-                                            onClick={() => navigate(`/reclutamiento/candidato/${cand.id}`)}
-                                            style={{ width: '100%', padding: '6px', backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '4px', color: '#475569', fontSize: '12px', cursor: 'pointer', fontWeight: '600' }}
-                                        >
-                                            Evaluar Candidato &rarr;
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
+                <div style={{ backgroundColor: '#FFF', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                            <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                                <th style={{ padding: '16px', color: '#64748B', fontSize: '13px', fontWeight: 'bold' }}>CANDIDATO</th>
+                                <th style={{ padding: '16px', color: '#64748B', fontSize: '13px', fontWeight: 'bold' }}>ESTATUS GLOBAL</th>
+                                <th style={{ padding: '16px', color: '#64748B', fontSize: '13px', fontWeight: 'bold' }}>ZONA/UBICACIÓN</th>
+                                <th style={{ padding: '16px', color: '#64748B', fontSize: '13px', fontWeight: 'bold', textAlign: 'right' }}>ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {candidatos.length === 0 ? (
+                                <tr>
+                                    <td colSpan="4" style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>No hay candidatos registrados en esta vacante.</td>
+                                </tr>
+                            ) : (
+                                candidatos.map((cand) => (
+                                    <tr key={cand.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                        <td style={{ padding: '16px' }}>
+                                            <div style={{ fontWeight: 'bold', color: '#0F172A', fontSize: '15px' }}>{cand.nombre_completo}</div>
+                                            <div style={{ fontSize: '13px', color: '#64748B', marginTop: '2px' }}>{cand.correo} • {cand.telefono}</div>
+                                        </td>
+                                        <td style={{ padding: '16px' }}>
+                                            {renderBadgeEstatus(cand.estatus)}
+                                        </td>
+                                        <td style={{ padding: '16px', color: '#475569', fontSize: '14px' }}>
+                                            {cand.zona_ubicacion}
+                                        </td>
+                                        <td style={{ padding: '16px', textAlign: 'right' }}>
+                                            <button
+                                                onClick={() => navigate(`/reclutamiento/candidato/${cand.id}`)}
+                                                style={{ padding: '8px 16px', backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', borderRadius: '6px', color: '#0F172A', fontSize: '13px', cursor: 'pointer', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                            >
+                                                <FileText size={16} /> Evaluar / Expediente
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             )}
 
@@ -172,7 +164,7 @@ const TableroVacante = () => {
                 <FormularioPerfilador vacanteId={id} onClose={() => setTabActiva('tablero')} onGuardado={() => { setTabActiva('tablero'); cargarDatos(); }} />
             )}
 
-            {/* Modal Agregar Candidato (Registro Rápido) */}
+            {/* Modal Agregar Candidato */}
             {mostrarModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
                     <div style={{ backgroundColor: '#FFF', padding: '32px', borderRadius: '12px', width: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>

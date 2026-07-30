@@ -355,7 +355,18 @@ class EntrevistaInicial(models.Model):
                 self.resultado = self.Resultado.OBSERVACION
                 self.notas = "En duda: Hay datos faltantes o información ambigua. Validar con el reclutador."
                 
+        # (models.py - Al final del método save de EntrevistaInicial)
         super().save(*args, **kwargs)
+
+        # ---------------------------------------------------------
+        # NUEVO: Actualización Automática de Estatus del Candidato
+        # ---------------------------------------------------------
+        candidato = self.candidato
+        # Si acabamos de hacer la entrevista inicial, el candidato ya está "En Proceso"
+        if candidato.estatus == Candidato.Estatus.NUEVO:
+            candidato.estatus = Candidato.Estatus.EN_PROCESO
+            candidato.save()
+
 
 class EntrevistaProfunda(models.Model):
     candidato = models.OneToOneField(Candidato, on_delete=models.CASCADE, related_name='entrevista_profunda')
@@ -370,6 +381,14 @@ class EntrevistaProfunda(models.Model):
     brechas = models.TextField(blank=True, null=True)
     
     resultado_sugerido = models.CharField(max_length=200, blank=True, null=True)
+    
+    # === AGENDA ENTREVISTA CLIENTE ===
+    agendar_cliente = models.BooleanField(default=False)
+    fecha_entrevista_cliente = models.DateField(null=True, blank=True)
+    hora_entrevista_cliente = models.TimeField(null=True, blank=True)
+    modalidad_cliente = models.CharField(max_length=100, blank=True, null=True)
+    detalles_agenda_cliente = models.TextField(blank=True, null=True)
+
     fecha = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -436,7 +455,28 @@ class EntrevistaProfunda(models.Model):
             if not self.brechas:
                 self.brechas = "\n".join(brechas_temp) if brechas_temp else "• Sin brechas críticas detectadas."
 
+        # (models.py - Al final del método save de EntrevistaProfunda)
         super().save(*args, **kwargs)
+
+        # ---------------------------------------------------------
+        # NUEVO: Actualización Automática de Estatus del Candidato
+        # ---------------------------------------------------------
+        candidato = self.candidato
+        
+        # OJO: Cambiamos "dictamen" por "semaforo" que es el campo correcto
+        if self.agendar_cliente:
+            candidato.estatus = Candidato.Estatus.ENVIADO_CLIENTE
+            candidato.save()
+        elif self.semaforo == 'verde' or self.semaforo == 'amarillo':
+            # Pasa a Viable (si no lo han marcado ya manualmente como Enviado)
+            if candidato.estatus not in [Candidato.Estatus.ENVIADO_CLIENTE]:
+                candidato.estatus = Candidato.Estatus.VIABLE
+                candidato.save()
+        elif self.semaforo == 'rojo':
+            # Si el semaforo es ROJO en la profunda, queda descartado
+            candidato.estatus = Candidato.Estatus.NO_VIABLE
+            candidato.save()
+
 
 # ==========================================
 # 5. REPORTES

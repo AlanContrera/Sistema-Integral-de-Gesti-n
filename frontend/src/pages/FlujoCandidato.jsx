@@ -18,6 +18,13 @@ const FlujoCandidato = () => {
     const [respuestasInicial, setRespuestasInicial] = useState({});
     const [plantillasPregunta, setPlantillasPregunta] = useState([]);
     const [respuestasProfunda, setRespuestasProfunda] = useState({});
+    const [agendaCliente, setAgendaCliente] = useState({
+        agendar_cliente: false,
+        fecha_entrevista_cliente: '',
+        hora_entrevista_cliente: '',
+        modalidad_cliente: '',
+        detalles_agenda_cliente: ''
+    });
     const [tab, setTab] = useState('inicial'); // 'inicial', 'profunda', 'reporte'
 
 
@@ -67,6 +74,14 @@ const FlujoCandidato = () => {
                         if (r.id_pregunta) mapRespuestas[r.id_pregunta] = r;
                     });
                     setRespuestasProfunda(mapRespuestas);
+                    
+                    setAgendaCliente({
+                        agendar_cliente: miProfunda.agendar_cliente || false,
+                        fecha_entrevista_cliente: miProfunda.fecha_entrevista_cliente || '',
+                        hora_entrevista_cliente: miProfunda.hora_entrevista_cliente || '',
+                        modalidad_cliente: miProfunda.modalidad_cliente || '',
+                        detalles_agenda_cliente: miProfunda.detalles_agenda_cliente || ''
+                    });
                 }
             }
 
@@ -166,11 +181,11 @@ const FlujoCandidato = () => {
     const handleRespuestaProfunda = (id_pregunta, rubro, campo, valor) => {
         setRespuestasProfunda(prev => ({
             ...prev,
-            [id_pregunta]: { 
+            [id_pregunta]: {
                 ...prev[id_pregunta],
-                id_pregunta, 
-                rubro, 
-                [campo]: valor 
+                id_pregunta,
+                rubro,
+                [campo]: valor
             }
         }));
     };
@@ -208,7 +223,7 @@ const FlujoCandidato = () => {
 
         const respondidas = nulos + basicos + intermedios + expertos;
         const porcentajeNum = parseFloat(calcularPorcentajeEnVivo());
-        
+
         let semaforo = 'gris';
         let resultado_sugerido = 'Pendiente: faltan evaluaciones';
 
@@ -230,14 +245,14 @@ const FlujoCandidato = () => {
 
     const handleGenerarPDF = () => {
         const elemento = document.getElementById('reporte-cliente-pdf');
-        
+
         const opciones = {
-            margin:       [10, 10, 10, 10],
-            filename:     `Reporte_Cliente_${candidato?.nombre_completo?.replace(/\s+/g, '_') || 'Candidato'}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' },
-            pagebreak:    { mode: 'css', avoid: ['tr', 'h2', 'h3', 'h4', '.evitar-salto'] }
+            margin: [10, 10, 10, 10],
+            filename: `Reporte_Cliente_${candidato?.nombre_completo?.replace(/\s+/g, '_') || 'Candidato'}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+            pagebreak: { mode: 'css', avoid: ['tr', 'h2', 'h3', 'h4', '.evitar-salto'] }
         };
 
         toast.promise(
@@ -267,7 +282,12 @@ const FlujoCandidato = () => {
 
             const payload = {
                 candidato: parseInt(id),
-                rubros: rubrosArray
+                rubros: rubrosArray,
+                agendar_cliente: agendaCliente.agendar_cliente,
+                fecha_entrevista_cliente: agendaCliente.fecha_entrevista_cliente || null,
+                hora_entrevista_cliente: agendaCliente.hora_entrevista_cliente || null,
+                modalidad_cliente: agendaCliente.modalidad_cliente || null,
+                detalles_agenda_cliente: agendaCliente.detalles_agenda_cliente || null
             };
 
             let res;
@@ -313,13 +333,20 @@ const FlujoCandidato = () => {
 
     return (
         <div style={{ paddingBottom: '40px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-                <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', display: 'flex', alignItems: 'center' }}>
-                    <ArrowLeft size={24} />
-                </button>
-                <div>
-                    <h1 style={{ fontSize: '28px', color: '#1E293B', fontWeight: '800', margin: 0 }}>{candidato.nombre_completo}</h1>
-                    <p style={{ color: '#64748B', fontSize: '15px', margin: '4px 0 0 0' }}>Aplicando a: {candidato.vacante_nombre} en {candidato.cliente_nombre}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', display: 'flex', alignItems: 'center' }}>
+                        <ArrowLeft size={24} />
+                    </button>
+                    <div>
+                        <h1 style={{ fontSize: '28px', color: '#1E293B', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {candidato.nombre_completo}
+                            <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '12px', backgroundColor: '#E2E8F0', color: '#475569', fontWeight: '700', textTransform: 'uppercase', verticalAlign: 'middle' }}>
+                                {candidato.estatus?.replace('_', ' ')}
+                            </span>
+                        </h1>
+                        <p style={{ color: '#64748B', fontSize: '15px', margin: '4px 0 0 0' }}>Aplicando a: {candidato.vacante_nombre} en {candidato.cliente_nombre}</p>
+                    </div>
                 </div>
             </div>
 
@@ -576,18 +603,55 @@ const FlujoCandidato = () => {
                         </div>
                     ) : (
                         <form onSubmit={handleGuardarProfunda}>
-                            {/* Resumen Superior (Porcentaje en vivo) */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '12px', marginBottom: '24px', border: '1px solid #E2E8F0' }}>
-                                <div>
-                                    <h4 style={{ margin: 0, color: '#475569', fontSize: '14px' }}>Avance de Evaluación</h4>
-                                    <div style={{ fontSize: '24px', fontWeight: '800', color: '#1E293B' }}>
-                                        {Object.values(respuestasProfunda).filter(r => r.nivel).length} / {generarPreguntasCompletas().length} rubros
+                            {/* Resumen Superior (Porcentaje en vivo) Tema Claro */}
+                            <div style={{ 
+                                backgroundColor: 'white', 
+                                padding: '28px 32px', 
+                                borderRadius: '16px', 
+                                marginBottom: '32px', 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                border: '1px solid #E2E8F0',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+                            }}>
+                                <div style={{ flex: 1, paddingRight: '40px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                                        <div style={{ backgroundColor: '#F0F9FF', padding: '12px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Target size={28} color="#0EA5E9" />
+                                        </div>
+                                        <div>
+                                            <h4 style={{ margin: 0, color: '#64748B', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>Progreso de Evaluación</h4>
+                                            <div style={{ fontSize: '28px', fontWeight: '800', color: '#1E293B', marginTop: '4px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                                                {Object.values(respuestasProfunda).filter(r => r.nivel).length} 
+                                                <span style={{ color: '#94A3B8', fontSize: '16px', fontWeight: '500' }}>/ {generarPreguntasCompletas().length} rubros evaluados</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {/* Barra de progreso visual */}
+                                    <div style={{ height: '8px', backgroundColor: '#F1F5F9', borderRadius: '10px', overflow: 'hidden' }}>
+                                        <div style={{ 
+                                            width: `${(Object.values(respuestasProfunda).filter(r => r.nivel).length / generarPreguntasCompletas().length) * 100}%`, 
+                                            height: '100%', 
+                                            backgroundColor: '#0EA5E9',
+                                            transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            borderRadius: '10px'
+                                        }} />
                                     </div>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <h4 style={{ margin: 0, color: '#475569', fontSize: '14px' }}>Porcentaje de Apego</h4>
-                                    <div style={{ fontSize: '28px', fontWeight: '800', color: '#0EA5E9' }}>
+                                <div style={{ borderLeft: '1px solid #E2E8F0', paddingLeft: '40px', textAlign: 'center', minWidth: '180px' }}>
+                                    <h4 style={{ margin: 0, color: '#64748B', fontSize: '13px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>Apego al Perfil</h4>
+                                    <div style={{ 
+                                        fontSize: '48px', 
+                                        fontWeight: '900', 
+                                        color: '#0EA5E9',
+                                        marginTop: '4px',
+                                        lineHeight: '1'
+                                    }}>
                                         {calcularPorcentajeEnVivo()}%
+                                    </div>
+                                    <div style={{ fontSize: '13px', color: '#94A3B8', marginTop: '8px', fontWeight: '500' }}>
+                                        Calculado en tiempo real
                                     </div>
                                 </div>
                             </div>
@@ -601,38 +665,34 @@ const FlujoCandidato = () => {
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
                                         {grupo.preguntas.map(p => (
-                                            <div key={p.id} style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '16px' }}>
-                                                
-                                                <div style={{ marginBottom: '12px' }}>
-                                                    <div style={{ color: '#1E293B', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>{p.pregunta}</div>
-                                                    <div style={{ color: '#64748B', fontSize: '13px', fontStyle: 'italic' }}>
-                                                        <Target size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                                                        Esperado: {p.criterio_evaluacion}
-                                                    </div>
+                                            <div key={p.id} style={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+
+                                                <div style={{ marginBottom: '20px', borderLeft: '4px solid #0EA5E9', paddingLeft: '16px' }}>
+                                                    <div style={{ color: '#0F172A', fontSize: '15px', fontWeight: '700', lineHeight: '1.5' }}>{p.pregunta}</div>
                                                 </div>
 
-                                                <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '16px', alignItems: 'start' }}>
-                                                    
+                                                <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px', alignItems: 'start' }}>
+
                                                     <div>
-                                                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '6px', display: 'block' }}>Nivel Detectado</label>
+                                                        <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Nivel Detectado</label>
                                                         <select
                                                             required
                                                             value={respuestasProfunda[p.id]?.nivel || ''}
                                                             onChange={e => handleRespuestaProfunda(p.id, p.rubro, 'nivel', e.target.value)}
                                                             style={{
-                                                                width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #CBD5E1', outline: 'none', fontSize: '13px', fontWeight: '500', backgroundColor:
+                                                                width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #CBD5E1', outline: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', backgroundColor:
                                                                     respuestasProfunda[p.id]?.nivel === 'nulo' ? '#FEE2E2' :
-                                                                    respuestasProfunda[p.id]?.nivel === 'basico' ? '#FFEDD5' :
-                                                                    respuestasProfunda[p.id]?.nivel === 'intermedio' ? '#E0F2FE' :
-                                                                    respuestasProfunda[p.id]?.nivel === 'experto' ? '#DCFCE7' : 'white',
-                                                                color: 
+                                                                        respuestasProfunda[p.id]?.nivel === 'basico' ? '#FFEDD5' :
+                                                                            respuestasProfunda[p.id]?.nivel === 'intermedio' ? '#E0F2FE' :
+                                                                                respuestasProfunda[p.id]?.nivel === 'experto' ? '#DCFCE7' : '#F8FAFC',
+                                                                color:
                                                                     respuestasProfunda[p.id]?.nivel === 'nulo' ? '#991B1B' :
-                                                                    respuestasProfunda[p.id]?.nivel === 'basico' ? '#C2410C' :
-                                                                    respuestasProfunda[p.id]?.nivel === 'intermedio' ? '#0369A1' :
-                                                                    respuestasProfunda[p.id]?.nivel === 'experto' ? '#166534' : '#334155'
+                                                                        respuestasProfunda[p.id]?.nivel === 'basico' ? '#C2410C' :
+                                                                            respuestasProfunda[p.id]?.nivel === 'intermedio' ? '#0369A1' :
+                                                                                respuestasProfunda[p.id]?.nivel === 'experto' ? '#166534' : '#475569'
                                                             }}
                                                         >
-                                                            <option value="" disabled>Selecciona nivel...</option>
+                                                            <option value="" disabled>Seleccionar...</option>
                                                             <option value="nulo">0 - Nulo</option>
                                                             <option value="basico">1 - Básico</option>
                                                             <option value="intermedio">2 - Intermedio</option>
@@ -641,12 +701,12 @@ const FlujoCandidato = () => {
                                                     </div>
 
                                                     <div>
-                                                        <label style={{ fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '6px', display: 'block' }}>Notas / Evidencia del Candidato</label>
-                                                        <textarea 
-                                                            placeholder="Escribe la evidencia observada..."
+                                                        <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notas / Evidencia Observada</label>
+                                                        <textarea
+                                                            placeholder="Escribe la evidencia observada (opcional pero recomendado)..."
                                                             value={respuestasProfunda[p.id]?.notas || ''}
                                                             onChange={e => handleRespuestaProfunda(p.id, p.rubro, 'notas', e.target.value)}
-                                                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', minHeight: '60px', fontFamily: 'inherit', resize: 'vertical' }}
+                                                            style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px', minHeight: '80px', fontFamily: 'inherit', resize: 'vertical', backgroundColor: '#F8FAFC', color: '#334155' }}
                                                         />
                                                     </div>
 
@@ -686,7 +746,7 @@ const FlujoCandidato = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            
+
                                             <div style={{ flex: 2, minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'center' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <span style={{ fontSize: '14px', color: '#64748B', fontWeight: '600', width: '150px' }}>Resultado Sugerido:</span>
@@ -696,15 +756,93 @@ const FlujoCandidato = () => {
                                                     <span style={{ fontSize: '14px', color: '#64748B', fontWeight: '600', width: '150px' }}>Semáforo Previsto:</span>
                                                     {generarSemaforoUi(res.semaforo)}
                                                 </div>
-                                                <div style={{ fontSize: '13px', color: '#94A3B8', marginTop: '4px', fontStyle: 'italic', backgroundColor: 'white', padding: '12px', borderRadius: '6px', border: '1px dashed #CBD5E1' }}>
-                                                    <Target size={14} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-                                                    El análisis ejecutivo final, incluyendo redacción de fortalezas y brechas, se procesará en el servidor al presionar <strong>Guardar Evaluación</strong>.
-                                                </div>
+                                                {/* Mensaje de procesamiento eliminado por solicitud del usuario */}
                                             </div>
                                         </div>
                                     </div>
                                 );
                             })()}
+
+                            {/* --- SECCIÓN: AGENDAR ENTREVISTA CON CLIENTE --- */}
+                            <div style={{ marginTop: '32px', backgroundColor: agendaCliente.agendar_cliente ? '#F0FDF4' : '#F8FAFC', border: agendaCliente.agendar_cliente ? '2px solid #86EFAC' : '1px solid #E2E8F0', borderRadius: '12px', padding: '24px', transition: 'all 0.3s ease' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: agendaCliente.agendar_cliente ? '20px' : '0' }}>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: agendaCliente.agendar_cliente ? '#166534' : '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <Calendar size={22} />
+                                            Siguiente Paso: Agendar Entrevista con Cliente
+                                        </h3>
+                                        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748B' }}>
+                                            Activa esta opción si el candidato cumple con el perfil y se presentará al cliente.
+                                        </p>
+                                    </div>
+                                    <label style={{ position: 'relative', display: 'inline-block', width: '50px', height: '28px' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={agendaCliente.agendar_cliente}
+                                            onChange={(e) => setAgendaCliente({ ...agendaCliente, agendar_cliente: e.target.checked })}
+                                            style={{ opacity: 0, width: 0, height: 0 }}
+                                        />
+                                        <span style={{
+                                            position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                                            backgroundColor: agendaCliente.agendar_cliente ? '#10B981' : '#CBD5E1',
+                                            transition: '.4s', borderRadius: '34px'
+                                        }}>
+                                            <span style={{
+                                                position: 'absolute', content: '""', height: '20px', width: '20px', left: '4px', bottom: '4px',
+                                                backgroundColor: 'white', transition: '.4s', borderRadius: '50%',
+                                                transform: agendaCliente.agendar_cliente ? 'translateX(22px)' : 'translateX(0)'
+                                            }}></span>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                {agendaCliente.agendar_cliente && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px', borderTop: '1px solid #BBF7D0', paddingTop: '20px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Fecha Programada</label>
+                                            <input 
+                                                type="date" 
+                                                value={agendaCliente.fecha_entrevista_cliente}
+                                                onChange={(e) => setAgendaCliente({ ...agendaCliente, fecha_entrevista_cliente: e.target.value })}
+                                                style={{ ...inputStyle, borderColor: '#86EFAC', backgroundColor: 'white' }} 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Hora</label>
+                                            <input 
+                                                type="time" 
+                                                value={agendaCliente.hora_entrevista_cliente}
+                                                onChange={(e) => setAgendaCliente({ ...agendaCliente, hora_entrevista_cliente: e.target.value })}
+                                                style={{ ...inputStyle, borderColor: '#86EFAC', backgroundColor: 'white' }} 
+                                            />
+                                        </div>
+                                        <div style={{ gridColumn: '1 / -1' }}>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Modalidad</label>
+                                            <select 
+                                                value={agendaCliente.modalidad_cliente}
+                                                onChange={(e) => setAgendaCliente({ ...agendaCliente, modalidad_cliente: e.target.value })}
+                                                style={{ ...inputStyle, borderColor: '#86EFAC', backgroundColor: 'white' }}
+                                            >
+                                                <option value="">Seleccionar modalidad...</option>
+                                                <option value="Virtual (Teams / Zoom)">Virtual (Teams / Zoom / Meet)</option>
+                                                <option value="Presencial (Instalaciones Cliente)">Presencial (Instalaciones del Cliente)</option>
+                                                <option value="Presencial (Oficinas IACI)">Presencial (Nuestras Oficinas)</option>
+                                                <option value="Telefónica">Llamada Telefónica</option>
+                                            </select>
+                                        </div>
+                                        <div style={{ gridColumn: '1 / -1' }}>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Liga de la reunión o Dirección Física / Detalles</label>
+                                            <textarea 
+                                                rows="3" 
+                                                placeholder="Pega aquí el enlace de Teams o la dirección de las oficinas del cliente..."
+                                                value={agendaCliente.detalles_agenda_cliente}
+                                                onChange={(e) => setAgendaCliente({ ...agendaCliente, detalles_agenda_cliente: e.target.value })}
+                                                style={{ ...inputStyle, borderColor: '#86EFAC', backgroundColor: 'white', resize: 'vertical' }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #E2E8F0' }}>
                                 <button type="submit" style={{ padding: '14px 28px', borderRadius: '8px', border: 'none', backgroundColor: '#10B981', color: 'white', fontWeight: '600', fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}>
@@ -717,231 +855,145 @@ const FlujoCandidato = () => {
                 </div>
             )}
 
-            {/* Pestaña: Reporte (Estilo Excel Reporte Cliente 1) */}
+
+            {/* Pestaña: Reporte (Botón de Descarga Limpio) */}
             {tab === 'reporte' && (
-                <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '2px solid #F1F5F9' }}>
-                        <h3 style={{ margin: 0, color: '#0F172A', fontSize: '22px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <FileText size={24} color="#0EA5E9" /> Reporte Ejecutivo
-                        </h3>
-                        {entrevistaProfunda && (
-                            <button onClick={handleGenerarPDF} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#3B82F6', color: 'white', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)', transition: 'background-color 0.2s' }}>
-                                <Download size={18} /> Generar PDF para Cliente
-                            </button>
-                        )}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', padding: '60px 32px', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)', minHeight: '400px' }}>
+                    <div style={{ backgroundColor: '#F0F9FF', padding: '24px', borderRadius: '50%', marginBottom: '24px' }}>
+                        <Download size={48} color="#0EA5E9" />
                     </div>
+                    <h2 style={{ margin: '0 0 16px 0', color: '#0F172A', fontSize: '28px', fontWeight: '800' }}>
+                        Descargar Reporte Ejecutivo
+                    </h2>
+                    <p style={{ margin: '0 0 32px 0', color: '#64748B', fontSize: '16px', maxWidth: '500px', textAlign: 'center', lineHeight: '1.6' }}>
+                        El reporte descargable contiene la evaluación detallada con todos los rubros, fortalezas, brechas y el dictamen final para enviar al cliente.
+                    </p>
 
-                    <div id="reporte-cliente-pdf" style={{ backgroundColor: '#ffffff', padding: '40px 50px', fontFamily: '"Inter", "Segoe UI", sans-serif', width: '100%', maxWidth: '1000px', margin: '0 auto', color: '#374151', lineHeight: '1.5', boxSizing: 'border-box' }}>
-                        
-                        {/* 1. ENCABEZADO CORPORATIVO */}
-                        <div style={{ borderBottom: '3px solid #1F4E78', paddingBottom: '24px', marginBottom: '32px' }}>
-                            <h1 style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 24px 0', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Reporte Ejecutivo de Candidato
-                            </h1>
-                            
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', fontSize: '13px' }}>
-                                <div>
-                                    <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Cliente / Empresa</span>
-                                    <span style={{ fontWeight: '600', color: '#111827' }}>{vacanteData?.cliente_nombre || 'IACI'}</span>
-                                </div>
-                                <div>
-                                    <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Puesto evaluado</span>
-                                    <span style={{ fontWeight: '600', color: '#111827' }}>{vacanteData?.titulo || 'N/A'}</span>
-                                </div>
-                                <div>
-                                    <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Fecha del reporte</span>
-                                    <span style={{ fontWeight: '500' }}>{formatDate(new Date())}</span>
-                                </div>
-                                <div>
-                                    <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Sueldo ofertado</span>
-                                    <span style={{ fontWeight: '500' }}>${vacanteData?.sueldo_maximo || 0}</span>
-                                </div>
-                                <div>
-                                    <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Ubicación</span>
-                                    <span style={{ fontWeight: '500' }}>{vacanteData?.ubicacion || 'N/A'}</span>
-                                </div>
-                                <div>
-                                    <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Consultor responsable</span>
-                                    <span style={{ fontWeight: '500' }}>{vacanteData?.reclutador_asignado_nombre || 'No asignado'}</span>
-                                </div>
-                                <div>
-                                    <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Contacto cliente</span>
-                                    <span style={{ fontWeight: '500' }}>{vacanteData?.contacto_nombre || 'Claudia Abundis'}</span>
-                                </div>
-                            </div>
-
-                            <div style={{ marginTop: '24px', padding: '16px 24px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <span style={{ color: '#64748B', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Candidato Evaluado</span>
-                                    <span style={{ fontWeight: '800', fontSize: '18px', color: '#0F172A' }}>{candidato?.nombre_completo}</span>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <span style={{ color: '#64748B', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Resultado General</span>
-                                    <span style={{ fontWeight: '700', fontSize: '16px', color: entrevistaProfunda ? '#1F4E78' : '#94A3B8' }}>
-                                        {entrevistaProfunda?.resultado_sugerido || 'Pendiente: faltan evaluaciones'}
-                                    </span>
-                                </div>
-                            </div>
+                    {entrevistaProfunda ? (
+                        <button onClick={handleGenerarPDF} style={{ padding: '16px 40px', borderRadius: '12px', border: 'none', backgroundColor: '#0EA5E9', color: 'white', fontWeight: 'bold', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.3)', transition: 'all 0.2s' }}>
+                            <FileText size={24} /> Descargar PDF (Listo para Cliente)
+                        </button>
+                    ) : (
+                        <div style={{ padding: '20px 32px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px', fontWeight: '600' }}>
+                            <AlertTriangle size={24} />
+                            Falta completar la Entrevista Profunda
                         </div>
-
-                        {/* 2. RESUMEN EJECUTIVO */}
-                        <div style={{ marginBottom: '32px' }}>
-                            <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#1F4E78', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Resumen Ejecutivo
-                            </h2>
-                            <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '16px', fontSize: '13px' }}>
-                                <div style={{ fontWeight: '600', color: '#475569' }}>Conclusión para cliente:</div>
-                                <div style={{ color: '#111827' }}>{entrevistaProfunda ? 'Evaluación detallada completada. Perfil validado para presentación inicial.' : 'Aún no hay suficientes evaluaciones para emitir recomendación confiable.'}</div>
-                                
-                                <div style={{ fontWeight: '600', color: '#475569' }}>Motivo principal:</div>
-                                <div style={{ color: '#111827', fontWeight: entrevistaProfunda ? '600' : 'normal' }}>
-                                    {entrevistaProfunda ? `El candidato obtuvo un resultado sugerido de: ${entrevistaProfunda.resultado_sugerido}` : 'Pendiente de concluir entrevistas y evaluaciones técnicas.'}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 3. VALIDACIONES REALIZADAS (Tabla limpia) */}
-                        <div style={{ marginBottom: '32px' }}>
-                            <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#1F4E78', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px', pageBreakAfter: 'avoid' }}>
-                                Validaciones Realizadas
-                            </h2>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '2px solid #E2E8F0' }}>
-                                        <th style={{ padding: '0 0 12px 0', color: '#64748B', fontWeight: '600', textTransform: 'uppercase', fontSize: '11px', width: '20%' }}>Etapa del Proceso</th>
-                                        <th style={{ padding: '0 0 12px 12px', color: '#64748B', fontWeight: '600', textTransform: 'uppercase', fontSize: '11px', width: '25%' }}>Resultado / Estatus</th>
-                                        <th style={{ padding: '0 0 12px 12px', color: '#64748B', fontWeight: '600', textTransform: 'uppercase', fontSize: '11px', width: '55%' }}>Evidencia Revisada & Observaciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                        <td style={{ padding: '16px 0', fontWeight: '600', color: '#334155' }}>Perfilador</td>
-                                        <td style={{ padding: '16px 0 16px 12px', color: '#10B981', fontWeight: '500' }}>✓ Validado</td>
-                                        <td style={{ padding: '16px 0 16px 12px', color: '#475569' }}>
-                                            <span style={{ display: 'block', fontWeight: '500', color: '#1E293B', marginBottom: '4px' }}>Funciones, competencias, sueldo y ubicación.</span>
-                                            Perfil base alineado exitosamente contra los requisitos levantados con el cliente.
-                                        </td>
-                                    </tr>
-                                    <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                        <td style={{ padding: '16px 0', fontWeight: '600', color: '#334155' }}>Entrevista Inicial</td>
-                                        <td style={{ padding: '16px 0 16px 12px', fontWeight: '500', color: entrevistaInicial ? '#10B981' : '#F59E0B' }}>
-                                            {entrevistaInicial ? '✓ Completada' : '⏱ Pendiente'}
-                                        </td>
-                                        <td style={{ padding: '16px 0 16px 12px', color: '#475569' }}>
-                                            <span style={{ display: 'block', fontWeight: '500', color: '#1E293B', marginBottom: '4px' }}>Fit básico, disponibilidad, experiencia y expectativa.</span>
-                                            {entrevistaInicial ? 'El candidato cumple con los filtros iniciales requeridos.' : 'Faltan respuestas preliminares del candidato.'}
-                                        </td>
-                                    </tr>
-                                    <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                        <td style={{ padding: '16px 0', fontWeight: '600', color: '#334155' }}>Entrevista Profunda</td>
-                                        <td style={{ padding: '16px 0 16px 12px', fontWeight: '500', color: entrevistaProfunda ? '#10B981' : '#F59E0B' }}>
-                                            {entrevistaProfunda ? `✓ Completada (${entrevistaProfunda.porcentaje}%)` : '⏱ Pendiente'}
-                                        </td>
-                                        <td style={{ padding: '16px 0 16px 12px', color: '#475569' }}>
-                                            <span style={{ display: 'block', fontWeight: '500', color: '#1E293B', marginBottom: '4px' }}>Dominio técnico, experiencia, actitud y viabilidad logística.</span>
-                                            {entrevistaProfunda ? 'Evaluación detallada concluida por el consultor asignado.' : 'Es necesario completar la matriz de evaluación técnica.'}
-                                        </td>
-                                    </tr>
-                                    <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                        <td style={{ padding: '16px 0', fontWeight: '600', color: '#334155' }}>Decisión Integrada</td>
-                                        <td style={{ padding: '16px 0 16px 12px', fontWeight: '600', color: '#1E293B' }}>
-                                            {entrevistaProfunda ? entrevistaProfunda.semaforo.toUpperCase() : 'Pendiente'}
-                                        </td>
-                                        <td style={{ padding: '16px 0 16px 12px', color: '#475569' }}>
-                                            <span style={{ display: 'block', fontWeight: '500', color: '#1E293B', marginBottom: '4px' }}>Cruce de entrevista profunda + habilidades.</span>
-                                            {entrevistaProfunda ? 'El cruce de datos permite emitir una recomendación formal.' : 'A la espera de conclusión de etapas previas.'}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* 4. FORTALEZAS DEL PERFIL VS VACANTE */}
-                        <div className="evitar-salto" style={{ marginBottom: '32px', pageBreakInside: 'avoid' }}>
-                            <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#1F4E78', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Análisis del Perfil vs Vacante
-                            </h2>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                
-                                <div>
-                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: '600', color: '#475569' }}>Funciones Clave del Puesto:</h4>
-                                    <div style={{ backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '6px', fontSize: '13px', color: '#1E293B', lineHeight: '1.6' }}>
-                                        {entrevistaProfunda ? entrevistaProfunda.analisis_ejecutivo : 'Pendiente: faltan evaluaciones. Completar matriz para obtener el análisis.'}
-                                    </div>
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                    <div>
-                                        <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: '600', color: '#059669' }}>Fortalezas y Responsabilidades Críticas:</h4>
-                                        <div style={{ padding: '16px', border: '1px solid #D1FAE5', backgroundColor: '#ECFDF5', borderRadius: '6px', fontSize: '13px', color: '#065F46', whiteSpace: 'pre-wrap', lineHeight: '1.6', minHeight: '100px' }}>
-                                            {entrevistaProfunda && entrevistaProfunda.fortalezas ? entrevistaProfunda.fortalezas : '• Sin fortalezas mapeadas actualmente.'}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: '600', color: '#D97706' }}>Brechas Técnicas Detectadas:</h4>
-                                        <div style={{ padding: '16px', border: '1px solid #FEF3C7', backgroundColor: '#FFFBEB', borderRadius: '6px', fontSize: '13px', color: '#92400E', whiteSpace: 'pre-wrap', lineHeight: '1.6', minHeight: '100px' }}>
-                                            {entrevistaProfunda && entrevistaProfunda.brechas ? entrevistaProfunda.brechas : '• Sin áreas de riesgo mapeadas actualmente.'}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: '600', color: '#475569' }}>Competencias Blandas (Viabilidad):</h4>
-                                    <div style={{ padding: '12px 16px', borderLeft: '3px solid #3B82F6', backgroundColor: '#EFF6FF', fontSize: '13px', color: '#1E3A8A' }}>
-                                        <strong>Traslado y Disponibilidad:</strong> {entrevistaProfunda ? (entrevistaProfunda.semaforo === 'verde' ? 'Óptima - Sin fricciones detectadas.' : 'Requiere revisión detallada con el candidato.') : 'Pendiente de evaluación.'}
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-
-                        {/* 5 y 6. CALLOUTS FINALES (Validaciones y Notas) */}
-                        <div className="evitar-salto" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', pageBreakInside: 'avoid' }}>
-                            
-                            {/* PUNTOS A VALIDAR */}
-                            <div style={{ padding: '20px', backgroundColor: '#FFFAF0', border: '1px solid #FDE68A', borderRadius: '8px' }}>
-                                <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: '700', color: '#92400E', textTransform: 'uppercase' }}>
-                                    Puntos a Validar con el Cliente
-                                </h3>
-                                <ul style={{ margin: 0, paddingLeft: '20px', color: '#78350F', fontSize: '13px', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <li>Confirmar expectativa salarial final y condiciones de aceptación.</li>
-                                    <li>Validar las brechas técnicas marcadas en la evaluación profunda.</li>
-                                    <li>Asegurar compatibilidad de horarios y tiempos de traslado.</li>
-                                    <li>Profundizar conjuntamente en los riesgos detectados.</li>
-                                </ul>
-                            </div>
-
-                            {/* NOTA IMPORTANTE */}
-                            <div style={{ padding: '20px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px' }}>
-                                <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: '700', color: '#991B1B', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <AlertTriangle size={16} /> Nota Importante del Proceso
-                                </h3>
-                                <div style={{ fontSize: '13px', color: '#7F1D1D', lineHeight: '1.6' }}>
-                                    <p style={{ margin: '0 0 12px 0' }}>
-                                        <strong>Estatus:</strong> Aún están pendientes las pruebas psicométricas y el estudio socioeconómico.
-                                    </p>
-                                    <p style={{ margin: '0 0 12px 0' }}>
-                                        <strong>Recomendación:</strong> Sugerimos concluir el proceso completo de evaluaciones antes de tomar una decisión final.
-                                    </p>
-                                    <p style={{ margin: 0, fontWeight: '600' }}>
-                                        No se recomienda citar al candidato para laborar sin haber cerrado estos procesos.
-                                    </p>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        {/* 7. PIE DE REPORTE */}
-                        <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#94A3B8' }}>
-                            <div>Este es un reporte confidencial generado exclusivamente para el cliente.</div>
-                            <div>Página 1 de 1</div>
-                        </div>
-
-                    </div>
+                    )}
                 </div>
             )}
+
+            {/* ===== PLANTILLA OCULTA PARA EL PDF (Sábana Completa de Entrevista Profunda) ===== */}
+            <div style={{ position: 'absolute', left: '-10000px', top: '-10000px' }}>
+                <div id="reporte-cliente-pdf" style={{ backgroundColor: '#ffffff', padding: '40px 50px', fontFamily: '"Inter", "Segoe UI", sans-serif', width: '1000px', color: '#374151', lineHeight: '1.5', boxSizing: 'border-box' }}>
+
+                    {/* 1. ENCABEZADO CORPORATIVO */}
+                    <div style={{ borderBottom: '3px solid #1F4E78', paddingBottom: '20px', marginBottom: '24px' }}>
+                        <h1 style={{ fontSize: '24px', fontWeight: '800', margin: '0 0 24px 0', color: '#111827', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Evaluación Técnica de Entrevista Profunda
+                        </h1>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', fontSize: '13px' }}>
+                            <div>
+                                <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Cliente / Empresa</span>
+                                <span style={{ fontWeight: '600', color: '#111827' }}>{vacanteData?.cliente_nombre || 'No registrado'}</span>
+                            </div>
+                            <div>
+                                <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Puesto evaluado</span>
+                                <span style={{ fontWeight: '600', color: '#111827' }}>{vacanteData?.titulo || 'N/A'}</span>
+                            </div>
+                            <div>
+                                <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Fecha del reporte</span>
+                                <span style={{ fontWeight: '500' }}>{formatDate(new Date())}</span>
+                            </div>
+                            <div>
+                                <span style={{ color: '#6B7280', display: 'block', fontSize: '11px', textTransform: 'uppercase', fontWeight: '600', marginBottom: '2px' }}>Candidato</span>
+                                <span style={{ fontWeight: '800', color: '#111827', fontSize: '15px' }}>{candidato?.nombre_completo}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 2. MATRIZ DE 37 RUBROS */}
+                    <div style={{ marginBottom: '32px' }}>
+                        <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#1F4E78', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px', marginBottom: '16px', textTransform: 'uppercase' }}>
+                            Detalle de Evaluación por Competencia
+                        </h2>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
+                            <thead>
+                                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                                    <th style={{ padding: '12px', color: '#475569', width: '30%', textTransform: 'uppercase', fontSize: '11px' }}>Rubro Evaluado</th>
+                                    <th style={{ padding: '12px', color: '#475569', width: '20%', textTransform: 'uppercase', fontSize: '11px' }}>Nivel Detectado</th>
+                                    <th style={{ padding: '12px', color: '#475569', width: '50%', textTransform: 'uppercase', fontSize: '11px' }}>Notas / Evidencia del Candidato</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {entrevistaProfunda?.rubros?.map((rubro, idx) => {
+                                    const colores = {
+                                        nulo: { bg: '#FEE2E2', text: '#991B1B' },
+                                        basico: { bg: '#FEF3C7', text: '#92400E' },
+                                        intermedio: { bg: '#DBEAFE', text: '#1E3A8A' },
+                                        experto: { bg: '#D1FAE5', text: '#065F46' }
+                                    };
+                                    const c = colores[rubro.nivel] || { bg: '#F1F5F9', text: '#475569' };
+
+                                    return (
+                                        <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9', pageBreakInside: 'avoid' }}>
+                                            <td style={{ padding: '12px', fontWeight: '600', color: '#334155' }}>{rubro.rubro}</td>
+                                            <td style={{ padding: '12px' }}>
+                                                <span style={{
+                                                    padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase',
+                                                    backgroundColor: c.bg, color: c.text
+                                                }}>
+                                                    {rubro.nivel || 'N/A'}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '12px', color: '#475569', whiteSpace: 'pre-wrap' }}>{rubro.notas || '-'}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* 3. ANÁLISIS EJECUTIVO Y DECISIÓN (Siguiente Paso) */}
+                    <div className="evitar-salto" style={{ pageBreakInside: 'avoid', border: '2px solid #E2E8F0', borderRadius: '12px', padding: '24px', backgroundColor: '#F8FAFC' }}>
+                        <h2 style={{ fontSize: '14px', fontWeight: '700', color: '#1F4E78', borderBottom: '1px solid #CBD5E1', paddingBottom: '8px', marginBottom: '20px', textTransform: 'uppercase' }}>
+                            Conclusión Ejecutiva
+                        </h2>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                            <div>
+                                <h3 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: '700', color: '#059669', textTransform: 'uppercase' }}>Fortalezas Principales</h3>
+                                <div style={{ whiteSpace: 'pre-wrap', fontSize: '13px', color: '#334155', lineHeight: '1.6' }}>{entrevistaProfunda?.fortalezas || 'No registradas.'}</div>
+                            </div>
+                            <div>
+                                <h3 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: '700', color: '#D97706', textTransform: 'uppercase' }}>Riesgos y Brechas Técnicas</h3>
+                                <div style={{ whiteSpace: 'pre-wrap', fontSize: '13px', color: '#334155', lineHeight: '1.6' }}>{entrevistaProfunda?.brechas || 'No registradas.'}</div>
+                            </div>
+                        </div>
+
+                        <div style={{ borderTop: '2px dashed #CBD5E1', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ fontSize: '12px', color: '#64748B', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Desempeño Global</div>
+                                <div style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A' }}>{entrevistaProfunda?.porcentaje}% <span style={{ fontSize: '14px', fontWeight: '500', color: '#64748B' }}>de afinidad</span></div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '12px', color: '#64748B', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Siguiente Paso Recomendado</div>
+                                <div style={{
+                                    fontSize: '18px', fontWeight: '800', padding: '8px 16px', borderRadius: '8px', display: 'inline-block',
+                                    backgroundColor: entrevistaProfunda?.semaforo === 'verde' ? '#D1FAE5' : entrevistaProfunda?.semaforo === 'amarillo' ? '#FEF3C7' : '#FEE2E2',
+                                    color: entrevistaProfunda?.semaforo === 'verde' ? '#065F46' : entrevistaProfunda?.semaforo === 'amarillo' ? '#92400E' : '#991B1B'
+                                }}>
+                                    {entrevistaProfunda?.resultado_sugerido || 'Pendiente'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
     );
 };
 
 export default FlujoCandidato;
+

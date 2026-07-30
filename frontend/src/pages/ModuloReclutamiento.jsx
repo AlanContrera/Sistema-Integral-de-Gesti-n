@@ -47,10 +47,7 @@ const ModuloReclutamiento = () => {
                         <Briefcase size={20} />
                         Vacantes
                     </Link>
-                    <Link to="/reclutamiento/candidatos" style={getMenuLinkStyle('/candidatos')}>
-                        <Users size={20} />
-                        Candidatos
-                    </Link>
+
                     <Link to="/reclutamiento/reportes" style={getMenuLinkStyle('/reportes')}>
                         <FileText size={20} />
                         Reportes
