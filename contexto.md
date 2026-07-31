@@ -98,6 +98,7 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 | 2026-07-20 | Integración de Diseños Personalizados (PDF) | Se configuraron 7 estilos de plantillas (KALE, ASESORES GBR, GLOBALEARTH, GOVIDA, LEVICTUS, LEXIC, LIMGRATSA) en el generador de PDF, adaptando coordenadas, estilos de tabla, colores, alineaciones y lógica condicional de renderizado. |
 | 2026-07-21 | Refactorización de Views y Temas | Se centralizó la configuración visual de la tabla y las coordenadas. El sistema soporta dinámicamente más de 40 diseños empresariales (CRISAC, VIMEX, TORRES, DERSA, etc.) mediante diccionarios en `temas_config.py`, logrando un código backend modular, optimizado y sin redundancias en la vista. |
 | 2026-07-27 | Módulo de Reclutamiento (Flujo de Candidato) | Se construyó el sistema de Entrevistas (Inicial y Profunda) con cálculos dinámicos de semáforos, porcentajes de match por habilidades y dictamen automatizado. Se desarrolló la exportación a PDF del "Reporte Ejecutivo", convirtiendo tablas tipo Excel en un dossier de formato Consultoría Premium (una o dos hojas limpias) utilizando HTML2PDF con saltos de página inteligentes. |
+| 2026-07-30 | Módulo de Reclutamiento (Perfilador UI) | Se transformó el Formulario Perfilador de una página larga a un wizard de 9 pasos con navegación secuencial, validación de campos obligatorios, prevención de envíos accidentales por doble clic o tecla Enter, y se modernizó la paleta de colores y la interfaz de botones a un estilo profesional. |
 
 ## Notas de Sesión
 

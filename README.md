@@ -24,7 +24,7 @@ frontend/   -> Interfaz web en React (Activa)
 - **Módulo 3:** Cálculo de Comisiones e Intereses (EN DESARROLLO)
 - **Módulo 4:** Interfaz Web (Dashboard Interactivo, Notificaciones en Vivo, Súper Buscador Global, Navegación por Carpetas, Exportación a Excel con Formato, Validación OCR)
 - **[✅ COMPLETADO] Módulo 5:** Generador Dinámico de Cotizaciones en PDF (Backend Django + Pandas + ReportLab, Paginación Inteligente, Extracción Heurística sin encabezados, Frontend React con Gestor Modal de Membretadas, Soporte para Múltiples Plantillas Personalizadas)
-- **[✅ COMPLETADO] Módulo 6 (Reclutamiento y Selección):** Sistema "Perfilador" (Replicación avanzada de herramientas en Excel). Carga automatizada de catálogo con 3,675 competencias. Wizard de Vacantes con autocompletado y cálculo de sueldos. Expediente digital del candidato con Entrevista Inicial (Semáforos) y Entrevista Profunda (cálculo porcentual en vivo y dictamen automático). Generación de Reporte Ejecutivo en PDF con layout de consultoría premium.
+- **[✅ COMPLETADO] Módulo 6 (Reclutamiento y Selección):** Sistema "Perfilador" (Replicación avanzada de herramientas en Excel). Carga automatizada de catálogo con 3,675 competencias. Wizard de Vacantes interactivo con navegación por pasos, prevención de errores, autocompletado y cálculo de sueldos. Expediente digital del candidato con Entrevista Inicial (Semáforos) y Entrevista Profunda (cálculo porcentual en vivo y dictamen automático). Generación de Reporte Ejecutivo en PDF con layout de consultoría premium.
 
 ## Estado
 

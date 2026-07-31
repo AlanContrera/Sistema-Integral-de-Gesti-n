@@ -5,6 +5,18 @@ import toast, { Toaster } from 'react-hot-toast';
 
 const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
     const [cargando, setCargando] = useState(false);
+    const [pasoActual, setPasoActual] = useState(1);
+    const [btnGuardarHabilitado, setBtnGuardarHabilitado] = useState(false);
+
+    useEffect(() => {
+        if (pasoActual === 9) {
+            setBtnGuardarHabilitado(false);
+            const timer = setTimeout(() => {
+                setBtnGuardarHabilitado(true);
+            }, 600);
+            return () => clearTimeout(timer);
+        }
+    }, [pasoActual]);
 
     // Catálogos
     const [categorias, setCategorias] = useState([]);
@@ -161,7 +173,20 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
         }
     };
 
-    const sectionTitleStyle = { backgroundColor: '#1E293B', color: '#FFF', padding: '10px 16px', fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '32px', marginBottom: '16px', borderRadius: '4px' };
+    const validarPaso = () => {
+        if (pasoActual === 1 && !formData.cliente) { toast.error('Falta Empresa / Cliente'); return false; }
+        if (pasoActual === 2 && !formData.categoria_puesto) { toast.error('Falta Nombre del Puesto'); return false; }
+        if (pasoActual === 6 && !formData.sueldo_ofertado) { toast.error('Falta Sueldo Ofertado'); return false; }
+        return true;
+    };
+
+    const handleSiguiente = () => {
+        if (validarPaso()) {
+            setPasoActual(prev => prev + 1);
+        }
+    };
+
+    const sectionTitleStyle = { backgroundColor: '#96C2DB', color: '#FFF', padding: '10px 16px', fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '16px', marginBottom: '16px', borderRadius: '4px' };
     const labelStyle = { display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' };
     const inputStyle = { width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '4px', backgroundColor: '#FFF', boxSizing: 'border-box' };
     const textStyle = { ...inputStyle, minHeight: '80px', resize: 'vertical' };
@@ -169,21 +194,29 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
     const grid3Style = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' };
 
     return (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', zIndex: 9999 }}>
+        <div style={{ backgroundColor: '#F8FAFC', width: '100%', borderRadius: '12px', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0', paddingBottom: '32px', position: 'relative' }}>
             <Toaster position="top-right" />
-            <div style={{ backgroundColor: '#F8FAFC', width: '90%', maxWidth: '1200px', margin: '32px 0', borderRadius: '8px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', borderRadius: '8px 8px 0 0' }}>
-                    <div>
-                        <h2 style={{ margin: 0, color: '#0F172A', fontSize: '20px' }}>PERFILADOR DE PUESTO / LEVANTAMIENTO DE VACANTE</h2>
-                        <span style={{ fontSize: '13px', color: '#64748B' }}>Versión Web 100% Fiel al Formato Original</span>
-                    </div>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}><X size={24} /></button>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', borderRadius: '12px 12px 0 0' }}>
+                <div>
+                    <h2 style={{ margin: 0, color: '#0F172A', fontSize: '20px' }}>PERFILADOR DE PUESTO / LEVANTAMIENTO DE VACANTE</h2>
+                    <span style={{ fontSize: '14px', color: '#64748B', fontWeight: '600' }}>Paso {pasoActual} de 9</span>
                 </div>
+                {onClose && <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}><X size={24} /></button>}
+            </div>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
-                    <form id="perfiladorForm" onSubmit={handleSubmit}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
+                <form 
+                    id="perfiladorForm" 
+                    onSubmit={handleSubmit}
+                    onKeyDown={(e) => {
+                        // Evitar submit con Enter a menos que estemos en un textarea
+                        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                            e.preventDefault();
+                        }
+                    }}
+                >
 
+                    <div style={{ display: pasoActual === 1 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>1. DATOS DEL CLIENTE</div>
                         <div style={gridStyle}>
                             <div><label style={labelStyle}>Empresa / Cliente *</label><input required type="text" name="cliente" value={formData.cliente} onChange={handleChange} style={inputStyle} /></div>
@@ -225,7 +258,9 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                                 </select>
                             </div>
                         </div>
+                    </div>
 
+                    <div style={{ display: pasoActual === 2 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>2. DATOS GENERALES DEL PUESTO</div>
                         <div style={gridStyle}>
                             <div>
@@ -269,72 +304,9 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                                 </select>
                             </div>
                         </div>
-                        <div style={{ backgroundColor: '#F1F5F9', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
-                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>Datos Salariales</h4>
-                            <div style={grid3Style}>
-                                <div><label style={labelStyle}>Sueldo Mensual Ofrecido *</label><input required type="number" step="0.01" name="sueldo_ofertado" value={formData.sueldo_ofertado} onChange={handleChange} style={inputStyle} /></div>
-                                <div>
-                                    <label style={labelStyle}>Periodicidad de pago</label>
-                                    <select name="periodicidad_pago" value={formData.periodicidad_pago} onChange={handleChange} style={inputStyle}>
-                                        <option value="mensual">Mensual</option>
-                                        <option value="semanal">Semanal</option>
-                                        <option value="quincenal">Quincenal</option>
-                                    </select>
-                                </div>
-                                <div><label style={labelStyle}>Promedio Base Mercado</label><input type="text" value={formData.sueldo_mercado ? `$${formData.sueldo_mercado}` : '$0.00'} disabled style={{ ...inputStyle, backgroundColor: '#E2E8F0', fontWeight: 'bold' }} /></div>
-                            </div>
+                    </div>
 
-                            {/* NUEVO: Lógica de rangos salariales */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px', backgroundColor: '#E2E8F0', padding: '12px', borderRadius: '4px' }}>
-                                <div>
-                                    <label style={labelStyle}>Sueldo Mínimo (-20%)</label>
-                                    <span style={{ fontSize: '14px', color: '#475569' }}>
-                                        {formData.sueldo_mercado ? `$${(parseFloat(formData.sueldo_mercado) * 0.8).toFixed(2)}` : '$0.00'}
-                                    </span>
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Sueldo Máximo (+20%)</label>
-                                    <span style={{ fontSize: '14px', color: '#475569' }}>
-                                        {formData.sueldo_mercado ? `$${(parseFloat(formData.sueldo_mercado) * 1.2).toFixed(2)}` : '$0.00'}
-                                    </span>
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Comparativo vs Mercado</label>
-                                    <span style={{
-                                        fontSize: '14px', fontWeight: 'bold',
-                                        color: !formData.sueldo_ofertado || !formData.sueldo_mercado ? '#475569' :
-                                            parseFloat(formData.sueldo_ofertado) < (parseFloat(formData.sueldo_mercado) * 0.8) ? '#EF4444' : // Rojo si es bajo
-                                                parseFloat(formData.sueldo_ofertado) > (parseFloat(formData.sueldo_mercado) * 1.2) ? '#EAB308' : // Amarillo si es alto
-                                                    '#22C55E' // Verde si está dentro
-                                    }}>
-                                        {!formData.sueldo_ofertado || !formData.sueldo_mercado ? '-' :
-                                            parseFloat(formData.sueldo_ofertado) < (parseFloat(formData.sueldo_mercado) * 0.8) ? 'Bajo' :
-                                                parseFloat(formData.sueldo_ofertado) > (parseFloat(formData.sueldo_mercado) * 1.2) ? 'Alto' :
-                                                    'Dentro de Rango'
-                                        }
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div style={grid3Style}>
-                                <div>
-                                    <label style={labelStyle}>Jornada</label>
-                                    <select name="jornada" value={formData.jornada} onChange={handleChange} style={inputStyle}>
-                                        <option value="completa">Completa</option>
-                                        <option value="medio_tiempo">Medio Tiempo</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Prestaciones</label>
-                                    <select name="prestaciones" value={formData.prestaciones} onChange={handleChange} style={inputStyle}>
-                                        <option value="ley">Ley</option>
-                                        <option value="superiores">Superiores</option>
-                                        <option value="honorarios">Honorarios</option>
-                                    </select>
-                                </div>
-                                <div><label style={labelStyle}>Pagos Adicionales (y Valor)</label><div style={{ display: 'flex', gap: '8px' }}><input type="text" name="pagos_adicionales" value={formData.pagos_adicionales} onChange={handleChange} style={inputStyle} placeholder="Bonos" /><input type="number" name="valor_estimado_mensual" value={formData.valor_estimado_mensual} onChange={handleChange} style={{ ...inputStyle, width: '100px' }} placeholder="$" /></div></div>
-                            </div>
-                        </div>
+                    <div style={{ display: pasoActual === 3 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>3. OBJETIVO DEL PUESTO & 4. FUNCIONES</div>
                         <div style={gridStyle}>
                             <div><label style={labelStyle}>Funciones diarias propuestas (Base Datos)</label><textarea name="funciones_diarias_sugeridas" value={formData.funciones_diarias_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F8FAFC' }} readOnly></textarea></div>
@@ -345,7 +317,9 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                             <div><label style={labelStyle}>Responsabilidades críticas Cliente</label><textarea name="responsabilidades_cliente" value={formData.responsabilidades_cliente} onChange={handleChange} style={textStyle}></textarea></div>
                         </div>
                         <div><label style={labelStyle}>Indicadores o KPIs del puesto</label><textarea name="kpis" value={formData.kpis} onChange={handleChange} style={textStyle}></textarea></div>
+                    </div>
 
+                    <div style={{ display: pasoActual === 4 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>5. PERFIL REQUERIDO</div>
                         <div style={grid3Style}>
                             <div><label style={labelStyle}>Escolaridad mínima</label><input type="text" name="escolaridad_requerida" value={formData.escolaridad_requerida} onChange={handleChange} style={inputStyle} /></div>
@@ -377,7 +351,9 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                             </div>
                             <div><label style={labelStyle}>Rolar turnos</label><input type="text" name="disponibilidad_rolar_turnos" value={formData.disponibilidad_rolar_turnos} onChange={handleChange} style={inputStyle} /></div>
                         </div>
+                    </div>
 
+                    <div style={{ display: pasoActual === 5 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>6. COMPETENCIAS</div>
                         <div style={gridStyle}>
                             <div><label style={labelStyle}>Competencias técnicas (Base Datos)</label><textarea name="competencias_tecnicas_sugeridas" value={formData.competencias_tecnicas_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F8FAFC' }} readOnly></textarea></div>
@@ -391,7 +367,9 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                             <div><label style={labelStyle}>Factores clave de éxito (Base Datos)</label><textarea name="factores_exito_sugeridos" value={formData.factores_exito_sugeridos} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F8FAFC' }} readOnly></textarea></div>
                             <div><label style={labelStyle}>Factores clave de éxito (Cliente)</label><textarea name="factores_exito_cliente" value={formData.factores_exito_cliente} onChange={handleChange} style={textStyle}></textarea></div>
                         </div>
+                    </div>
 
+                    <div style={{ display: pasoActual === 6 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>7. CONDICIONES LABORALES</div>
                         <div style={grid3Style}>
                             <div>
@@ -405,7 +383,42 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                             <div><label style={labelStyle}>Horario</label><input type="text" name="horario" value={formData.horario} onChange={handleChange} style={inputStyle} /></div>
                             <div><label style={labelStyle}>Herramientas proporcionadas</label><input type="text" name="herramientas_proporcionadas" value={formData.herramientas_proporcionadas} onChange={handleChange} style={inputStyle} /></div>
                         </div>
+                        <div style={{ backgroundColor: '#F1F5F9', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>Datos Salariales</h4>
+                            <div style={grid3Style}>
+                                <div><label style={labelStyle}>Sueldo Mensual Ofrecido *</label><input required type="number" step="0.01" name="sueldo_ofertado" value={formData.sueldo_ofertado} onChange={handleChange} style={inputStyle} /></div>
+                                <div>
+                                    <label style={labelStyle}>Periodicidad de pago</label>
+                                    <select name="periodicidad_pago" value={formData.periodicidad_pago} onChange={handleChange} style={inputStyle}>
+                                        <option value="mensual">Mensual</option>
+                                        <option value="semanal">Semanal</option>
+                                        <option value="quincenal">Quincenal</option>
+                                    </select>
+                                </div>
+                                <div><label style={labelStyle}>Promedio Base Mercado</label><input type="text" value={formData.sueldo_mercado ? `$${formData.sueldo_mercado}` : '$0.00'} disabled style={{ ...inputStyle, backgroundColor: '#E2E8F0', fontWeight: 'bold' }} /></div>
+                            </div>
+                            <div style={grid3Style}>
+                                <div>
+                                    <label style={labelStyle}>Jornada</label>
+                                    <select name="jornada" value={formData.jornada} onChange={handleChange} style={inputStyle}>
+                                        <option value="completa">Completa</option>
+                                        <option value="medio_tiempo">Medio Tiempo</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Prestaciones</label>
+                                    <select name="prestaciones" value={formData.prestaciones} onChange={handleChange} style={inputStyle}>
+                                        <option value="ley">Ley</option>
+                                        <option value="superiores">Superiores</option>
+                                        <option value="honorarios">Honorarios</option>
+                                    </select>
+                                </div>
+                                <div><label style={labelStyle}>Pagos Adicionales (y Valor)</label><div style={{ display: 'flex', gap: '8px' }}><input type="text" name="pagos_adicionales" value={formData.pagos_adicionales} onChange={handleChange} style={inputStyle} placeholder="Bonos" /><input type="number" name="valor_estimado_mensual" value={formData.valor_estimado_mensual} onChange={handleChange} style={{ ...inputStyle, width: '100px' }} placeholder="$" /></div></div>
+                            </div>
+                        </div>
+                    </div>
 
+                    <div style={{ display: pasoActual === 7 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>8. PROCESO DE SELECCIÓN</div>
                         <div style={grid3Style}>
                             <div><label style={labelStyle}>Entrevistas requeridas</label><input type="text" name="entrevistas_requeridas" value={formData.entrevistas_requeridas} onChange={handleChange} style={inputStyle} /></div>
@@ -417,7 +430,9 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                             <div><label style={labelStyle}>Quién toma la decisión final</label><input type="text" name="quien_decide" value={formData.quien_decide} onChange={handleChange} style={inputStyle} /></div>
                             <div><label style={labelStyle}>Candidatos esperados</label><input type="number" name="numero_candidatos_esperados" value={formData.numero_candidatos_esperados} onChange={handleChange} style={inputStyle} min="1" /></div>
                         </div>
+                    </div>
 
+                    <div style={{ display: pasoActual === 8 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>9. CRITERIOS DE DESCARTE</div>
                         <div style={gridStyle}>
                             <div><label style={labelStyle}>Perfiles no aceptados</label><textarea name="perfiles_no_aceptados" value={formData.perfiles_no_aceptados} onChange={handleChange} style={textStyle}></textarea></div>
@@ -427,7 +442,9 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                             <div><label style={labelStyle}>Zonas no viables</label><input type="text" name="zonas_no_viables" value={formData.zonas_no_viables} onChange={handleChange} style={inputStyle} /></div>
                             <div><label style={labelStyle}>Pretensión salarial máxima</label><input type="number" step="0.01" name="pretension_salarial_max" value={formData.pretension_salarial_max} onChange={handleChange} style={inputStyle} /></div>
                         </div>
+                    </div>
 
+                    <div style={{ display: pasoActual === 9 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>10. ACUERDOS COMERCIALES</div>
                         <div style={grid3Style}>
                             <div><label style={labelStyle}>Urgencia vacante</label><input type="text" name="urgencia_vacante" value={formData.urgencia_vacante} onChange={handleChange} style={inputStyle} /></div>
@@ -453,28 +470,44 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                             </div>
                             <div><label style={labelStyle}>Fecha compromiso terna</label><input type="date" name="fecha_compromiso_terna" value={formData.fecha_compromiso_terna} onChange={handleChange} style={inputStyle} /></div>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
 
-            <button
-                form="perfiladorForm"
-                type="submit"
-                disabled={cargando}
-                style={{
-                    position: 'fixed', bottom: '40px', right: '40px',
-                    backgroundColor: '#0EA5E9', color: '#FFF',
-                    padding: '16px 24px', borderRadius: '50px',
-                    border: 'none', cursor: 'pointer',
-                    boxShadow: '0 10px 15px -3px rgba(14, 165, 233, 0.4)',
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    fontSize: '16px', fontWeight: 'bold', zIndex: 10000,
-                    opacity: cargando ? 0.7 : 1
-                }}
-            >
-                <Save size={24} />
-                {cargando ? 'Guardando...' : 'Guardar Perfilador'}
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '24px 32px', borderTop: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', borderRadius: '0 0 12px 12px' }}>
+                {pasoActual > 1 ? (
+                    <button type="button" onClick={() => setPasoActual(pasoActual - 1)} style={{ backgroundColor: '#FFF', color: '#64748B', border: '1px solid #CBD5E1', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        Atrás
+                    </button>
+                ) : (
+                    <div></div>
+                )}
+
+                {pasoActual < 9 ? (
+                    <button type="button" onClick={handleSiguiente} style={{ backgroundColor: '#96C2DB', color: '#FFF', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        Siguiente
+                    </button>
+                ) : (
+                    <button
+                        form="perfiladorForm"
+                        type="submit"
+                        disabled={cargando || !btnGuardarHabilitado}
+                        style={{
+                            backgroundColor: (!btnGuardarHabilitado) ? '#94A3B8' : '#10B981', color: '#FFF',
+                            padding: '12px 32px', borderRadius: '12px',
+                            border: 'none', cursor: (!btnGuardarHabilitado) ? 'not-allowed' : 'pointer',
+                            boxShadow: (!btnGuardarHabilitado) ? 'none' : '0 4px 6px -1px rgba(16, 185, 129, 0.4)',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            fontSize: '15px', fontWeight: 'bold',
+                            opacity: cargando ? 0.7 : 1,
+                            transition: 'all 0.3s'
+                        }}
+                    >
+                        <Save size={20} />
+                        {cargando ? 'Guardando...' : 'Finalizar y Guardar'}
+                    </button>
+                )}
+            </div>
         </div>
     );
 };
