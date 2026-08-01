@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchConToken } from '../services/api';
+import { fetchConToken } from '../../services/api';
 import { CheckCircle, ChevronRight, ChevronLeft, Save } from 'lucide-react';
 
 const WizardVacante = ({ onClose, onGuardado }) => {
@@ -147,14 +147,14 @@ const WizardVacante = ({ onClose, onGuardado }) => {
                         <div key={p.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 1, backgroundColor: 'white', padding: '0 10px' }}>
                             <div style={{ 
                                 width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold',
-                                backgroundColor: paso >= p.id ? '#0EA5E9' : '#F1F5F9',
+                                backgroundColor: paso >= p.id ? '#96C2DB' : '#F1F5F9',
                                 color: paso >= p.id ? 'white' : '#94A3B8',
-                                border: `2px solid ${paso >= p.id ? '#0EA5E9' : '#E2E8F0'}`,
+                                border: `2px solid ${paso >= p.id ? '#96C2DB' : '#E2E8F0'}`,
                                 transition: 'all 0.3s ease'
                             }}>
                                 {paso > p.id ? <CheckCircle size={16} /> : p.id}
                             </div>
-                            <span style={{ fontSize: '12px', marginTop: '8px', color: paso >= p.id ? '#0EA5E9' : '#94A3B8', fontWeight: '600' }}>{p.title}</span>
+                            <span style={{ fontSize: '12px', marginTop: '8px', color: paso >= p.id ? '#96C2DB' : '#94A3B8', fontWeight: '600' }}>{p.title}</span>
                         </div>
                     ))}
                 </div>
@@ -306,7 +306,7 @@ const WizardVacante = ({ onClose, onGuardado }) => {
                         <button 
                             type="button"
                             onClick={() => setPaso(p => Math.min(4, p + 1))}
-                            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#0EA5E9', color: 'white', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#96C2DB', color: 'white', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                         >
                             Siguiente <ChevronRight size={18} />
                         </button>

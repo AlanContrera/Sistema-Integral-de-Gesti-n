@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     CategoriaPreguntasViewSet, PlantillaPreguntaViewSet, VacanteViewSet, 
     CandidatoViewSet, EntrevistaInicialViewSet, EntrevistaProfundaViewSet, ReporteClienteViewSet, EstadoViewSet,
-    MunicipioViewSet, PropuestaClienteViewSet
+    MunicipioViewSet, PropuestaClienteViewSet, PreguntaEntrevistaInicialViewSet
 )
 
 router = DefaultRouter()
@@ -20,6 +20,7 @@ router.register(r'propuestas', PropuestaClienteViewSet)
 
 
 router.register(r'reportes', ReporteClienteViewSet)
+router.register(r'preguntas-iniciales', PreguntaEntrevistaInicialViewSet)
 
 
 urlpatterns = [

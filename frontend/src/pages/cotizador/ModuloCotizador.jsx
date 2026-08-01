@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, UploadCloud, FileSpreadsheet, CheckCircle2, Loader2, Calendar, Settings } from 'lucide-react';
 import toast from 'react-hot-toast';
-import GestorMembretadas from './GestorMembretadas';
+import GestorMembretadas from '../../components/cotizador/GestorMembretadas';
 
 export default function ModuloCotizador() {
   const navigate = useNavigate();

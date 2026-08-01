@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     CategoriaPreguntas, PlantillaPregunta, Vacante, 
-    Candidato, EntrevistaInicial, EntrevistaProfunda, ReporteCliente, Estado, Municipio, PropuestaCliente
+    Candidato, EntrevistaInicial, EntrevistaProfunda, ReporteCliente, Estado, Municipio, PropuestaCliente, PreguntaEntrevistaInicial,
 )
 
 class PlantillaPreguntaSerializer(serializers.ModelSerializer):
@@ -70,4 +70,9 @@ class PropuestaClienteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PropuestaCliente
+        fields = '__all__'
+
+class PreguntaEntrevistaInicialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PreguntaEntrevistaInicial
         fields = '__all__'

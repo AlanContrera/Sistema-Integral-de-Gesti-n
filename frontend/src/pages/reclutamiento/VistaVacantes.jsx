@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { fetchConToken } from '../services/api';
+import { fetchConToken } from '../../services/api';
 import { Plus, Search, MapPin, DollarSign, Briefcase, ChevronLeft } from 'lucide-react';
-import FormularioPerfilador from '../components/FormularioPerfilador';
+import FormularioPerfilador from '../../components/reclutamiento/FormularioPerfilador';
 
 const VistaVacantes = () => {
     const [vacantes, setVacantes] = useState([]);

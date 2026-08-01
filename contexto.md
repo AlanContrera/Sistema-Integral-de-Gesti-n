@@ -1,6 +1,6 @@
 # CONTEXTO MAESTRO - Sistema Integral (App_Facturacion)
 
-> **Última actualización:** 2026-07-27
+> **Última actualización:** 2026-07-31
 > **Estado general del proyecto:** 🟢 En construcción — Módulo 4 pulido, Motor de Cálculos (Módulo 3) y Módulo 5 (Cotizador) finalizado. Módulo 6 (Reclutamiento) completado en su fase inicial (Perfilador y Reporte PDF).
 > **Sesión actual enfocada en:** Finalización de sesión de Módulo Reclutamiento.
 
@@ -61,6 +61,20 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 - Generación de PDF dinámicos y membretados mediante motor Platypus (ReportLab).
 - Interfaz web dedicada en React (Drag & Drop) para generación y descarga interactiva.
 
+### ✅ Módulo 6: Reclutamiento y Selección
+- Sistema "Perfilador" (Replicación avanzada de herramientas en Excel). Carga automatizada de catálogo con 3,675 competencias.
+- Wizard interactivo para Vacantes con validaciones, cálculos salariales y prevención de errores.
+- Expediente digital del candidato con Entrevista Inicial (Semáforos) y Profunda (Cálculo porcentual).
+- Generación de Reporte Ejecutivo en PDF con layout de consultoría premium y paginación inteligente.
+
+### Módulo 7: Comercial (Proximamente)
+
+## Documentación del Reclutamiento y Comercial
+
+La documentación específica de cada módulo se encuentra en la carpeta `docs/`.
+- [Análisis Excel Reclutamiento](file:///wsl.localhost/Ubuntu/home/sistemas/Proyectos/App_Facturacion/docs/reclutamiento/analisis_excel_reclutamiento.md)
+- [Biblia del Reclutamiento](file:///wsl.localhost/Ubuntu/home/sistemas/Proyectos/App_Facturacion/docs/reclutamiento/biblia_excel_reclutamiento.md)
+
 ## Reglas Estrictas del Desarrollador
 
 1. El asistente NO escribe código funcional por mí (ni vistas, ni funciones completas).
@@ -99,6 +113,8 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 | 2026-07-21 | Refactorización de Views y Temas | Se centralizó la configuración visual de la tabla y las coordenadas. El sistema soporta dinámicamente más de 40 diseños empresariales (CRISAC, VIMEX, TORRES, DERSA, etc.) mediante diccionarios en `temas_config.py`, logrando un código backend modular, optimizado y sin redundancias en la vista. |
 | 2026-07-27 | Módulo de Reclutamiento (Flujo de Candidato) | Se construyó el sistema de Entrevistas (Inicial y Profunda) con cálculos dinámicos de semáforos, porcentajes de match por habilidades y dictamen automatizado. Se desarrolló la exportación a PDF del "Reporte Ejecutivo", convirtiendo tablas tipo Excel en un dossier de formato Consultoría Premium (una o dos hojas limpias) utilizando HTML2PDF con saltos de página inteligentes. |
 | 2026-07-30 | Módulo de Reclutamiento (Perfilador UI) | Se transformó el Formulario Perfilador de una página larga a un wizard de 9 pasos con navegación secuencial, validación de campos obligatorios, prevención de envíos accidentales por doble clic o tecla Enter, y se modernizó la paleta de colores y la interfaz de botones a un estilo profesional. |
+| 2026-07-31 | Arquitectura de Frontend | Reestructuración completa del frontend implementando un patrón de diseño por Módulos de Negocio. Se agruparon las páginas y componentes en subcarpetas lógicas: `auth`, `pagos`, `cotizador` y `reclutamiento` para asegurar la escalabilidad del proyecto. |
+| 2026-07-31 | Módulo de Reclutamiento (Preguntas Dinámicas) | Se construyó la arquitectura Full-Stack para gestionar las Preguntas Iniciales y Profundas de las entrevistas. Se integró una interfaz en React (VistaPreguntas) que consume los endpoints del backend para permitir la edición y guardado en tiempo real en base de datos. |
 
 ## Notas de Sesión
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { updateComprobante } from '../services/api';
+import { updateComprobante } from '../../services/api';
 
 function ModalVistaPrevia({ seleccionado, onCerrar, catalogos }) {
 

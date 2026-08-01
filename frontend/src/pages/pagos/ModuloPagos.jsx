@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate, useParams } from 'react-router-dom';
 import { LayoutDashboard, FileText, ArrowRightLeft, Menu, X, Home, Search } from 'lucide-react';
-import { getComprobantes, getFacturas, getCorreos, getCatalogos } from '../services/api';
+import { getComprobantes, getFacturas, getCorreos, getCatalogos } from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { toast } from 'react-hot-toast';
 
 // Importamos nuestros componentes extraídos
-import ModalVistaPrevia from '../components/ModalVistaPrevia';
-import VistaFacturas from '../components/VistaFacturas';
-import VistaBuzon from '../components/VistaBuzon';
-import VistaExpediente from '../components/VistaExpediente';
+import ModalVistaPrevia from '../../components/pagos/ModalVistaPrevia';
+import VistaFacturas from '../../components/pagos/VistaFacturas';
+import VistaBuzon from '../../components/pagos/VistaBuzon';
+import VistaExpediente from '../../components/pagos/VistaExpediente';
 
 function VistaIngresos({ correosPadre, setSeleccionado, busquedaGlobal }) {
   const { tipoFiltro } = useParams();

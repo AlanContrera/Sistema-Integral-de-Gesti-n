@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { Landmark, Bot, Calculator, Settings, LogIn, Users } from 'lucide-react';
-import ModuloPagos from './pages/ModuloPagos';
-import ModuloCotizador from './pages/ModuloCotizador';
-import ModuloReclutamiento from './pages/ModuloReclutamiento'; // <--- ESTA FALTABA
-import RutaProtegida from './components/RutaProtegida';        // <--- Y ESTA TAMBIÉN
+import ModuloPagos from './pages/pagos/ModuloPagos';
+import ModuloCotizador from './pages/cotizador/ModuloCotizador';
+import ModuloReclutamiento from './pages/reclutamiento/ModuloReclutamiento';
+import RutaProtegida from './components/auth/RutaProtegida';
 import { Toaster } from 'react-hot-toast';
-import Login from './pages/Login';
+import Login from './pages/auth/Login';
 
 
 function MenuPrincipal() {

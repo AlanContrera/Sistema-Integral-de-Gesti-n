@@ -367,6 +367,12 @@ class EntrevistaInicial(models.Model):
             candidato.estatus = Candidato.Estatus.EN_PROCESO
             candidato.save()
 
+class PreguntaEntrevistaInicial(models.Model):
+    clave = models.CharField(max_length=20, unique=True) # Aquí va f_escolaridad, p8, p9
+    rubro = models.CharField(max_length=100) # Ej: Sueldo, Traslado
+    pregunta = models.TextField() # El texto editable
+
+
 
 class EntrevistaProfunda(models.Model):
     candidato = models.OneToOneField(Candidato, on_delete=models.CASCADE, related_name='entrevista_profunda')

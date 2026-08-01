@@ -7,12 +7,12 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import (
     CategoriaPreguntas, PlantillaPregunta, Vacante, 
-    Candidato, EntrevistaInicial, EntrevistaProfunda, ReporteCliente, Estado, Municipio, PropuestaCliente
+    Candidato, EntrevistaInicial, EntrevistaProfunda, ReporteCliente, Estado, Municipio, PropuestaCliente, PreguntaEntrevistaInicial,
 )
 from .serializers import (
     CategoriaPreguntasSerializer, PlantillaPreguntaSerializer, VacanteSerializer, 
     CandidatoSerializer, EntrevistaInicialSerializer, EntrevistaProfundaSerializer, ReporteClienteSerializer, EstadoSerializer, MunicipioSerializer,
-    PropuestaClienteSerializer,
+    PropuestaClienteSerializer, PreguntaEntrevistaInicialSerializer
 )
 
 class CategoriaPreguntasViewSet(viewsets.ModelViewSet):
@@ -150,3 +150,8 @@ class PropuestaClienteViewSet(viewsets.ModelViewSet):
         nombre_archivo = f"Propuesta_{propuesta.vacante.cliente.replace(' ', '_')}.pdf"
         response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
         return response
+
+class PreguntaEntrevistaInicialViewSet(viewsets.ModelViewSet):
+    queryset = PreguntaEntrevistaInicial.objects.all().order_by('id')
+    serializer_class = PreguntaEntrevistaInicialSerializer
+    permission_classes = [IsAuthenticated]

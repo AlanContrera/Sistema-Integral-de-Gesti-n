@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchConToken } from '../services/api';
+import { fetchConToken } from '../../services/api';
 import { Search, UserPlus, Mail, Phone, MapPin, Briefcase } from 'lucide-react';
 
 const VistaCandidatos = () => {
@@ -82,10 +82,10 @@ const VistaCandidatos = () => {
                     onClick={() => setMostrarModal(true)}
                     style={{ 
                         display: 'flex', alignItems: 'center', gap: '8px', 
-                        backgroundColor: '#0EA5E9', color: 'white', 
+                        backgroundColor: '#96C2DB', color: 'white', 
                         padding: '10px 20px', borderRadius: '8px', 
                         border: 'none', fontWeight: '600', cursor: 'pointer',
-                        boxShadow: '0 4px 6px -1px rgba(14, 165, 233, 0.2)'
+                        boxShadow: '0 4px 6px -1px rgba(150, 194, 219, 0.2)'
                     }}
                 >
                     <UserPlus size={20} />
@@ -155,7 +155,7 @@ const VistaCandidatos = () => {
                                         </td>
                                         <td style={{ padding: '16px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontWeight: '500', fontSize: '14px' }}>
-                                                <Briefcase size={16} color="#0EA5E9" /> 
+                                                <Briefcase size={16} color="#96C2DB" /> 
                                                 {/* Asumiendo que el backend envía el string del nombre de la vacante, si no, se deberá ajustar */}
                                                 {typeof candidato.vacante === 'object' ? candidato.vacante.nombre_puesto : `ID Vacante: ${candidato.vacante}`}
                                             </div>
@@ -170,7 +170,7 @@ const VistaCandidatos = () => {
                                         </td>
                                         <td style={{ padding: '16px', textAlign: 'right' }}>
                                             <button onClick={() => window.location.href = `/reclutamiento/candidato/${candidato.id}`} style={{ 
-                                                backgroundColor: '#F8FAFC', color: '#0EA5E9', border: '1px solid #E2E8F0', 
+                                                backgroundColor: '#F8FAFC', color: '#96C2DB', border: '1px solid #E2E8F0', 
                                                 padding: '6px 12px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' 
                                             }}>
                                                 Ver Perfil
@@ -226,7 +226,7 @@ const VistaCandidatos = () => {
                                 <button type="button" onClick={() => setMostrarModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#F1F5F9', color: '#475569', fontWeight: '600', cursor: 'pointer' }}>
                                     Cancelar
                                 </button>
-                                <button type="submit" style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#0EA5E9', color: 'white', fontWeight: '600', cursor: 'pointer' }}>
+                                <button type="submit" style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#96C2DB', color: 'white', fontWeight: '600', cursor: 'pointer' }}>
                                     Guardar Candidato
                                 </button>
                             </div>

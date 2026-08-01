@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, FileText, ArrowRightLeft, Download, Calculator, CheckCircle2, Building2, Landmark, Calendar, Mail, FileStack } from 'lucide-react';
-import { getComprobantes } from '../services/api';
-import { ParseadorDeTablas } from '../utils/parsers';
+import { getComprobantes } from '../../services/api';
+import { ParseadorDeTablas } from '../../utils/parsers';
 import * as XLSX from 'xlsx';
 
 function VistaExpediente({ expediente, onVolver, onVerComprobante }) {

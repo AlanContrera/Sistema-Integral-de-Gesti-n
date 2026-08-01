@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Briefcase, Users, FileText, LogOut } from 'lucide-react'; // Íconos que ya usas
+import { Briefcase, Users, FileText, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import VistaVacantes from './VistaVacantes';
 import VistaCandidatos from './VistaCandidatos';
 import FlujoCandidato from './FlujoCandidato';
 import TableroVacante from './TableroVacante';
+import VistaReportes from './VistaReportes';
+import VistaPreguntas from './VistaPreguntas';
 
 const ModuloReclutamiento = () => {
-    const location = useLocation(); // Para saber qué menú pintar de azul (activo)
+    const location = useLocation();
+    const [sidebarAbierta, setSidebarAbierta] = useState(true);
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -15,62 +18,142 @@ const ModuloReclutamiento = () => {
         window.location.href = '/login';
     };
 
-    // Pequeña función para devolver el estilo de los botones del menú dinámicamente
-    const getMenuLinkStyle = (path) => {
+    // Paleta de colores solicitada
+    const COLOR_SIDEBAR = '#96C2DB'; // Gris azulado principal
+    const COLOR_HOVER = '#E5EDF1';   // Gris azulado claro
+    const COLOR_MAIN = '#FFFFFF';    // Blanco puro
+    const COLOR_TEXT_ACTIVE = '#334155'; // Gris oscuro para asegurar lectura en la pestaña blanca
+
+    const renderMenuItem = (path, Icon, label) => {
         const isActive = location.pathname.includes(path);
-        return {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '12px 16px',
-            textDecoration: 'none',
-            color: isActive ? '#FFFFFF' : '#94A3B8',
-            backgroundColor: isActive ? '#0EA5E9' : 'transparent',
-            borderRadius: '8px',
-            fontWeight: '600',
-            marginBottom: '8px',
-            transition: 'all 0.2s ease'
-        };
+        return (
+            <Link key={path} to={`/reclutamiento${path}`} style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: sidebarAbierta ? 'flex-start' : 'center',
+                gap: '12px',
+                padding: sidebarAbierta ? '12px 24px' : '12px 0',
+                marginLeft: sidebarAbierta ? '16px' : '12px',
+                marginRight: sidebarAbierta ? '0' : '12px',
+                textDecoration: 'none',
+                color: isActive ? COLOR_TEXT_ACTIVE : COLOR_MAIN,
+                backgroundColor: isActive ? COLOR_MAIN : 'transparent',
+                borderRadius: sidebarAbierta ? '24px 0 0 24px' : '12px',
+                fontWeight: '700',
+                fontSize: '14px',
+                marginBottom: '4px',
+                transition: 'all 0.3s ease',
+            }}>
+                <Icon size={20} />
+                {sidebarAbierta && <span style={{ whiteSpace: 'nowrap' }}>{label}</span>}
+
+                {/* 🪄 SVGs con el color Blanco para fusionarse con el contenido */}
+                {(isActive && sidebarAbierta) && (
+                    <>
+                        <svg width="24" height="24" viewBox="0 0 24 24" style={{ position: 'absolute', right: 0, top: '-24px', zIndex: 0 }}>
+                            <path d="M 0 24 L 24 24 L 24 0 A 24 24 0 0 1 0 24 Z" fill={COLOR_MAIN} />
+                        </svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" style={{ position: 'absolute', right: 0, bottom: '-24px', zIndex: 0 }}>
+                            <path d="M 0 0 L 24 0 L 24 24 A 24 24 0 0 0 0 0 Z" fill={COLOR_MAIN} />
+                        </svg>
+                    </>
+                )}
+            </Link>
+        );
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: COLOR_MAIN, fontFamily: "'Inter', sans-serif" }}>
 
             {/* ⬅️ BARRA LATERAL (SIDEBAR) */}
-            <div style={{ width: '260px', backgroundColor: '#1E293B', padding: '24px', display: 'flex', flexDirection: 'column' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '40px', color: '#F8FAFC', letterSpacing: '1px' }}>
-                    RecluSystem
-                </h2>
+            <div style={{
+                position: 'relative',
+                width: sidebarAbierta ? '240px' : '80px',
+                backgroundColor: COLOR_SIDEBAR,
+                padding: '32px 0 24px 0',
+                display: 'flex',
+                flexDirection: 'column',
+                borderTopRightRadius: sidebarAbierta ? '40px' : '20px',
+                boxShadow: '4px 0 15px -3px rgba(0,0,0,0.05)',
+                zIndex: 10,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
 
-                <nav style={{ flex: 1 }}>
-                    <Link to="/reclutamiento/vacantes" style={getMenuLinkStyle('/vacantes')}>
-                        <Briefcase size={20} />
-                        Vacantes
-                    </Link>
+                {/* BOTÓN COLAPSAR */}
+                <button
+                    onClick={() => setSidebarAbierta(!sidebarAbierta)}
+                    style={{
+                        position: 'absolute',
+                        top: '40px',
+                        right: '-14px',
+                        width: '28px',
+                        height: '28px',
+                        backgroundColor: COLOR_HOVER,
+                        color: COLOR_SIDEBAR,
+                        border: `1px solid ${COLOR_MAIN}`,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                        zIndex: 20,
+                        transition: 'transform 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    {sidebarAbierta ? <ChevronLeft size={16} strokeWidth={3} /> : <ChevronRight size={16} strokeWidth={3} />}
+                </button>
 
-                    <Link to="/reclutamiento/reportes" style={getMenuLinkStyle('/reportes')}>
-                        <FileText size={20} />
-                        Reportes
-                    </Link>
+                {/* HEADER LOGO */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarAbierta ? 'flex-start' : 'center', gap: '12px', marginBottom: '40px', paddingLeft: sidebarAbierta ? '32px' : '0' }}>
+                    <div style={{ backgroundColor: COLOR_MAIN, padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                        <Users size={20} color={COLOR_SIDEBAR} strokeWidth={2.5} />
+                    </div>
+                    {sidebarAbierta && (
+                        <h2 style={{ fontSize: '19px', fontWeight: '800', color: COLOR_MAIN, margin: 0, letterSpacing: '-0.5px' }}>
+                            RecluSystem
+                        </h2>
+                    )}
+                </div>
+
+                <nav style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    {sidebarAbierta && (
+                        <div style={{ fontSize: '11px', fontWeight: '800', color: COLOR_MAIN, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px', paddingLeft: '32px' }}>
+                            Menú Principal
+                        </div>
+                    )}
+
+                    {renderMenuItem('/vacantes', Briefcase, 'Gestión Vacantes')}
+                    {renderMenuItem('/reportes', FileText, 'Reportes')}
+                    {renderMenuItem('/preguntas', Settings, 'Banco Preguntas')}
                 </nav>
 
-                <button
-                    onClick={handleLogout}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: 'transparent', color: '#F87171', border: 'none', cursor: 'pointer', fontWeight: '600', borderRadius: '8px', textAlign: 'left', marginTop: 'auto' }}
-                >
-                    <LogOut size={20} />
-                    Cerrar Sesión
-                </button>
+                <div style={{ marginTop: 'auto', paddingLeft: sidebarAbierta ? '16px' : '12px', paddingRight: sidebarAbierta ? '0' : '12px' }}>
+                    <button
+                        onClick={handleLogout}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarAbierta ? 'flex-start' : 'center', gap: '12px', padding: sidebarAbierta ? '12px 24px' : '12px 0', backgroundColor: 'transparent', color: COLOR_MAIN, opacity: 0.8, border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '14px', borderRadius: sidebarAbierta ? '24px 0 0 24px' : '12px', textAlign: 'left', width: '100%', transition: 'all 0.2s' }}
+                        title="Cerrar Sesión"
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = 0.8}
+                    >
+                        <LogOut size={20} />
+                        {sidebarAbierta && <span>Cerrar Sesión</span>}
+                    </button>
+                </div>
             </div>
 
             {/* ➡️ ÁREA PRINCIPAL (CONTENIDO DINÁMICO) */}
             <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
                 <Routes>
-                    {/* Aquí conectaremos la VistaVacantes en el siguiente paso */}
                     <Route path="vacantes" element={<VistaVacantes />} />
                     <Route path="candidatos" element={<VistaCandidatos />} />
                     <Route path="candidato/:id" element={<FlujoCandidato />} />
                     <Route path="vacantes/:id" element={<TableroVacante />} />
+                    <Route path="reportes" element={<VistaReportes />} />
+                    <Route path="preguntas" element={<VistaPreguntas />} />
 
                     <Route path="*" element={
                         <div>

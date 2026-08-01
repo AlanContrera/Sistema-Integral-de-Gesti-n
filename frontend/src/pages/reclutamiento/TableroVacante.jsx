@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchConToken } from '../services/api';
+import { fetchConToken } from '../../services/api';
 import { ArrowLeft, Users, ClipboardList, Plus, User, CheckCircle, Clock, XCircle, FileText, Send } from 'lucide-react';
-import FormularioPerfilador from '../components/FormularioPerfilador';
+import FormularioPerfilador from '../../components/reclutamiento/FormularioPerfilador';
 
 const TableroVacante = () => {
     const { id } = useParams();
@@ -82,8 +82,8 @@ const TableroVacante = () => {
 
     const navStyle = (activa) => ({
         padding: '12px 24px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px',
-        color: activa ? '#0EA5E9' : '#64748B',
-        borderBottom: activa ? '3px solid #0EA5E9' : '3px solid transparent',
+        color: activa ? '#96C2DB' : '#64748B',
+        borderBottom: activa ? '3px solid #96C2DB' : '3px solid transparent',
         display: 'flex', alignItems: 'center', gap: '8px'
     });
 
@@ -100,7 +100,7 @@ const TableroVacante = () => {
                     </div>
                 </div>
                 {tabActiva === 'tablero' && (
-                    <button onClick={() => setMostrarModal(true)} style={{ backgroundColor: '#0EA5E9', color: '#FFF', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(14, 165, 233, 0.2)' }}>
+                    <button onClick={() => setMostrarModal(true)} style={{ backgroundColor: '#96C2DB', color: '#FFF', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(150, 194, 219, 0.2)' }}>
                         <Plus size={18} /> Agregar Candidato
                     </button>
                 )}
@@ -169,7 +169,7 @@ const TableroVacante = () => {
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
                     <div style={{ backgroundColor: '#FFF', padding: '32px', borderRadius: '12px', width: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
                         <h2 style={{ margin: '0 0 24px 0', fontSize: '20px', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <User size={20} color="#0EA5E9" /> Registro Rápido
+                            <User size={20} color="#96C2DB" /> Registro Rápido
                         </h2>
                         <form onSubmit={handleCrearCandidato}>
                             <div style={{ marginBottom: '16px' }}>
@@ -191,7 +191,7 @@ const TableroVacante = () => {
 
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                                 <button type="button" onClick={() => setMostrarModal(false)} style={{ padding: '8px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', fontWeight: '600' }}>Cancelar</button>
-                                <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#0EA5E9', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Crear Candidato</button>
+                                <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#96C2DB', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Crear Candidato</button>
                             </div>
                         </form>
                     </div>
