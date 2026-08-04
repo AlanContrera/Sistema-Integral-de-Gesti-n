@@ -67,19 +67,7 @@ const VistaVacantes = () => {
                             <h1 style={{ fontSize: '28px', color: '#1E293B', fontWeight: '800', marginBottom: '4px' }}>Vacantes</h1>
                             <p style={{ color: '#64748B', fontSize: '15px' }}>Gestiona las vacantes de tus clientes.</p>
                         </div>
-                        <button
-                            onClick={() => setMostrarModal(true)}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                backgroundColor: '#96C2DB', color: 'white',
-                                padding: '10px 20px', borderRadius: '8px',
-                                border: 'none', fontWeight: '600', cursor: 'pointer',
-                                boxShadow: '0 4px 6px -1px rgba(150, 194, 219, 0.2)'
-                            }}
-                        >
-                            <Plus size={20} />
-                            Nueva Vacante
-                        </button>
+
                     </div>
 
                     {/* Barra de búsqueda / Filtros */}

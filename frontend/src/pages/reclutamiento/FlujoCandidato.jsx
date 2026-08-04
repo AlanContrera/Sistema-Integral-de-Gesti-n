@@ -364,7 +364,6 @@ const FlujoCandidato = () => {
             <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', marginBottom: '24px' }}>
                 <div style={navStyle(tab === 'inicial')} onClick={() => setTab('inicial')}>Entrevista Inicial</div>
                 <div style={navStyle(tab === 'profunda')} onClick={() => setTab('profunda')}>Entrevista Profunda</div>
-                <div style={navStyle(tab === 'reporte')} onClick={() => setTab('reporte')}>Reporte Ejecutivo</div>
             </div>
 
             {/* Pestaña: Entrevista Inicial */}
@@ -904,32 +903,6 @@ const FlujoCandidato = () => {
                 </div>
             )}
 
-
-            {/* Pestaña: Reporte (Botón de Descarga Limpio) */}
-            {tab === 'reporte' && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', padding: '60px 32px', borderRadius: '16px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)', minHeight: '400px' }}>
-                    <div style={{ backgroundColor: '#E5EDF1', padding: '24px', borderRadius: '50%', marginBottom: '24px' }}>
-                        <Download size={48} color="#96C2DB" />
-                    </div>
-                    <h2 style={{ margin: '0 0 16px 0', color: '#0F172A', fontSize: '28px', fontWeight: '800' }}>
-                        Descargar Reporte Ejecutivo
-                    </h2>
-                    <p style={{ margin: '0 0 32px 0', color: '#64748B', fontSize: '16px', maxWidth: '500px', textAlign: 'center', lineHeight: '1.6' }}>
-                        El reporte descargable contiene la evaluación detallada con todos los rubros, fortalezas, brechas y el dictamen final para enviar al cliente.
-                    </p>
-
-                    {entrevistaProfunda ? (
-                        <button onClick={handleGenerarPDF} style={{ padding: '16px 40px', borderRadius: '12px', border: 'none', backgroundColor: '#96C2DB', color: 'white', fontWeight: 'bold', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 10px 15px -3px rgba(150, 194, 219, 0.3)', transition: 'all 0.2s' }}>
-                            <FileText size={24} /> Descargar PDF (Listo para Cliente)
-                        </button>
-                    ) : (
-                        <div style={{ padding: '20px 32px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#991B1B', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px', fontWeight: '600' }}>
-                            <AlertTriangle size={24} />
-                            Falta completar la Entrevista Profunda
-                        </div>
-                    )}
-                </div>
-            )}
 
             {/* ===== PLANTILLA OCULTA PARA EL PDF (Sábana Completa de Entrevista Profunda) ===== */}
             <div style={{ position: 'absolute', left: '-10000px', top: '-10000px' }}>
