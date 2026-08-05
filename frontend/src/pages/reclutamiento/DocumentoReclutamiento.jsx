@@ -5,41 +5,41 @@ import { Briefcase, Target, GraduationCap, Award, DollarSign, CheckSquare, FileT
 const DocumentoPerfilador = ({ vacante }) => {
     if (!vacante) return null;
 
-    // --- ESTILOS ADAPTADOS A TU PALETA (GRIS AZULADO) ---
+    // --- ESTILOS COMPACTOS ADAPTADOS A TU PALETA ---
     const labelStyle = {
-        backgroundColor: '#E5EDF1', // El gris azulado claro (COLOR_HOVER de tu app)
-        color: '#334155', // Tu color de texto principal
-        fontWeight: '800', // Un poco más grueso para que resalte
-        padding: '12px 16px',
+        backgroundColor: '#E5EDF1', // El gris azulado claro
+        color: '#334155', // Texto principal
+        fontWeight: '800',
+        padding: '6px 10px', // Reducido para evitar scroll
         borderBottom: '1px solid #CBD5E1',
         borderRight: '1px solid #CBD5E1',
         width: '20%',
         verticalAlign: 'top',
-        fontSize: '12px',
+        fontSize: '11px', // Más pequeño
         textTransform: 'uppercase'
     };
 
     const valueStyle = {
         backgroundColor: '#FFF',
         color: '#334155',
-        padding: '12px 16px',
+        padding: '6px 10px', // Reducido
         borderBottom: '1px solid #CBD5E1',
         borderRight: '1px solid #CBD5E1',
         width: '30%',
         verticalAlign: 'top',
         whiteSpace: 'pre-wrap',
-        fontSize: '13px'
+        fontSize: '12px' // Más pequeño
     };
 
     const valueFullStyle = {
         backgroundColor: '#FFF',
         color: '#334155',
-        padding: '12px 16px',
+        padding: '6px 10px',
         borderBottom: '1px solid #CBD5E1',
         width: '80%',
         verticalAlign: 'top',
         whiteSpace: 'pre-wrap',
-        fontSize: '13px'
+        fontSize: '12px'
     };
 
     // Funciones de renderizado de celdas
@@ -59,13 +59,13 @@ const DocumentoPerfilador = ({ vacante }) => {
         </tr>
     );
 
-    // Componente para envolver cada sección en una "Tarjeta" con tu GRIS AZULADO
+    // Componente "Tarjeta" compacta
     const SeccionTabla = ({ titulo, icono, children }) => (
-        <div style={{ backgroundColor: '#FFF', borderRadius: '12px', overflow: 'hidden', border: '1px solid #96C2DB', boxShadow: '0 4px 10px rgba(150, 194, 219, 0.15)', marginBottom: '24px' }}>
-            {/* Cabecera con el GRIS AZULADO PRINCIPAL (#96C2DB) */}
-            <div style={{ backgroundColor: '#96C2DB', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {React.cloneElement(icono, { color: '#FFF' })}
-                <h3 style={{ margin: 0, color: '#FFF', fontSize: '15px', fontWeight: '800', letterSpacing: '1px', textTransform: 'uppercase' }}>
+        <div style={{ backgroundColor: '#FFF', borderRadius: '8px', overflow: 'hidden', border: '1px solid #96C2DB', boxShadow: '0 2px 4px rgba(150, 194, 219, 0.1)', marginBottom: '16px' }}>
+            {/* Cabecera compacta */}
+            <div style={{ backgroundColor: '#96C2DB', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {React.cloneElement(icono, { color: '#FFF', size: 16 })}
+                <h3 style={{ margin: 0, color: '#FFF', fontSize: '13px', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                     {titulo}
                 </h3>
             </div>
@@ -78,11 +78,11 @@ const DocumentoPerfilador = ({ vacante }) => {
     );
 
     return (
-        <div style={{ width: '100%', padding: '24px', backgroundColor: '#F1F5F9', minHeight: '100%' }}>
+        <div style={{ width: '100%', padding: '16px', backgroundColor: '#F1F5F9', minHeight: '100%' }}>
 
             <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
-                <SeccionTabla titulo="Propuesta de Perfil de Puesto" icono={<Briefcase size={18} color="#96C2DB" />}>
+                <SeccionTabla titulo="Propuesta de Perfil de Puesto" icono={<Briefcase />}>
                     {renderFila4('Cliente / Empresa', vacante.cliente, 'Fecha de levantamiento', vacante.fecha_creacion?.split('T')[0])}
                     {renderFila4('Contacto responsable', vacante.contacto_responsable, 'Consultor responsable', 'Pendiente')}
                     {renderFila4('Puesto propuesto', vacante.puesto_nombre || vacante.nombre_puesto, 'Área / Departamento', vacante.area_departamento)}
@@ -92,7 +92,7 @@ const DocumentoPerfilador = ({ vacante }) => {
                     {renderFila4('Promedio mercado ubicación', 'Pendiente', 'Periodicidad de pago', vacante.periodicidad_pago)}
                 </SeccionTabla>
 
-                <SeccionTabla titulo="Resumen Ejecutivo del Perfil" icono={<Target size={18} color="#96C2DB" />}>
+                <SeccionTabla titulo="Resumen Ejecutivo del Perfil" icono={<Target />}>
                     {renderFila2('Objetivo del puesto', vacante.objetivo_puesto)}
                     {renderFila2('Resultados esperados', vacante.resultados_esperados)}
                     {renderFila2('Funciones principales sugeridas', vacante.funciones_diarias_sugeridas)}
@@ -101,7 +101,7 @@ const DocumentoPerfilador = ({ vacante }) => {
                     {renderFila2('Indicadores / KPIs', vacante.kpis)}
                 </SeccionTabla>
 
-                <SeccionTabla titulo="Perfil Requerido" icono={<GraduationCap size={18} color="#96C2DB" />}>
+                <SeccionTabla titulo="Perfil Requerido" icono={<GraduationCap />}>
                     {renderFila4('Escolaridad mínima', vacante.escolaridad_requerida, 'Carrera / especialidad', vacante.carrera_especialidad)}
                     {renderFila4('Experiencia mínima', vacante.experiencia_minima ? `${vacante.experiencia_minima} años` : '', 'Experiencia deseable', vacante.experiencia_deseable)}
                     {renderFila4('Edad deseada', vacante.edad_deseada, 'Idioma requerido', vacante.idioma_requerido)}
@@ -109,7 +109,7 @@ const DocumentoPerfilador = ({ vacante }) => {
                     {renderFila4('Disponibilidad para viajar', vacante.disponibilidad_viajar, 'Disponibilidad para rolar turnos', vacante.disponibilidad_rolar_turnos)}
                 </SeccionTabla>
 
-                <SeccionTabla titulo="Competencias y Factores de Éxito" icono={<Award size={18} color="#96C2DB" />}>
+                <SeccionTabla titulo="Competencias y Factores de Éxito" icono={<Award />}>
                     {renderFila2('Competencias técnicas sugeridas', vacante.competencias_tecnicas_sugeridas)}
                     {renderFila2('Competencias técnicas validadas por cliente', vacante.competencias_tecnicas_cliente)}
                     {renderFila2('Competencias blandas', vacante.competencias_blandas_sugeridas || vacante.competencias_blandas_cliente)}
@@ -117,7 +117,7 @@ const DocumentoPerfilador = ({ vacante }) => {
                     {renderFila2('Factores clave de éxito del cliente', vacante.factores_exito_cliente)}
                 </SeccionTabla>
 
-                <SeccionTabla titulo="Condiciones y Proceso" icono={<DollarSign size={18} color="#96C2DB" />}>
+                <SeccionTabla titulo="Condiciones y Proceso" icono={<DollarSign />}>
                     {renderFila4('Sueldo bruto mensual', vacante.sueldo_ofertado ? `$${vacante.sueldo_ofertado}` : 'Pendiente', 'Sueldo neto mensual', 'Pendiente')}
                     {renderFila4('Prestaciones', vacante.prestaciones, 'Bonos / comisiones', vacante.pagos_adicionales)}
                     {renderFila4('Horario', vacante.horario, 'Modalidad', vacante.modalidad)}
@@ -126,13 +126,13 @@ const DocumentoPerfilador = ({ vacante }) => {
                     {renderFila4('Documentos necesarios', vacante.documentos_necesarios, 'Tiempo ideal de cobertura', vacante.tiempo_cobertura)}
                 </SeccionTabla>
 
-                <SeccionTabla titulo="Validación del Cliente" icono={<CheckSquare size={18} color="#96C2DB" />}>
+                <SeccionTabla titulo="Validación del Cliente" icono={<CheckSquare />}>
                     {renderFila4('¿Está de acuerdo con el perfil?', 'Pendiente', 'Fecha de validación', 'Pendiente')}
                     {renderFila2('Comentarios o ajustes solicitados', 'NA')}
                     {renderFila4('Nombre y firma del cliente', '', 'Nombre y firma consultor', '')}
                 </SeccionTabla>
 
-                <SeccionTabla titulo="Propuesta Comercial" icono={<FileText size={18} color="#96C2DB" />}>
+                <SeccionTabla titulo="Propuesta Comercial" icono={<FileText />}>
                     {renderFila4('Cliente / Empresa', vacante.cliente, 'Puesto a cubrir', vacante.puesto_nombre || vacante.nombre_puesto)}
                     {renderFila4('Servicio propuesto', 'Reclutamiento y selección', 'Tipo de contratación', vacante.tipo_contratacion)}
                     {renderFila4('Honorarios acordados', 'Pendiente de confirmar', 'Garantía', 'Pendiente')}
@@ -146,12 +146,12 @@ const DocumentoPerfilador = ({ vacante }) => {
                 </SeccionTabla>
 
                 {/* AVISO DE PRIVACIDAD */}
-                <div style={{ backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', marginTop: '32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <ShieldAlert size={16} color="#64748B" />
-                        <h4 style={{ margin: 0, color: '#475569', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase' }}>Aviso de Privacidad y Tratamiento de Datos</h4>
+                <div style={{ backgroundColor: '#F8FAFC', padding: '12px', borderRadius: '8px', border: '1px solid #E2E8F0', marginTop: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                        <ShieldAlert size={14} color="#64748B" />
+                        <h4 style={{ margin: 0, color: '#475569', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Aviso de Privacidad y Tratamiento de Datos</h4>
                     </div>
-                    <p style={{ margin: 0, color: '#64748B', fontSize: '11px', textAlign: 'justify', lineHeight: '1.5' }}>
+                    <p style={{ margin: 0, color: '#64748B', fontSize: '10px', textAlign: 'justify', lineHeight: '1.4' }}>
                         Partners & Masters informa que los datos personales, laborales, académicos, profesionales, referencias, resultados de entrevistas, evaluaciones psicométricas y estudios socioeconómicos recabados durante el proceso de reclutamiento serán utilizados exclusivamente para fines de evaluación, validación, integración de expediente, presentación de candidatos al cliente y seguimiento del proceso de selección. La información será tratada de forma confidencial y sólo será compartida con el cliente contratante cuando sea necesario para la evaluación de la vacante solicitada. El titular podrá solicitar acceso, rectificación, cancelación u oposición al tratamiento de sus datos personales a través de los medios de contacto de Partners & Masters. Al Contacto para privacidad: contacto@partners-masters.com | Tel. +52 81 1234 1234 | www.partners-masters.com
                     </p>
                 </div>

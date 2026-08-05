@@ -1,8 +1,8 @@
 # CONTEXTO MAESTRO - Sistema Integral (App_Facturacion)
 
 > **Última actualización:** 2026-08-04
-> **Estado general del proyecto:** 🟢 En construcción — Módulo 4 pulido, Motor de Cálculos (Módulo 3) y Módulo 5 (Cotizador) finalizado. Módulo 6 (Reclutamiento) completado en su fase inicial (Perfilador y Reporte PDF).
-> **Sesión actual enfocada en:** Finalización de sesión de Módulo Reclutamiento.
+> **Estado general del proyecto:** 🟢 En construcción — Módulo Reclutamiento completado (PDFs Premium y Documento UI compactado). Preparando inicio del Módulo 7 (Comercial) para la siguiente sesión.
+> **Sesión actual enfocada en:** Preparación del terreno y plan de implementación para el Módulo Comercial.
 
 ## Objetivo General
 
@@ -115,7 +115,7 @@ La documentación específica de cada módulo se encuentra en la carpeta `docs/`
 | 2026-07-30 | Módulo de Reclutamiento (Perfilador UI) | Se transformó el Formulario Perfilador de una página larga a un wizard de 9 pasos con navegación secuencial, validación de campos obligatorios, prevención de envíos accidentales por doble clic o tecla Enter, y se modernizó la paleta de colores y la interfaz de botones a un estilo profesional. |
 | 2026-07-31 | Arquitectura de Frontend | Reestructuración completa del frontend implementando un patrón de diseño por Módulos de Negocio. Se agruparon las páginas y componentes en subcarpetas lógicas: `auth`, `pagos`, `cotizador` y `reclutamiento` para asegurar la escalabilidad del proyecto. |
 | 2026-07-31 | Módulo de Reclutamiento (Preguntas Dinámicas) | Se construyó la arquitectura Full-Stack para gestionar las Preguntas Iniciales y Profundas de las entrevistas. Se integró una interfaz en React (VistaPreguntas) que consume los endpoints del backend para permitir la edición y guardado en tiempo real en base de datos. |
-| 2026-08-04 | Módulo de Reclutamiento (Documento Perfilador y ATS) | Se separó la vista de gestión de vacante en pestañas: Pipeline de Candidatos y Perfilador Reclutamiento. Se construyó el Documento Perfilador de solo lectura, replicando fielmente la estructura legal y comercial del Excel original (Hoja 14), integrado con la paleta de colores institucional. |
+| 2026-08-04 | Módulo de Reclutamiento (Documento Perfilador y ATS) | Se separó la vista de gestión de vacante en pestañas: Pipeline de Candidatos y Perfilador Reclutamiento. Se construyó el Documento Perfilador de solo lectura, replicando fielmente la estructura legal y comercial del Excel original (Hoja 14), integrado con la paleta de colores institucional. Posteriormente, se optimizó el DocumentoReclutamiento UI para ser más compacto y se refactorizaron 3 componentes pesados de HTML duro a PDFs dinámicos con formato 'Corporate Premium'. Se dejó listo el plan de implementación para el Módulo 7 (Comercial). |
 
 
 ## Notas de Sesión

@@ -122,8 +122,8 @@ const VistaPreguntas = () => {
     };
 
     const tabs = [
-        { id: 'inicial', label: 'Entrevista Inicial (Globales)' },
-        { id: 'profunda', label: 'Entrevista Profunda (Por Puesto)' }
+        { id: 'inicial', label: 'Entrevista Inicial' },
+        { id: 'profunda', label: 'Entrevista Profunda' }
     ];
 
     return (
