@@ -1,8 +1,8 @@
 # CONTEXTO MAESTRO - Sistema Integral (App_Facturacion)
 
-> **Última actualización:** 2026-08-04
-> **Estado general del proyecto:** 🟢 En construcción — Módulo Reclutamiento completado (PDFs Premium y Documento UI compactado). Preparando inicio del Módulo 7 (Comercial) para la siguiente sesión.
-> **Sesión actual enfocada en:** Preparación del terreno y plan de implementación para el Módulo Comercial.
+> **Última actualización:** 2026-08-05
+> **Estado general del proyecto:** 🟢 En construcción — Separación de módulos completada (Reclutamiento asume el flujo de Vacantes al 100%, Comercial queda independiente).
+> **Sesión actual enfocada en:** Preparación de filtros y limpieza de tablero de vacantes.
 
 ## Objetivo General
 
@@ -67,7 +67,12 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 - Expediente digital del candidato con Entrevista Inicial (Semáforos) y Profunda (Cálculo porcentual).
 - Generación de Reporte Ejecutivo en PDF con layout de consultoría premium y paginación inteligente.
 
-### Módulo 7: Comercial (Proximamente)
+### Paleta de Colores (Módulo Comercial)
+- **Color Primario (Acentos, Botones, Sidebar):** Azul Acero (`#5C7E8F`)
+- **Fondo Secundario (Hover/Gradientes):** Azul Hielo (`#D4DDE2`)
+- **Fondo General:** Blanco Puro (`#FFFFFF`)
+- **Grises (Bordes, Textos Secundarios):** Gris Metálico (`#A2A2A2`)
+
 
 ## Documentación del Reclutamiento y Comercial
 
@@ -116,6 +121,7 @@ La documentación específica de cada módulo se encuentra en la carpeta `docs/`
 | 2026-07-31 | Arquitectura de Frontend | Reestructuración completa del frontend implementando un patrón de diseño por Módulos de Negocio. Se agruparon las páginas y componentes en subcarpetas lógicas: `auth`, `pagos`, `cotizador` y `reclutamiento` para asegurar la escalabilidad del proyecto. |
 | 2026-07-31 | Módulo de Reclutamiento (Preguntas Dinámicas) | Se construyó la arquitectura Full-Stack para gestionar las Preguntas Iniciales y Profundas de las entrevistas. Se integró una interfaz en React (VistaPreguntas) que consume los endpoints del backend para permitir la edición y guardado en tiempo real en base de datos. |
 | 2026-08-04 | Módulo de Reclutamiento (Documento Perfilador y ATS) | Se separó la vista de gestión de vacante en pestañas: Pipeline de Candidatos y Perfilador Reclutamiento. Se construyó el Documento Perfilador de solo lectura, replicando fielmente la estructura legal y comercial del Excel original (Hoja 14), integrado con la paleta de colores institucional. Posteriormente, se optimizó el DocumentoReclutamiento UI para ser más compacto y se refactorizaron 3 componentes pesados de HTML duro a PDFs dinámicos con formato 'Corporate Premium'. Se dejó listo el plan de implementación para el Módulo 7 (Comercial). |
+| 2026-08-05 | Separación Comercial-Reclutamiento | Se decidió desligar por completo al Módulo Comercial de la gestión de Vacantes. Reclutamiento asume el control 100% de la creación del Perfilador. Se implementaron filtros dinámicos en el tablero de vacantes (Activas, Cerradas, Canceladas) mejorando el diseño del selector de estados en el Tablero de Vacantes. |
 
 
 ## Notas de Sesión

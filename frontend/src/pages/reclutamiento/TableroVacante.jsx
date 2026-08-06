@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchConToken } from '../../services/api';
-import { ArrowLeft, Users, Plus, User, CheckCircle, Clock, XCircle, FileText, Send, Target, FileSearch } from 'lucide-react';
+import { ArrowLeft, Users, Plus, User, CheckCircle, Clock, XCircle, FileText, Send, Target, FileSearch, Briefcase } from 'lucide-react';
 import DocumentoPerfilador from './DocumentoReclutamiento';
 
 const TableroVacante = () => {
@@ -59,6 +59,25 @@ const TableroVacante = () => {
         }
     };
 
+    const handleCambiarEstatus = async (nuevoEstatus) => {
+        try {
+            const res = await fetchConToken(`/reclutamiento/vacantes/${id}/`, {
+                method: 'PATCH',
+                body: JSON.stringify({ estatus: nuevoEstatus })
+            });
+            if (res.ok) {
+                // Actualizamos la vista localmente para que cambie al instante
+                setVacante({ ...vacante, estatus: nuevoEstatus });
+                // Aquí podríamos lanzar un toast.success('Estatus actualizado');
+            } else {
+                alert('Error al cambiar el estatus de la vacante');
+            }
+        } catch (error) {
+            alert('Error de conexión al cambiar el estatus');
+        }
+    };
+
+
     const renderBadgeEstatus = (estatus) => {
         const config = {
             'nuevo': { color: '#3B82F6', bg: '#DBEAFE', text: 'Nuevo Prospecto', icon: <User size={14} /> },
@@ -90,24 +109,65 @@ const TableroVacante = () => {
         <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
 
             {/* HEADER */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <button onClick={() => navigate('/reclutamiento/vacantes')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', padding: '8px', borderRadius: '50%', backgroundColor: '#F1F5F9' }}>
+                    <button onClick={() => navigate('/reclutamiento/vacantes')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', padding: '8px', borderRadius: '50%', backgroundColor: '#F1F5F9', flexShrink: 0 }}>
                         <ArrowLeft size={24} />
                     </button>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '26px', color: '#1E293B', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <h1 style={{ margin: 0, fontSize: '26px', color: '#1E293B', fontWeight: '800', lineHeight: '1.2' }}>
                             {vacante.nombre_puesto || vacante.puesto_nombre || 'Sin título'}
-                            <span style={{ fontSize: '13px', backgroundColor: '#E2E8F0', color: '#475569', padding: '4px 10px', borderRadius: '6px', fontWeight: '600' }}>
-                                Cliente: {vacante.cliente || 'Interno'}
-                            </span>
                         </h1>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {/* Selector de Estatus */}
+                            <span style={{ fontSize: '13px', backgroundColor: '#F8FAFC', color: '#64748B', padding: '6px 12px', borderRadius: '8px', fontWeight: '500', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Briefcase size={14} color="#94A3B8" />
+                                Cliente: <strong style={{ color: '#1E293B', fontWeight: '700' }}>{vacante.cliente || 'Interno'}</strong>
+                            </span>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F8FAFC', padding: '4px 6px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                                <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '600', marginLeft: '6px' }}>Estado:</span>
+
+                                <div style={{ position: 'relative' }}>
+                                    <select
+                                        value={vacante.estatus}
+                                        onChange={(e) => handleCambiarEstatus(e.target.value)}
+                                        style={{
+                                            appearance: 'none',
+                                            WebkitAppearance: 'none',
+                                            padding: '6px 32px 6px 16px',
+                                            fontSize: '13px',
+                                            fontWeight: '700',
+                                            textTransform: 'uppercase',
+                                            color: vacante.estatus === 'activa' ? '#166534' : vacante.estatus === 'cerrada' ? '#475569' : vacante.estatus === 'cancelada' ? '#991B1B' : '#854D0E',
+                                            backgroundColor: vacante.estatus === 'activa' ? '#DCFCE7' : vacante.estatus === 'cerrada' ? '#F1F5F9' : vacante.estatus === 'cancelada' ? '#FEE2E2' : '#FEF9C3',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            outline: 'none',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                        }}
+                                    >
+                                        <option value="activa">Activa</option>
+                                        <option value="cerrada">Cerrada</option>
+                                        <option value="cancelada">Cancelada</option>
+                                    </select>
+
+                                    {/* Flechita personalizada */}
+                                    <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'inherit', opacity: 0.6 }}>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
 
                 {/* El botón de agregar candidato solo se muestra si estamos en la pestaña de candidatos */}
                 {tabActiva === 'candidatos' && (
-                    <button onClick={() => setMostrarModalCandidato(true)} style={{ backgroundColor: '#96C2DB', color: '#FFF', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(150, 194, 219, 0.2)' }}>
+                    <button onClick={() => setMostrarModalCandidato(true)} style={{ backgroundColor: '#96C2DB', color: '#FFF', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(150, 194, 219, 0.2)', flexShrink: 0 }}>
                         <Plus size={18} /> Agregar Candidato
                     </button>
                 )}

@@ -1,13 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { Landmark, Bot, Calculator, Settings, LogIn, Users } from 'lucide-react';
+import { Landmark, Bot, Calculator, Settings, LogIn, Users, Briefcase } from 'lucide-react';
 import ModuloPagos from './pages/pagos/ModuloPagos';
 import ModuloCotizador from './pages/cotizador/ModuloCotizador';
 import ModuloReclutamiento from './pages/reclutamiento/ModuloReclutamiento';
+import ModuloComercial from './pages/comercial/ModuloComercial';
 import RutaProtegida from './components/auth/RutaProtegida';
 import { Toaster } from 'react-hot-toast';
 import Login from './pages/auth/Login';
-
 
 function MenuPrincipal() {
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ function MenuPrincipal() {
           </div>
         </div>
 
-        {/* Módulo 3: Reclutamiento (NUEVO) */}
+        {/* Módulo 3: Reclutamiento (ACTIVO) */}
         <div
           onClick={() => navigate('/reclutamiento')}
           style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', cursor: 'pointer', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', transition: 'transform 0.2s ease, box-shadow 0.2s ease', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid #E2E8F0', position: 'relative', overflow: 'hidden' }}
@@ -76,20 +76,21 @@ function MenuPrincipal() {
           </div>
         </div>
 
-
-
-        {/* Configuración (PRÓXIMAMENTE) */}
-        <div style={{ background: '#F1F5F9', borderRadius: '24px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px dashed #CBD5E1', opacity: 0.8, position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '24px', right: '24px', background: '#E2E8F0', color: '#64748B', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', letterSpacing: '0.5px' }}>PRÓXIMAMENTE</div>
-          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}>
-            <Settings size={32} />
+        {/* Módulo 4: Comercial (ACTIVO) */}
+        <div
+          onClick={() => navigate('/comercial')}
+          style={{ background: '#FFFFFF', borderRadius: '24px', padding: '32px', cursor: 'pointer', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', transition: 'transform 0.2s ease, box-shadow 0.2s ease', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid #D4DDE2', position: 'relative', overflow: 'hidden' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 20px 40px -10px rgba(0,0,0,0.1)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.05)' }}
+        >
+          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'linear-gradient(135deg, #A2A2A2, #5C7E8F)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', boxShadow: '0 8px 16px -4px rgba(92, 126, 143, 0.3)' }}>
+            <Briefcase size={32} />
           </div>
           <div>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', color: '#475569', fontWeight: '700' }}>Catálogos Maestros</h2>
-            <p style={{ margin: 0, color: '#94A3B8', fontSize: '15px', lineHeight: 1.5 }}>Administración global de empresas, bancos, usuarios y reglas del sistema.</p>
+            <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', color: '#1E293B', fontWeight: '700' }}>Comercial</h2>
+            <p style={{ margin: 0, color: '#64748B', fontSize: '15px', lineHeight: 1.5 }}>Levantamiento de perfiles, gestión de prospectos y generación de propuestas comerciales en PDF.</p>
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -104,6 +105,7 @@ export default function App() {
           <Route path="/pagos/*" element={<ModuloPagos />} />
           <Route path="/cotizador/*" element={<ModuloCotizador />} />
           <Route path="/reclutamiento/*" element={<RutaProtegida><ModuloReclutamiento /></RutaProtegida>} />
+          <Route path="/comercial/*" element={<RutaProtegida><ModuloComercial /></RutaProtegida>} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </Router> </>

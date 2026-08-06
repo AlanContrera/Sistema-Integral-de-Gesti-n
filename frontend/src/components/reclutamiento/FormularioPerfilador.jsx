@@ -186,20 +186,20 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
         }
     };
 
-    const sectionTitleStyle = { backgroundColor: '#96C2DB', color: '#FFF', padding: '10px 16px', fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '16px', marginBottom: '16px', borderRadius: '4px' };
-    const labelStyle = { display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '4px' };
-    const inputStyle = { width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '4px', backgroundColor: '#FFF', boxSizing: 'border-box' };
+    const sectionTitleStyle = { backgroundColor: '#5C7E8F', color: '#FFF', padding: '10px 16px', fontSize: '14px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '16px', marginBottom: '16px', borderRadius: '4px' };
+    const labelStyle = { display: 'block', fontSize: '12px', fontWeight: '700', color: '#1E293B', marginBottom: '4px' };
+    const inputStyle = { width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #D4DDE2', borderRadius: '4px', backgroundColor: '#FFF', boxSizing: 'border-box', color: '#1E293B', outline: 'none' };
     const textStyle = { ...inputStyle, minHeight: '80px', resize: 'vertical' };
     const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' };
     const grid3Style = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' };
 
     return (
-        <div style={{ backgroundColor: '#F8FAFC', width: '100%', borderRadius: '12px', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0', paddingBottom: '32px', position: 'relative' }}>
+        <div style={{ backgroundColor: '#F0F4F8', width: '100%', borderRadius: '12px', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #D4DDE2', paddingBottom: '32px', position: 'relative' }}>
             <Toaster position="top-right" />
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', borderRadius: '12px 12px 0 0' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #D4DDE2', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF', borderRadius: '12px 12px 0 0' }}>
                 <div>
-                    <h2 style={{ margin: 0, color: '#0F172A', fontSize: '20px' }}>PERFILADOR DE PUESTO / LEVANTAMIENTO DE VACANTE</h2>
-                    <span style={{ fontSize: '14px', color: '#64748B', fontWeight: '600' }}>Paso {pasoActual} de 9</span>
+                    <h2 style={{ margin: 0, color: '#1E293B', fontSize: '20px', fontWeight: '800' }}>PERFILADOR DE PUESTO / LEVANTAMIENTO DE VACANTE</h2>
+                    <span style={{ fontSize: '14px', color: '#64748B', fontWeight: '700' }}>Paso {pasoActual} de 9</span>
                 </div>
                 {onClose && <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}><X size={24} /></button>}
             </div>
@@ -309,11 +309,11 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                     <div style={{ display: pasoActual === 3 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>3. OBJETIVO DEL PUESTO & 4. FUNCIONES</div>
                         <div style={gridStyle}>
-                            <div><label style={labelStyle}>Funciones diarias propuestas (Base Datos)</label><textarea name="funciones_diarias_sugeridas" value={formData.funciones_diarias_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F8FAFC' }} readOnly></textarea></div>
+                            <div><label style={labelStyle}>Funciones diarias propuestas (Base Datos)</label><textarea name="funciones_diarias_sugeridas" value={formData.funciones_diarias_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F0F4F8' }} readOnly></textarea></div>
                             <div><label style={labelStyle}>Funciones diarias por el Cliente (Ajustes)</label><textarea name="funciones_diarias_cliente" value={formData.funciones_diarias_cliente} onChange={handleChange} style={textStyle}></textarea></div>
                         </div>
                         <div style={gridStyle}>
-                            <div><label style={labelStyle}>Responsabilidades críticas Propuestas</label><textarea name="responsabilidades_sugeridas" value={formData.responsabilidades_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F8FAFC' }} readOnly></textarea></div>
+                            <div><label style={labelStyle}>Responsabilidades críticas Propuestas</label><textarea name="responsabilidades_sugeridas" value={formData.responsabilidades_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F0F4F8' }} readOnly></textarea></div>
                             <div><label style={labelStyle}>Responsabilidades críticas Cliente</label><textarea name="responsabilidades_cliente" value={formData.responsabilidades_cliente} onChange={handleChange} style={textStyle}></textarea></div>
                         </div>
                         <div><label style={labelStyle}>Indicadores o KPIs del puesto</label><textarea name="kpis" value={formData.kpis} onChange={handleChange} style={textStyle}></textarea></div>
@@ -356,15 +356,15 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                     <div style={{ display: pasoActual === 5 ? 'block' : 'none', animation: 'fadeIn 0.3s' }}>
                         <div style={sectionTitleStyle}>6. COMPETENCIAS</div>
                         <div style={gridStyle}>
-                            <div><label style={labelStyle}>Competencias técnicas (Base Datos)</label><textarea name="competencias_tecnicas_sugeridas" value={formData.competencias_tecnicas_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F8FAFC' }} readOnly></textarea></div>
+                            <div><label style={labelStyle}>Competencias técnicas (Base Datos)</label><textarea name="competencias_tecnicas_sugeridas" value={formData.competencias_tecnicas_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F0F4F8' }} readOnly></textarea></div>
                             <div><label style={labelStyle}>Competencias técnicas (Cliente)</label><textarea name="competencias_tecnicas_cliente" value={formData.competencias_tecnicas_cliente} onChange={handleChange} style={textStyle}></textarea></div>
                         </div>
                         <div style={gridStyle}>
-                            <div><label style={labelStyle}>Competencias blandas (Base Datos)</label><textarea name="competencias_blandas_sugeridas" value={formData.competencias_blandas_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F8FAFC' }} readOnly></textarea></div>
+                            <div><label style={labelStyle}>Competencias blandas (Base Datos)</label><textarea name="competencias_blandas_sugeridas" value={formData.competencias_blandas_sugeridas} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F0F4F8' }} readOnly></textarea></div>
                             <div><label style={labelStyle}>Competencias blandas (Cliente)</label><textarea name="competencias_blandas_cliente" value={formData.competencias_blandas_cliente} onChange={handleChange} style={textStyle}></textarea></div>
                         </div>
                         <div style={gridStyle}>
-                            <div><label style={labelStyle}>Factores clave de éxito (Base Datos)</label><textarea name="factores_exito_sugeridos" value={formData.factores_exito_sugeridos} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F8FAFC' }} readOnly></textarea></div>
+                            <div><label style={labelStyle}>Factores clave de éxito (Base Datos)</label><textarea name="factores_exito_sugeridos" value={formData.factores_exito_sugeridos} onChange={handleChange} style={{ ...textStyle, backgroundColor: '#F0F4F8' }} readOnly></textarea></div>
                             <div><label style={labelStyle}>Factores clave de éxito (Cliente)</label><textarea name="factores_exito_cliente" value={formData.factores_exito_cliente} onChange={handleChange} style={textStyle}></textarea></div>
                         </div>
                     </div>
@@ -383,8 +383,8 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                             <div><label style={labelStyle}>Horario</label><input type="text" name="horario" value={formData.horario} onChange={handleChange} style={inputStyle} /></div>
                             <div><label style={labelStyle}>Herramientas proporcionadas</label><input type="text" name="herramientas_proporcionadas" value={formData.herramientas_proporcionadas} onChange={handleChange} style={inputStyle} /></div>
                         </div>
-                        <div style={{ backgroundColor: '#F1F5F9', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
-                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px' }}>Datos Salariales</h4>
+                        <div style={{ backgroundColor: '#F0F4F8', padding: '16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #D4DDE2' }}>
+                            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#1E293B' }}>Datos Salariales</h4>
                             <div style={grid3Style}>
                                 <div><label style={labelStyle}>Sueldo Mensual Ofrecido *</label><input required type="number" step="0.01" name="sueldo_ofertado" value={formData.sueldo_ofertado} onChange={handleChange} style={inputStyle} /></div>
                                 <div>
@@ -395,7 +395,7 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                                         <option value="quincenal">Quincenal</option>
                                     </select>
                                 </div>
-                                <div><label style={labelStyle}>Promedio Base Mercado</label><input type="text" value={formData.sueldo_mercado ? `$${formData.sueldo_mercado}` : '$0.00'} disabled style={{ ...inputStyle, backgroundColor: '#E2E8F0', fontWeight: 'bold' }} /></div>
+                                <div><label style={labelStyle}>Promedio Base Mercado</label><input type="text" value={formData.sueldo_mercado ? `$${formData.sueldo_mercado}` : '$0.00'} disabled style={{ ...inputStyle, backgroundColor: '#D4DDE2', fontWeight: 'bold', color: '#1E293B', border: '1px solid #A2A2A2' }} /></div>
                             </div>
                             <div style={grid3Style}>
                                 <div>
@@ -474,9 +474,9 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                 </form>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '24px 32px', borderTop: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', borderRadius: '0 0 12px 12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '24px 32px', borderTop: '1px solid #D4DDE2', backgroundColor: '#FFF', borderRadius: '0 0 12px 12px' }}>
                 {pasoActual > 1 ? (
-                    <button type="button" onClick={() => setPasoActual(pasoActual - 1)} style={{ backgroundColor: '#FFF', color: '#64748B', border: '1px solid #CBD5E1', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    <button type="button" onClick={() => setPasoActual(pasoActual - 1)} style={{ backgroundColor: '#FFF', color: '#64748B', border: '1px solid #A2A2A2', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}>
                         Atrás
                     </button>
                 ) : (
@@ -484,7 +484,7 @@ const FormularioPerfilador = ({ vacanteId, onClose, onGuardado }) => {
                 )}
 
                 {pasoActual < 9 ? (
-                    <button type="button" onClick={handleSiguiente} style={{ backgroundColor: '#96C2DB', color: '#FFF', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                    <button type="button" onClick={handleSiguiente} style={{ backgroundColor: '#5C7E8F', color: '#FFF', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 6px rgba(92, 126, 143, 0.3)' }}>
                         Siguiente
                     </button>
                 ) : (
