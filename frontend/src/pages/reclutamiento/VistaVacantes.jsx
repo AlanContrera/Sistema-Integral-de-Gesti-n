@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchConToken } from '../../services/api';
-import { Plus, Search, MapPin, DollarSign, Briefcase, ChevronLeft } from 'lucide-react';
+import { Plus, Search, MapPin, DollarSign, Briefcase, ChevronLeft, UserCheck, UserCircle } from 'lucide-react';
 import FormularioPerfilador from '../../components/reclutamiento/FormularioPerfilador';
 
 const VistaVacantes = () => {
@@ -173,16 +173,8 @@ const VistaVacantes = () => {
 
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '14px' }}>
-                                                    <MapPin size={16} color="#94A3B8" />
-                                                    <span>{vacante.modalidad}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '14px' }}>
-                                                    <DollarSign size={16} color="#94A3B8" />
-                                                    <span>${Number(vacante.sueldo_ofertado).toLocaleString('es-MX')} MXN</span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '14px' }}>
-                                                    <Briefcase size={16} color="#94A3B8" />
-                                                    <span>{vacante.experiencia_minima} años exp.</span>
+                                                    <UserCircle size={16} color="#94A3B8" />
+                                                    <span>Reclutador: {vacante.consultor_nombre || 'Desconocido'}</span>
                                                 </div>
                                             </div>
 

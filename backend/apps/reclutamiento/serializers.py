@@ -19,6 +19,7 @@ class CategoriaPreguntasSerializer(serializers.ModelSerializer):
 class VacanteSerializer(serializers.ModelSerializer):
     categoria_nombre = serializers.CharField(source='categoria_puesto.nombre', read_only=True)
     consultor_nombre = serializers.CharField(source='consultor.get_full_name', read_only=True)
+    creado_por_nombre = serializers.CharField(source='creado_por.get_full_name', read_only=True)
 
     class Meta:
         model = Vacante

@@ -1,8 +1,8 @@
 # CONTEXTO MAESTRO - Sistema Integral (App_Facturacion)
 
-> **Última actualización:** 2026-08-05
-> **Estado general del proyecto:** 🟢 En construcción — Separación de módulos completada (Reclutamiento asume el flujo de Vacantes al 100%, Comercial queda independiente).
-> **Sesión actual enfocada en:** Preparación de filtros y limpieza de tablero de vacantes.
+> **Última actualización:** 2026-08-07
+> **Estado general del proyecto:** 🟢 En construcción — Setup de rastreo de creadores completado. En pausa por migración de equipo. Preparando inicio del Módulo de Administración de Usuarios.
+> **Sesión actual enfocada en:** Definición de la arquitectura para el Módulo TI y jerarquía de Roles.
 
 ## Objetivo General
 
@@ -122,6 +122,7 @@ La documentación específica de cada módulo se encuentra en la carpeta `docs/`
 | 2026-07-31 | Módulo de Reclutamiento (Preguntas Dinámicas) | Se construyó la arquitectura Full-Stack para gestionar las Preguntas Iniciales y Profundas de las entrevistas. Se integró una interfaz en React (VistaPreguntas) que consume los endpoints del backend para permitir la edición y guardado en tiempo real en base de datos. |
 | 2026-08-04 | Módulo de Reclutamiento (Documento Perfilador y ATS) | Se separó la vista de gestión de vacante en pestañas: Pipeline de Candidatos y Perfilador Reclutamiento. Se construyó el Documento Perfilador de solo lectura, replicando fielmente la estructura legal y comercial del Excel original (Hoja 14), integrado con la paleta de colores institucional. Posteriormente, se optimizó el DocumentoReclutamiento UI para ser más compacto y se refactorizaron 3 componentes pesados de HTML duro a PDFs dinámicos con formato 'Corporate Premium'. Se dejó listo el plan de implementación para el Módulo 7 (Comercial). |
 | 2026-08-05 | Separación Comercial-Reclutamiento | Se decidió desligar por completo al Módulo Comercial de la gestión de Vacantes. Reclutamiento asume el control 100% de la creación del Perfilador. Se implementaron filtros dinámicos en el tablero de vacantes (Activas, Cerradas, Canceladas) mejorando el diseño del selector de estados en el Tablero de Vacantes. |
+| 2026-08-07 | Trazabilidad y Roles (Módulo Usuarios) | Se integró trazabilidad en `Vacante` mediante `creado_por` asignado automáticamente en el backend vía token. Se aprobó un plan arquitectónico para desarrollar un Módulo TI de Administración de Usuarios y expandir la jerarquía de roles (Supervisor vs Asistente) para el control de asignaciones (RBAC). |
 
 
 ## Notas de Sesión
@@ -157,3 +158,22 @@ Para que los usuarios de la red local puedan acceder a la app se usa **Port Forw
 powershell -ExecutionPolicy Bypass -File "C:\Users\Sistemas\wsl_portforward.ps1"
 ```
 El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
+
+## PRÓXIMA FASE: Plan Arquitectónico (Gestión de Usuarios, Roles y Asignaciones)
+
+**Objetivo (Pendiente al volver de migración):** Construir una pantalla para TI donde dar de alta cuentas y jerarquizar reclutadores (Supervisor vs Asistente) para controlar asignaciones en los tableros.
+
+**Fase A: Base de Datos (Modelos de Usuario)**
+- Expandiremos los roles de reclutamiento del modelo `Usuario` en `backend/apps/usuarios/models.py` a `supervisor_reclutamiento` y `asistente_reclutamiento` para distinguir jerarquías.
+
+**Fase B: Creación de la API de Usuarios (Backend)**
+- `backend/apps/usuarios/serializers.py`: Para convertir los usuarios a JSON.
+- `backend/apps/usuarios/views.py`: Un `ModelViewSet` para listar, crear y editar usuarios.
+- `backend/apps/usuarios/urls.py`: Para exponer el endpoint `/api/usuarios/`.
+
+**Fase C: Módulo de Configuración TI (Frontend)**
+- `frontend/src/pages/configuracion/VistaUsuarios.jsx`: Panel de control (CRUD) para que TI asigne nombres, correos, contraseñas y roles.
+
+**Fase D: Asignación de Vacantes (Frontend)**
+- Modificar `TableroVacante.jsx` con un menú desplegable de "Asignar a:" consumiendo la API de usuarios.
+- Implementar validación RBAC (Role-Based Access Control) para que solo usuarios con rol de `supervisor_reclutamiento` o superior puedan reasignar vacantes.

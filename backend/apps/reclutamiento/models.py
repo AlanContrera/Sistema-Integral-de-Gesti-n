@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 
 
+
 # ==========================================
 # 0. CATÁLOGOS GEOGRÁFICOS
 # ==========================================
@@ -102,7 +103,7 @@ class Vacante(models.Model):
     area_departamento = models.CharField(max_length=200, blank=True)
     jefe_directo = models.CharField(max_length=200, blank=True)
     numero_vacantes = models.PositiveIntegerField(default=1)
-    
+
     class Motivo(models.TextChoices):
         NUEVA = 'nueva', 'Nueva'
         REEMPLAZO = 'reemplazo', 'Reemplazo'
@@ -223,6 +224,7 @@ class Vacante(models.Model):
     fecha_compromiso_terna = models.DateField(null=True, blank=True)
 
     consultor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='vacantes_asignadas')
+    creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='vacantes_creadas')
     estatus = models.CharField(max_length=20, choices=Estatus.choices, default=Estatus.BORRADOR)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 

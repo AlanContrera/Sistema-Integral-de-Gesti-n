@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchConToken } from '../../services/api';
-import { ArrowLeft, Users, Plus, User, CheckCircle, Clock, XCircle, FileText, Send, Target, FileSearch, Briefcase } from 'lucide-react';
+import { ArrowLeft, Users, Plus, User, CheckCircle, Clock, XCircle, FileText, Send, Target, FileSearch, Briefcase, FileSignature } from 'lucide-react';
 import DocumentoPerfilador from './DocumentoReclutamiento';
 
 const TableroVacante = () => {
@@ -123,6 +123,11 @@ const TableroVacante = () => {
                             <span style={{ fontSize: '13px', backgroundColor: '#F8FAFC', color: '#64748B', padding: '6px 12px', borderRadius: '8px', fontWeight: '500', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Briefcase size={14} color="#94A3B8" />
                                 Cliente: <strong style={{ color: '#1E293B', fontWeight: '700' }}>{vacante.cliente || 'Interno'}</strong>
+                            </span>
+
+                            <span style={{ fontSize: '13px', backgroundColor: '#F8FAFC', color: '#64748B', padding: '6px 12px', borderRadius: '8px', fontWeight: '500', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <FileSignature size={14} color='#94A3B8' />
+                                Levantanmiento: <strong style={{ color: '#1E293B', fontWeight: '700' }}> {vacante.creado_por_nombre || 'Desconocido'}</strong>
                             </span>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F8FAFC', padding: '4px 6px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>

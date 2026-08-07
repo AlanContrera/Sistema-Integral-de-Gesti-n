@@ -45,6 +45,9 @@ class VacanteViewSet(viewsets.ModelViewSet):
     serializer_class = VacanteSerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        serializer.save(creado_por=self.request.user)
+
     @action(detail=False, methods=['get'])
     def autocompletar(self, request):
         categoria_id = request.query_params.get('categoria_id')
