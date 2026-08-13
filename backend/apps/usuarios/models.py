@@ -8,14 +8,19 @@ class Usuario(AbstractUser):
     class Rol(models.TextChoices):
         SUPER_ADMIN = 'super_admin', 'Super Admin'
         ADMIN = 'admin', 'Administrador'
-        COMERCIAL = 'comercial', 'Comercial'
-        RECLUTAMIENTO = 'reclutamiento', 'Reclutamiento'
+        SUPERVISOR = 'supervisor', 'Supervisor'
+        USUARIO_ESTANDAR = 'usuario_estandar', 'Usuario Estandar'
 
     rol = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=Rol.choices,
-        default=Rol.RECLUTAMIENTO,
+        default=Rol.USUARIO_ESTANDAR,
     )
+
+    acceso_pagos = models.BooleanField(default=False)
+    acceso_cotizador = models.BooleanField(default=False)
+    acceso_reclutamiento = models.BooleanField(default=False)
+    acceso_comercial = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = 'Usuario'

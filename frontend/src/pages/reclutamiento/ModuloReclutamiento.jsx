@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Briefcase, Users, FileText, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Briefcase, Users, FileText, Settings, LogOut, ChevronLeft, ChevronRight, Archive } from 'lucide-react';
 import VistaVacantes from './VistaVacantes';
 import VistaCandidatos from './VistaCandidatos';
 import FlujoCandidato from './FlujoCandidato';
 import TableroVacante from './TableroVacante';
 import VistaReportes from './VistaReportes';
 import VistaPreguntas from './VistaPreguntas';
+import VistaCartera from './VistaCartera';
 
 const ModuloReclutamiento = () => {
     const location = useLocation();
@@ -82,6 +83,7 @@ const ModuloReclutamiento = () => {
                     )}
 
                     {renderMenuItem('/vacantes', Briefcase, 'Gestión Vacantes')}
+                    {renderMenuItem('/cartera', Archive, 'Cartera Prospectos')}
                     {renderMenuItem('/reportes', FileText, 'Reportes')}
                     {renderMenuItem('/preguntas', Settings, 'Banco Preguntas')}
                 </nav>
@@ -102,6 +104,7 @@ const ModuloReclutamiento = () => {
             <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
                 <Routes>
                     <Route path="vacantes" element={<VistaVacantes />} />
+                    <Route path="cartera" element={<VistaCartera />} />
                     <Route path="candidatos" element={<VistaCandidatos />} />
                     <Route path="candidato/:id" element={<FlujoCandidato />} />
                     <Route path="vacantes/:id" element={<TableroVacante />} />

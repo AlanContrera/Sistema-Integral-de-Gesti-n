@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/', include('apps.correos.urls')),
     path('api/cotizador/', include('apps.cotizador.urls')),
     path('api/reclutamiento/', include('apps.reclutamiento.urls')),
+    path('api/usuarios/', include('apps.usuarios.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 

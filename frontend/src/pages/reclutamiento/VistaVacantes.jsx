@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { fetchConToken } from '../../services/api';
 import { Plus, Search, MapPin, DollarSign, Briefcase, ChevronLeft, UserCheck, UserCircle } from 'lucide-react';
 import FormularioPerfilador from '../../components/reclutamiento/FormularioPerfilador';
+import SelectorPremium from '../../components/reclutamiento/SelectorPremium';
+
+
 
 const VistaVacantes = () => {
     const [vacantes, setVacantes] = useState([]);
@@ -55,7 +58,6 @@ const VistaVacantes = () => {
     const getStatusColor = (estatus) => {
         switch (estatus) {
             case 'activa': return { bg: '#DCFCE7', text: '#166534' }; // Verde
-            case 'borrador': return { bg: '#FEF9C3', text: '#854D0E' }; // Amarillo
             case 'cerrada': return { bg: '#F1F5F9', text: '#475569' }; // Gris
             case 'cancelada': return { bg: '#FEE2E2', text: '#991B1B' }; // Rojo
             default: return { bg: '#F1F5F9', text: '#475569' };
@@ -95,16 +97,17 @@ const VistaVacantes = () => {
                                 style={{ width: '100%', padding: '10px 16px 10px 44px', borderRadius: '8px', border: '1px solid #E2E8F0', outline: 'none', fontSize: '15px' }}
                             />
                         </div>
-                        <select
-                            value={filtroEstatus}
-                            onChange={(e) => setFiltroEstatus(e.target.value)}
-                            style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #E2E8F0', outline: 'none', color: '#475569', backgroundColor: 'white' }}
-                        >
-                            <option value="activa">Activas</option>
-                            <option value="cerrada">Cerradas</option>
-                            <option value="cancelada">Canceladas</option>
-                            <option value="todas">Todas</option>
-                        </select>
+                        <SelectorPremium
+                            valorActual={filtroEstatus}
+                            onChange={setFiltroEstatus}
+                            opciones={[
+                                { id: 'activa', label: 'Activas' },
+                                { id: 'cerrada', label: 'Cerradas' },
+                                { id: 'cancelada', label: 'Canceladas' },
+                                { id: 'todas', label: 'Todas' }
+                            ]}
+                        />
+
                     </div>
 
                     {/* Grid de Vacantes */}
@@ -173,10 +176,15 @@ const VistaVacantes = () => {
 
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '14px' }}>
+                                                    <UserCheck size={16} color="#0EA5E9" />
+                                                    <span>Levantamiento: <strong>{vacante.creado_por_nombre || 'No registrado'}</strong></span>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '14px' }}>
                                                     <UserCircle size={16} color="#94A3B8" />
-                                                    <span>Reclutador: {vacante.consultor_nombre || 'Desconocido'}</span>
+                                                    <span>Reclutador: {vacante.consultor_nombre || 'Sin asignar'}</span>
                                                 </div>
                                             </div>
+
 
                                             <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'flex-end' }}>
                                                 <button

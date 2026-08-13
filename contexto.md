@@ -61,11 +61,25 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 - Generación de PDF dinámicos y membretados mediante motor Platypus (ReportLab).
 - Interfaz web dedicada en React (Drag & Drop) para generación y descarga interactiva.
 
-### ✅ Módulo 6: Reclutamiento y Selección
-- Sistema "Perfilador" (Replicación avanzada de herramientas en Excel). Carga automatizada de catálogo con 3,675 competencias.
-- Wizard interactivo para Vacantes con validaciones, cálculos salariales y prevención de errores.
-- Expediente digital del candidato con Entrevista Inicial (Semáforos) y Profunda (Cálculo porcentual).
-- Generación de Reporte Ejecutivo en PDF con layout de consultoría premium y paginación inteligente.
+### Módulo 6: Reclutamiento y Selección
+Este módulo representa la digitalización completa y avanzada de las herramientas de perfilamiento y seguimiento que previamente se manejaban en Excel, transformándolas en un sistema de grado empresarial con estética 'Corporate Premium'.
+
+**Características Principales:**
+- **Wizard de Vacantes:** Interfaz interactiva de 9 pasos para la creación del "Perfilador". Incluye navegación secuencial, validación de campos obligatorios, prevención de envíos dobles, autocompletado y cálculo dinámico de sueldos.
+- **Catálogo Inteligente:** Carga automatizada y gestión de una base de datos de 3,675 competencias.
+- **Entrevistas Dinámicas:**
+  - *Entrevista Inicial:* Sistema de semáforos para respuestas de primer filtro.
+  - *Entrevista Profunda:* Cálculos porcentuales de *match* en vivo basados en habilidades, con emisión de dictamen automatizado.
+  - *Gestor de Preguntas:* Arquitectura full-stack que permite editar y guardar preguntas por categoría en tiempo real desde la interfaz.
+- **Tablero ATS (Applicant Tracking System):** Gestión visual del Pipeline de Candidatos, con selectores de estado (Activas, Cerradas, Canceladas) y vistas optimizadas de documentos legales de solo lectura.
+- **Generación de Reportes PDF:** Exportación del "Reporte Ejecutivo" del candidato. Convierte tablas complejas en un dossier de formato Consultoría Premium (1-2 hojas limpias) utilizando HTML2PDF con saltos de página inteligentes.
+- **Roles y Asignación (RBAC):** Jerarquización de usuarios (Supervisor vs Asistente). El campo `consultor` permite la asignación directa de vacantes y candidatos, blindando la privacidad para que los reclutadores estándar solo vean su propia carga de trabajo.
+
+
+## PRÓXIMA FASE: Módulo 7 (Comercial)
+
+**Objetivo:** Construir el Tablero CRM Comercial
+
 
 ### Paleta de Colores (Módulo Comercial)
 - **Color Primario (Acentos, Botones, Sidebar):** Azul Acero (`#5C7E8F`)
@@ -77,8 +91,8 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 ## Documentación del Reclutamiento y Comercial
 
 La documentación específica de cada módulo se encuentra en la carpeta `docs/`.
-- [Análisis Excel Reclutamiento](file:///wsl.localhost/Ubuntu/home/sistemas/Proyectos/App_Facturacion/docs/reclutamiento/analisis_excel_reclutamiento.md)
-- [Biblia del Reclutamiento](file:///wsl.localhost/Ubuntu/home/sistemas/Proyectos/App_Facturacion/docs/reclutamiento/biblia_excel_reclutamiento.md)
+- [Análisis Excel Reclutamiento](file:///wsl.localhost/Ubuntu/home/sistemas_pm/Proyectos/Sistema-Integral-de-Gestion/docs/reclutamiento/analisis_excel_reclutamiento.md)
+- [Biblia del Reclutamiento](file:///wsl.localhost/Ubuntu/home/sistemas_pm/Proyectos/Sistema-Integral-de-Gestion/docs/reclutamiento/biblia_excel_reclutamiento.md)
 
 ## Reglas Estrictas del Desarrollador
 
@@ -123,6 +137,9 @@ La documentación específica de cada módulo se encuentra en la carpeta `docs/`
 | 2026-08-04 | Módulo de Reclutamiento (Documento Perfilador y ATS) | Se separó la vista de gestión de vacante en pestañas: Pipeline de Candidatos y Perfilador Reclutamiento. Se construyó el Documento Perfilador de solo lectura, replicando fielmente la estructura legal y comercial del Excel original (Hoja 14), integrado con la paleta de colores institucional. Posteriormente, se optimizó el DocumentoReclutamiento UI para ser más compacto y se refactorizaron 3 componentes pesados de HTML duro a PDFs dinámicos con formato 'Corporate Premium'. Se dejó listo el plan de implementación para el Módulo 7 (Comercial). |
 | 2026-08-05 | Separación Comercial-Reclutamiento | Se decidió desligar por completo al Módulo Comercial de la gestión de Vacantes. Reclutamiento asume el control 100% de la creación del Perfilador. Se implementaron filtros dinámicos en el tablero de vacantes (Activas, Cerradas, Canceladas) mejorando el diseño del selector de estados en el Tablero de Vacantes. |
 | 2026-08-07 | Trazabilidad y Roles (Módulo Usuarios) | Se integró trazabilidad en `Vacante` mediante `creado_por` asignado automáticamente en el backend vía token. Se aprobó un plan arquitectónico para desarrollar un Módulo TI de Administración de Usuarios y expandir la jerarquía de roles (Supervisor vs Asistente) para el control de asignaciones (RBAC). |
+| 2026-08-11 | Arquitectura de Seguridad (RBAC) y Rediseño Premium | Se implementó un estado global con AuthContext para proteger URLs por módulo. Se blindó la privacidad en Django (usuarios estándar solo ven sus vacantes asignadas). Rediseño estético premium de selectores en el Tablero ATS. |
+| 2026-08-13 | Módulo TI y Asignación de Vacantes (RBAC) | Se construyó la pantalla VistaUsuarios para administrar cuentas y jerarquías (Supervisores vs Asistentes). Se integró el campo `consultor` en los modelos para asignar vacantes y candidatos a reclutadores específicos, protegiendo las vistas con el AuthContext. |
+| 2026-08-13 | Cartera de Candidatos y Refactorización UI | Se implementó el estado 'cartera' en el flujo de reclutamiento con su respectiva `VistaCartera`. Se rediseñaron los selectores de estado a nivel global mediante el componente `SelectorPremium`. Se realizó una depuración masiva de archivos temporales (scripts de pruebas y HTML/JSX sueltos) en backend y frontend. |
 
 
 ## Notas de Sesión
@@ -155,25 +172,21 @@ Para que los usuarios de la red local puedan acceder a la app se usa **Port Forw
 1. Abre **PowerShell como Administrador** (`Win+X` → Terminal Admin)
 2. Ejecuta:
 ```powershell
-powershell -ExecutionPolicy Bypass -File "C:\Users\Sistemas\wsl_portforward.ps1"
+powershell -ExecutionPolicy Bypass -File "C:\Users\Sistemas P&M\wsl_portforward.ps1"
 ```
 El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 
-## PRÓXIMA FASE: Plan Arquitectónico (Gestión de Usuarios, Roles y Asignaciones)
+## PRÓXIMA FASE: Dockerización del Proyecto (Desarrollo Local)
 
-**Objetivo (Pendiente al volver de migración):** Construir una pantalla para TI donde dar de alta cuentas y jerarquizar reclutadores (Supervisor vs Asistente) para controlar asignaciones en los tableros.
+**Objetivo:** Empaquetar todo el Sistema Integral de Gestión (Frontend React, Backend Django, Celery, Redis) utilizando Docker para garantizar la portabilidad.
 
-**Fase A: Base de Datos (Modelos de Usuario)**
-- Expandiremos los roles de reclutamiento del modelo `Usuario` en `backend/apps/usuarios/models.py` a `supervisor_reclutamiento` y `asistente_reclutamiento` para distinguir jerarquías.
+**Fase A: Instalación de Entorno**
+- Instalación de Docker Desktop en Windows con integración a WSL 2.
 
-**Fase B: Creación de la API de Usuarios (Backend)**
-- `backend/apps/usuarios/serializers.py`: Para convertir los usuarios a JSON.
-- `backend/apps/usuarios/views.py`: Un `ModelViewSet` para listar, crear y editar usuarios.
-- `backend/apps/usuarios/urls.py`: Para exponer el endpoint `/api/usuarios/`.
+**Fase B: Orquestación (docker-compose)**
+- Creación de `docker-compose.yml` en la raíz del proyecto para conectar los 4 servicios.
+- Configuración de Volúmenes para montar el archivo `db.sqlite3` actual y evitar pérdida de datos.
 
-**Fase C: Módulo de Configuración TI (Frontend)**
-- `frontend/src/pages/configuracion/VistaUsuarios.jsx`: Panel de control (CRUD) para que TI asigne nombres, correos, contraseñas y roles.
-
-**Fase D: Asignación de Vacantes (Frontend)**
-- Modificar `TableroVacante.jsx` con un menú desplegable de "Asignar a:" consumiendo la API de usuarios.
-- Implementar validación RBAC (Role-Based Access Control) para que solo usuarios con rol de `supervisor_reclutamiento` o superior puedan reasignar vacantes.
+**Fase C: Contenedores (Dockerfiles)**
+- Construcción de `backend/Dockerfile` (Python) y `frontend/Dockerfile` (Node).
+- Configuración de archivos `.dockerignore` para mantener las imágenes ligeras.

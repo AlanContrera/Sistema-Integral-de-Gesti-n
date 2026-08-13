@@ -45,6 +45,14 @@ class VacanteViewSet(viewsets.ModelViewSet):
     serializer_class = VacanteSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        # Si el usuario es operativo (estándar), bloqueamos la consulta
+        if user.rol == 'usuario_estandar':
+            return Vacante.objects.filter(consultor=user)
+        # Si es supervisor o admin, tienen acceso total
+        return Vacante.objects.all()
+
     def perform_create(self, serializer):
         serializer.save(creado_por=self.request.user)
 
@@ -80,6 +88,8 @@ class VacanteViewSet(viewsets.ModelViewSet):
             'kpis': '\n'.join(kpis),
         })
 
+
+
 class CandidatoViewSet(viewsets.ModelViewSet):
     queryset = Candidato.objects.all()
     serializer_class = CandidatoSerializer
@@ -89,8 +99,14 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Candidato.objects.all()
         vacante_id = self.request.query_params.get('vacante', None)
+        estatus = self.request.query_params.get('estatus', None)
+        
         if vacante_id is not None:
             queryset = queryset.filter(vacante_id=vacante_id)
+            
+        if estatus is not None:
+            queryset = queryset.filter(estatus=estatus)
+            
         return queryset
 
 class EntrevistaInicialViewSet(viewsets.ModelViewSet):

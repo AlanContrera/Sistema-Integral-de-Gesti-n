@@ -15,7 +15,7 @@ const Login = () => {
 
         try {
             // Ajusta el puerto (8000) o la ruta (/api/token/) si en tu backend es diferente
-            const response = await fetch('http://localhost:8000/api/token/', {
+            const response = await fetch(`http://${window.location.hostname}:8000/api/token/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

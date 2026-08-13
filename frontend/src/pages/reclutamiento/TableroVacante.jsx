@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchConToken } from '../../services/api';
-import { ArrowLeft, Users, Plus, User, CheckCircle, Clock, XCircle, FileText, Send, Target, FileSearch, Briefcase, FileSignature } from 'lucide-react';
+import { ArrowLeft, Users, Plus, User, CheckCircle, Clock, XCircle, FileText, Send, Target, FileSearch, Briefcase, FileSignature, UserCheck, Activity } from 'lucide-react';
 import DocumentoPerfilador from './DocumentoReclutamiento';
+import SelectorPremium from '../../components/reclutamiento/SelectorPremium';
+
 
 const TableroVacante = () => {
     const { id } = useParams();
@@ -14,6 +16,10 @@ const TableroVacante = () => {
     const [cargando, setCargando] = useState(true);
     const [tabActiva, setTabActiva] = useState('candidatos'); // 'candidatos' o 'perfilador'
 
+    // ESTADOS PARA RBAC
+    const [usuarioActual, setUsuarioActual] = useState(null);
+    const [listaReclutadores, setListaReclutadores] = useState([]);
+
     const [mostrarModalCandidato, setMostrarModalCandidato] = useState(false);
     const [nuevoCandidato, setNuevoCandidato] = useState({
         nombre_completo: '', correo: '', telefono: '', zona_ubicacion: '',
@@ -23,20 +29,49 @@ const TableroVacante = () => {
         cargarDatos();
     }, [id]);
 
+    // MODIFICAMOS EL FETCH PARA TRAER AL USUARIO Y LA LISTA
     const cargarDatos = async () => {
         try {
             setCargando(true);
-            const [resVac, resCand] = await Promise.all([
+            const [resVac, resCand, resMe, resUsuarios] = await Promise.all([
                 fetchConToken(`/reclutamiento/vacantes/${id}/`),
-                fetchConToken(`/reclutamiento/candidatos/?vacante=${id}`)
+                fetchConToken(`/reclutamiento/candidatos/?vacante=${id}`),
+                fetchConToken(`/usuarios/me/`),
+                fetchConToken(`/usuarios/`)
             ]);
-
             if (resVac.ok) setVacante(await resVac.json());
-            if (resCand.ok) setCandidatos(await resCand.json());
+            if (resCand.ok) {
+                const data = await resCand.json();
+                // Ocultar los que ya fueron mandados a la cartera
+                setCandidatos(data.filter(c => c.estatus !== 'cartera'));
+            }
+            if (resMe.ok) setUsuarioActual(await resMe.json());
+            if (resUsuarios.ok) {
+                const todos = await resUsuarios.json();
+                // Filtramos para que solo salgan reclutadores en el menú
+                const soloReclutamiento = todos.filter(u => u.acceso_reclutamiento === true || u.rol === 'admin' || u.rol === 'super_admin');
+                setListaReclutadores(soloReclutamiento);
+            }
         } catch (error) {
             console.error(error);
         } finally {
             setCargando(false);
+        }
+    };
+    // FUNCIÓN PARA ASIGNAR CONSULTOR
+    const handleReasignar = async (nuevoConsultorId) => {
+        try {
+            const res = await fetchConToken(`/reclutamiento/vacantes/${id}/`, {
+                method: 'PATCH',
+                body: JSON.stringify({ consultor: nuevoConsultorId })
+            });
+            if (res.ok) {
+                setVacante({ ...vacante, consultor: nuevoConsultorId });
+            } else {
+                alert('Error al reasignar la vacante');
+            }
+        } catch (error) {
+            alert('Error de conexión al reasignar');
         }
     };
 
@@ -130,41 +165,40 @@ const TableroVacante = () => {
                                 Levantanmiento: <strong style={{ color: '#1E293B', fontWeight: '700' }}> {vacante.creado_por_nombre || 'Desconocido'}</strong>
                             </span>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F8FAFC', padding: '4px 6px', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                                <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '600', marginLeft: '6px' }}>Estado:</span>
-
-                                <div style={{ position: 'relative' }}>
-                                    <select
-                                        value={vacante.estatus}
-                                        onChange={(e) => handleCambiarEstatus(e.target.value)}
-                                        style={{
-                                            appearance: 'none',
-                                            WebkitAppearance: 'none',
-                                            padding: '6px 32px 6px 16px',
-                                            fontSize: '13px',
-                                            fontWeight: '700',
-                                            textTransform: 'uppercase',
-                                            color: vacante.estatus === 'activa' ? '#166534' : vacante.estatus === 'cerrada' ? '#475569' : vacante.estatus === 'cancelada' ? '#991B1B' : '#854D0E',
-                                            backgroundColor: vacante.estatus === 'activa' ? '#DCFCE7' : vacante.estatus === 'cerrada' ? '#F1F5F9' : vacante.estatus === 'cancelada' ? '#FEE2E2' : '#FEF9C3',
-                                            border: 'none',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            outline: 'none',
-                                            transition: 'all 0.2s ease',
-                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                                        }}
-                                    >
-                                        <option value="activa">Activa</option>
-                                        <option value="cerrada">Cerrada</option>
-                                        <option value="cancelada">Cancelada</option>
-                                    </select>
-
-                                    {/* Flechita personalizada */}
-                                    <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'inherit', opacity: 0.6 }}>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                {/* Selector de Asignación (Diseño Premium) */}
+                                {usuarioActual && (usuarioActual.rol === 'supervisor' || usuarioActual.rol === 'admin' || usuarioActual.rol === 'super_admin') && (
+                                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                        <UserCheck size={16} color="#6366F1" style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }} />
+                                        <SelectorPremium
+                                            valorActual={vacante.consultor || ''}
+                                            onChange={handleReasignar}
+                                            opciones={[
+                                                { id: '', label: 'Delegar vacante a...' },
+                                                ...listaReclutadores.map(user => ({
+                                                    id: user.id,
+                                                    label: `${user.first_name} ${user.last_name}`
+                                                }))
+                                            ]}
+                                        />
                                     </div>
+                                )}
+
+                                {/* Selector de Estatus (Diseño Premium) */}
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+
+                                    <SelectorPremium
+                                        valorActual={vacante.estatus}
+                                        onChange={handleCambiarEstatus}
+                                        opciones={[
+                                            { id: 'activa', label: 'Activa' },
+                                            { id: 'cerrada', label: 'Cerrada' },
+                                            { id: 'cancelada', label: 'Cancelada' }
+                                        ]}
+                                    />
                                 </div>
                             </div>
+
 
                         </div>
                     </div>

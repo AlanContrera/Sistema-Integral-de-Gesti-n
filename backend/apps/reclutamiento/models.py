@@ -225,7 +225,8 @@ class Vacante(models.Model):
 
     consultor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='vacantes_asignadas')
     creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='vacantes_creadas')
-    estatus = models.CharField(max_length=20, choices=Estatus.choices, default=Estatus.BORRADOR)
+    estatus = models.CharField(max_length=20, choices=Estatus.choices, default=Estatus.ACTIVA)
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -248,6 +249,9 @@ class Candidato(models.Model):
         VIABLE = 'viable', 'Viable'
         NO_VIABLE = 'no_viable', 'No Viable'
         ENVIADO_CLIENTE = 'enviado_cliente', 'Enviado al Cliente'
+        SELECCIONADO = 'seleccionado', 'Seleccionado'
+        CARTERA = 'cartera', 'En Cartera (No Seleccionado)'
+
 
     vacante = models.ForeignKey(Vacante, on_delete=models.CASCADE, related_name='candidatos')
     nombre_completo = models.CharField(max_length=200)

@@ -12,6 +12,7 @@ from pypdf import PdfReader, PdfWriter
 from .plantillas_config import MAPA_PLANTILLAS
 from .temas_config import get_tema
 import os
+from django.conf import settings
 from reportlab.platypus import Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
@@ -76,11 +77,13 @@ class GenerarCotizacionView(APIView):
                     return Response({
                         "error": f"El archivo no contiene una hoja llamada '4.0'. Las hojas que encontré son: {', '.join(hojas)}. Asegúrate de subir el archivo de facturación correcto."
                     }, status=400)
-                except Exception:
-                    return Response({"error": "No se pudo leer el archivo. Verifica que sea un Excel de facturación válido con una hoja llamada '4.0'."}, status=400)
+                except Exception as e:
+                    print("=== ERROR REAL AL LEER EXCEL ===", str(e))
+                    return Response({"error": f"Error oculto: {str(e)}"}, status=400)
+
             
             # === DEBUGGING LOG ===
-            debug_path = '/home/sistemas/Proyectos/App_Facturacion/backend/media/debug_log.txt'
+            debug_path = 'debug_log.txt'
             with open(debug_path, 'w') as f:
                 f.write("=== INICIO DEBUG COTIZADOR ===\n")
                 f.write(f"Shape del DF: {df.shape}\n")
@@ -3029,7 +3032,7 @@ class GenerarCotizacionView(APIView):
             packet.seek(0)
             
             # --- FUSION MULTIPÁGINA DE PLANTILLA ---
-            ruta_plantilla = f"/home/sistemas/Proyectos/App_Facturacion/backend/media/membretadas/{config['pdf']}"
+            ruta_plantilla = os.path.join(settings.MEDIA_ROOT, 'membretadas', config['pdf'])
             if not os.path.exists(ruta_plantilla):
                 return Response({"error": f"No se encontró el PDF: {ruta_plantilla}"}, status=400)
                 
@@ -3068,7 +3071,7 @@ class GestorMembretadasView(APIView):
     parser_classes = [MultiPartParser]
     
     def get_directorio(self):
-        ruta = os.path.join('/home/sistemas/Proyectos/App_Facturacion/backend/media/membretadas')
+        ruta = os.path.join(settings.MEDIA_ROOT, 'membretadas')
         if not os.path.exists(ruta):
             os.makedirs(ruta)
         return ruta
