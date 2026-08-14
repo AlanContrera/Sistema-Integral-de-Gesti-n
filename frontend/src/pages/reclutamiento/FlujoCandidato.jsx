@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchConToken } from '../../services/api';
-import { User, FileText, CheckCircle, AlertTriangle, XCircle, ArrowLeft, ChevronDown, ChevronRight, BarChart2, Calendar, Briefcase, Target, Cpu, Brain, Activity, Download, Check } from 'lucide-react';
+import { User, FileText, CheckCircle, AlertTriangle, XCircle, ArrowLeft, ChevronDown, ChevronRight, BarChart2, Calendar, Briefcase, Target, Cpu, Brain, Activity, Download, Check, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SelectorEstatusPremium = ({ estatusActual, onChange }) => {
@@ -441,6 +441,33 @@ const FlujoCandidato = () => {
 
     const porcentajeInicial = Math.round(([...Array(10)].filter((_, i) => respuestasInicial[`p${i + 1}_eval`] === 'Cumple').length / 10) * 100);
 
+    const enviarCorreoCita = async (tipo, entrevistaId) => {
+        try {
+            if (!entrevistaId) {
+                toast.error("Debes guardar la evaluación antes de poder enviar el correo.");
+                return;
+            }
+
+            // Usamos las rutas plurales exactas como están en el router de Django
+            const prefijo = tipo === 'inicial' ? 'entrevistas-iniciales' : 'entrevistas-profundas';
+            const endpoint = `/reclutamiento/${prefijo}/${entrevistaId}/enviar_correo_cita/`;
+
+            const response = await fetchConToken(endpoint, {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                throw new Error("Error en la solicitud");
+            }
+
+            toast.success("Correo de cita enviado al candidato exitosamente");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al enviar correo. Asegúrate de haber guardado la agenda primero.");
+        }
+    };
+
+
 
     return (
         <div style={{ paddingBottom: '40px' }}>
@@ -640,10 +667,10 @@ const FlujoCandidato = () => {
                         })()}
 
                         {/* --- SECCIÓN: AGENDAR ENTREVISTA PROFUNDA --- */}
-                        <div style={{ marginTop: '32px', backgroundColor: respuestasInicial.es_viable === 'si' ? '#F0FDF4' : '#F8FAFC', border: respuestasInicial.es_viable === 'si' ? '2px solid #86EFAC' : '1px solid #E2E8F0', borderRadius: '12px', padding: '24px', transition: 'all 0.3s ease' }}>
+                        <div style={{ marginTop: '32px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '24px', transition: 'all 0.3s ease' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: respuestasInicial.es_viable === 'si' ? '20px' : '0' }}>
                                 <div>
-                                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: respuestasInicial.es_viable === 'si' ? '#166534' : '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <Calendar size={22} />
                                         Siguiente Paso: Agendar Entrevista Profunda
                                     </h3>
@@ -673,51 +700,61 @@ const FlujoCandidato = () => {
                             </div>
 
                             {respuestasInicial.es_viable === 'si' && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px', borderTop: '1px solid #BBF7D0', paddingTop: '20px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px', borderTop: '1px dashed #CBD5E1', paddingTop: '20px' }}>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Fecha Programada</label>
+                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Fecha Programada</label>
                                         <input
                                             type="date"
                                             required
                                             value={respuestasInicial.fecha_entrevista_profunda || ''}
                                             onChange={e => handleRespuestaInicial('fecha_entrevista_profunda', e.target.value)}
-                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #86EFAC', fontSize: '13px', boxSizing: 'border-box', backgroundColor: 'white' }}
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box', backgroundColor: 'white' }}
                                         />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Hora</label>
+                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Hora</label>
                                         <input
                                             type="time"
                                             required
                                             value={respuestasInicial.hora_entrevista_profunda || ''}
                                             onChange={e => handleRespuestaInicial('hora_entrevista_profunda', e.target.value)}
-                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #86EFAC', fontSize: '13px', boxSizing: 'border-box', backgroundColor: 'white' }}
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box', backgroundColor: 'white' }}
                                         />
                                     </div>
                                     <div style={{ gridColumn: '1 / -1' }}>
-                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Modalidad</label>
+                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Modalidad</label>
                                         <select
                                             required
                                             value={respuestasInicial.modalidad_profunda || ''}
                                             onChange={e => handleRespuestaInicial('modalidad_profunda', e.target.value)}
-                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #86EFAC', fontSize: '13px', boxSizing: 'border-box', backgroundColor: 'white' }}
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box', backgroundColor: 'white' }}
                                         >
                                             <option value="" disabled>Seleccionar modalidad...</option>
-                                            <option value="Virtual (Teams / Zoom / Meet)">Virtual (Teams / Zoom / Meet)</option>
-                                            <option value="Presencial (Oficinas IACI)">Presencial (Oficinas IACI)</option>
+                                            <option value="Virtual">Virtual</option>
+                                            <option value="Presencial">Presencial</option>
                                             <option value="Telefónica">Llamada Telefónica</option>
                                         </select>
                                     </div>
                                     <div style={{ gridColumn: '1 / -1' }}>
-                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Liga de la reunión o Detalles</label>
+                                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Liga de la reunión o Detalles</label>
                                         <textarea
                                             rows="3"
                                             required
                                             placeholder="Pega aquí el enlace de Teams o la dirección..."
                                             value={respuestasInicial.detalles_agenda_profunda || ''}
                                             onChange={e => handleRespuestaInicial('detalles_agenda_profunda', e.target.value)}
-                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #86EFAC', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box', backgroundColor: 'white' }}
+                                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box', backgroundColor: 'white' }}
                                         />
+                                    </div>
+                                    <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => enviarCorreoCita('inicial', entrevistaInicial?.id)}
+                                            style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#3B82F6', color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)' }}
+                                        >
+                                            <Mail size={18} />
+                                            Enviar Correo de Cita
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -915,10 +952,10 @@ const FlujoCandidato = () => {
                             })()}
 
                             {/* --- SECCIÓN: AGENDAR ENTREVISTA CON CLIENTE --- */}
-                            <div style={{ marginTop: '32px', backgroundColor: agendaCliente.agendar_cliente ? '#F0FDF4' : '#F8FAFC', border: agendaCliente.agendar_cliente ? '2px solid #86EFAC' : '1px solid #E2E8F0', borderRadius: '12px', padding: '24px', transition: 'all 0.3s ease' }}>
+                            <div style={{ marginTop: '32px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '24px', transition: 'all 0.3s ease' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: agendaCliente.agendar_cliente ? '20px' : '0' }}>
                                     <div>
-                                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: agendaCliente.agendar_cliente ? '#166534' : '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <Calendar size={22} />
                                             Siguiente Paso: Agendar Entrevista con Cliente
                                         </h3>

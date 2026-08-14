@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f5;
+            margin: 0;
+            padding: 20px;
+            color: #334155;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background-color: #1e293b;
+            color: #ffffff;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 32px;
+            line-height: 1.6;
+        }
+
+        .status-box {
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 0 4px 4px 0;
+            background-color: #f8fafc;
+        }
+
+        .footer {
+            background-color: #f1f5f9;
+            padding: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Departamento de Atracción de Talento</h1>
+        </div>
+        <div class="content">
+            <p>Estimado/a <strong>{{ candidato_nombre }}</strong>,</p>
+
+            <!-- Aquí pusimos el color directamente para que tu editor no marque error -->
+            <div class="status-box" style="border-left: 4px solid {{ color }};">
+                <p style="margin: 0;">{{ mensaje_principal }}</p>
+            </div>
+
+            <p>Agradecemos sinceramente su interés en formar parte de nuestro equipo. Quedamos a su entera disposición
+                ante cualquier consulta.</p>
+            <p>Atentamente,</p>
+            <p><strong>El Equipo de Atracción de Talento</strong></p>
+        </div>
+        <div class="footer">
+            <p>Este es un correo automático generado por nuestro Sistema Integral de Gestión. Por favor, mantenga la
+                discreción de la información compartida.</p>
+        </div>
+    </div>
+</body>
+
+</html>

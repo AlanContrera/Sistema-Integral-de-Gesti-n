@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f5;
+            margin: 0;
+            padding: 20px;
+            color: #334155;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background-color: #1e293b;
+            color: #ffffff;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .content {
+            padding: 32px;
+            line-height: 1.6;
+        }
+
+        .details-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .details-box p {
+            margin: 8px 0;
+        }
+
+        .footer {
+            background-color: #f1f5f9;
+            padding: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Departamento de Reclutamiento</h1>
+        </div>
+        <div class="content">
+            <p>Estimado/a <strong>{{ candidato_nombre }}</strong>,</p>
+            <p>Es un placer para nosotros informarle que su perfil avanza de manera satisfactoria en nuestro proceso de
+                selección para la vacante de <strong>{{ nombre_vacante }}</strong>.</p>
+            <p>Por este medio, deseamos extenderle una invitación para llevar a cabo la siguiente etapa de evaluación. A
+                continuación, le compartimos los detalles de su cita:</p>
+
+            <div class="details-box">
+                <p><strong>🗓️ Fecha:</strong> {{ fecha }}</p>
+                <p><strong>⏰ Hora:</strong> {{ hora }}</p>
+                <p><strong>📍 Modalidad:</strong> <span style="text-transform: capitalize;">{{ modalidad }}</span></p>
+                {% if detalles %}
+                <p><strong>📝 Detalles adicionales:</strong> {{ detalles }}</p>
+                {% endif %}
+            </div>
+
+            <p>Agradecemos de antemano su puntualidad y disposición. Si por algún motivo de fuerza mayor requiere
+                reprogramar, le pedimos amablemente notificarnos respondiendo a este correo.</p>
+            <p>Atentamente,</p>
+            <p><strong>El Equipo de Atracción de Talento</strong></p>
+        </div>
+        <div class="footer">
+            <p>Este es un correo automático generado por nuestro Sistema Integral de Gestión. Por favor, mantenga la
+                discreción de la información compartida.</p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -4,3 +4,6 @@ class ReclutamientoConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.reclutamiento'
     verbose_name = 'Módulo RecluSystem'
+
+    def ready(self):
+        import apps.reclutamiento.signals

@@ -1,5 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.decorators import action
+from rest_framework import status
+from .tasks import enviar_correo_entrevista_task
 from .utils_pdf import generar_pdf_reporte_cliente
 from .utils_pdf import generar_pdf_propuesta_cliente
 from rest_framework.response import Response
@@ -114,10 +116,56 @@ class EntrevistaInicialViewSet(viewsets.ModelViewSet):
     serializer_class = EntrevistaInicialSerializer
     permission_classes = [IsAuthenticated]
 
+    @action(detail=True, methods=['post'])
+    def enviar_correo_cita(self, request, pk=None):
+        entrevista = self.get_object()
+        
+        # Obtenemos los datos desde el JSON de respuestas que envía el frontend
+        respuestas = entrevista.respuestas or {}
+        
+        es_viable = respuestas.get("es_viable") == "si"
+        fecha = respuestas.get("fecha_entrevista_profunda")
+        hora = respuestas.get("hora_entrevista_profunda")
+        
+        if not es_viable or not fecha or not hora:
+            return Response({"error": "La entrevista no tiene una fecha agendada o faltan datos."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        modalidad = respuestas.get("modalidad_profunda", "A confirmar")
+        detalles = respuestas.get("detalles_agenda_profunda", "Entrevista Profunda")
+        
+        enviar_correo_entrevista_task.delay(
+            entrevista.candidato.id, 
+            fecha, 
+            hora, 
+            modalidad, 
+            detalles
+        )
+        return Response({"status": "Correo enviado"}, status=status.HTTP_200_OK)
+
+
 class EntrevistaProfundaViewSet(viewsets.ModelViewSet):
     queryset = EntrevistaProfunda.objects.all()
     serializer_class = EntrevistaProfundaSerializer
     permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def enviar_correo_cita(self, request, pk=None):
+        entrevista = self.get_object()
+        if not entrevista.agendar_cliente or not entrevista.fecha_entrevista_cliente or not entrevista.hora_entrevista_cliente:
+            return Response({"error": "Faltan datos de la agenda (fecha u hora)."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        fecha = entrevista.fecha_entrevista_cliente.strftime("%Y-%m-%d")
+        hora = entrevista.hora_entrevista_cliente.strftime("%H:%M")
+        
+        enviar_correo_entrevista_task.delay(
+            entrevista.candidato.id, 
+            fecha, 
+            hora, 
+            entrevista.modalidad_cliente or "A confirmar", 
+            entrevista.detalles_agenda_cliente or "Entrevista Final con Cliente"
+        )
+        return Response({"status": "Correo enviado"}, status=status.HTTP_200_OK)
+
 
 class ReporteClienteViewSet(viewsets.ModelViewSet):
     queryset = ReporteCliente.objects.all()
