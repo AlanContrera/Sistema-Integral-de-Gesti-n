@@ -25,11 +25,9 @@ frontend/   -> Interfaz web en React (Activa)
 - **Módulo 4:** Interfaz Web (Dashboard Interactivo, Notificaciones en Vivo, Súper Buscador Global, Navegación por Carpetas, Exportación a Excel con Formato, Validación OCR)
 - **[✅ COMPLETADO] Módulo 5:** Generador Dinámico de Cotizaciones en PDF (Backend Django + Pandas + ReportLab, Paginación Inteligente, Extracción Heurística sin encabezados, Frontend React con Gestor Modal de Membretadas, Soporte para Múltiples Plantillas Personalizadas)
 - **[✅ COMPLETADO] Módulo 6 (Reclutamiento y Selección):** Sistema "Perfilador" (Replicación avanzada de herramientas en Excel). Carga automatizada de catálogo con 3,675 competencias. Wizard de Vacantes interactivo con navegación por pasos, prevención de errores, autocompletado y cálculo de sueldos. Expediente digital del candidato con Entrevistas y dictamen automático. Tablero ATS con visualización de documento legal. Generación de Reportes Ejecutivos en PDF de forma 100% dinámica con layout 'Corporate Premium'.
-- **[✅ COMPLETADO] Módulo TI y Seguridad (RBAC):** Panel de control `VistaUsuarios` para administrar jerarquías (Supervisor vs Asistente). Asignación dinámica de vacantes a consultores específicos y protección de rutas en el Frontend (AuthContext) y Backend.
-- **[🏗️ EN PREPARACIÓN] Arquitectura Docker:** Dockerización de todos los servicios para garantizar entornos estandarizados.
+- **[✅ COMPLETADO] Arquitectura Docker:** Dockerización de todos los servicios (Django, Vite, Celery, Redis) garantizando entornos locales 100% estandarizados con hot-reloading y persistencia segura de datos.
 - **[🏗️ EN PREPARACIÓN] Módulo 7 (Comercial):** Interfaz CRM (Tablero Comercial).
 
 ## Estado
 
-
-En construcción activa. El Módulo de Reclutamiento completó exitosamente el diseño "Premium" para reportes PDF, refactorización de UI y Cartera de Candidatos. Se ha depurado por completo el repositorio backend y frontend. Actualmente en preparación para **Dockerizar** el entorno local y posteriormente iniciar el desarrollo del Módulo 7 (Comercial) con su propio Tablero CRM. Ver `contexto.md` para el detalle de la arquitectura.
+En construcción activa. El Módulo de Reclutamiento y la refactorización arquitectónica (TI y Seguridad) operan con éxito. El entorno de desarrollo ha sido completamente Dockerizado asegurando portabilidad e independencia de máquina. Próximo objetivo: Iniciar el desarrollo de cero del Módulo 7 (Comercial).

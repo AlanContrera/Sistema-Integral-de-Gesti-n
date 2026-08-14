@@ -10,5 +10,5 @@
 - **INSTRUCCIONES CLARAS DE CÓDIGO E IMPORTS**: Cuando el agente proporcione bloques de código, DEBE especificar claramente: 1) El archivo exacto. 2) La ubicación exacta donde pegarlo. 3) **Todas las importaciones necesarias** explícitamente. Nunca debe asumir que el usuario agregará los imports por intuición.
 - **PROHIBIDO REFERENCIAR CÓDIGO PASADO**: El agente NUNCA debe decirle al usuario "ya te lo había pasado" ni hacerle buscar fragmentos de código en mensajes anteriores. Si el usuario necesita un código que ya se proporcionó, el agente debe volver a entregarlo completo, sin quejas ni referencias al pasado.
 
-
+"El usuario utiliza Obsidian como su Segundo Cerebro. Al finalizar cualquier tarea significativa o refactorización, debes crear siempre un artefacto 'Walkthrough' excelentemente formateado, claro y conciso para que el usuario pueda referenciarlo en su bóveda."
 

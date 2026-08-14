@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # 1. Backend (Django)
+  backend:
+    build:
+      context: ./backend
+    container_name: sig_backend
+    volumes:
+      - ./backend:/app # Sincroniza tu código y tu db.sqlite3 en tiempo real
+      - /app/venv # Ignoramos tu entorno virtual local
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    command: python manage.py runserver 0.0.0.0:8000
+
+  # 2. Worker para tareas en segundo plano (Celery)
+  celery:
+    build:
+      context: ./backend
+    container_name: sig_celery
+    volumes:
+      - ./backend:/app
+      - /app/venv
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - backend
+    command: celery -A config worker -l info
+
+  # 3. Base de datos en memoria para Celery (Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: sig_redis
+    ports:
+      - "6379:6379"
+
+  # 4. Frontend (React / Vite)
+  frontend:
+    build:
+      context: ./frontend
+    container_name: sig_frontend
+    volumes:
+      - ./frontend:/app # Hot-Reloading: cambios se ven al instante
+      - /app/node_modules # Mantenemos los paquetes de node aislados
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Obligatorio para Hot-Reloading en WSL/Docker
+      - WATCHPACK_POLLING=true
+    command: npm run dev -- --host 0.0.0.0

@@ -78,7 +78,8 @@ Este módulo representa la digitalización completa y avanzada de las herramient
 
 ## PRÓXIMA FASE: Módulo 7 (Comercial)
 
-**Objetivo:** Construir el Tablero CRM Comercial
+**Objetivo:** Desarrollar el Tablero CRM (Comercial) para gestionar clientes, seguimiento de prospección, levantamientos de requerimientos, emisión de propuestas económicas y reportes de ventas.
+
 
 
 ### Paleta de Colores (Módulo Comercial)
@@ -140,6 +141,7 @@ La documentación específica de cada módulo se encuentra en la carpeta `docs/`
 | 2026-08-11 | Arquitectura de Seguridad (RBAC) y Rediseño Premium | Se implementó un estado global con AuthContext para proteger URLs por módulo. Se blindó la privacidad en Django (usuarios estándar solo ven sus vacantes asignadas). Rediseño estético premium de selectores en el Tablero ATS. |
 | 2026-08-13 | Módulo TI y Asignación de Vacantes (RBAC) | Se construyó la pantalla VistaUsuarios para administrar cuentas y jerarquías (Supervisores vs Asistentes). Se integró el campo `consultor` en los modelos para asignar vacantes y candidatos a reclutadores específicos, protegiendo las vistas con el AuthContext. |
 | 2026-08-13 | Cartera de Candidatos y Refactorización UI | Se implementó el estado 'cartera' en el flujo de reclutamiento con su respectiva `VistaCartera`. Se rediseñaron los selectores de estado a nivel global mediante el componente `SelectorPremium`. Se realizó una depuración masiva de archivos temporales (scripts de pruebas y HTML/JSX sueltos) en backend y frontend. |
+| 2026-08-13 | Dockerización (Entorno Local) | Se implementó Docker y Docker Compose para empaquetar Django, React, Redis y Celery, manteniendo SQLite montado como volumen para proteger la información. Se estandarizó el hot-reloading y dependencias. |
 
 
 ## Notas de Sesión
