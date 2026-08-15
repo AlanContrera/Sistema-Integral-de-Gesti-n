@@ -11,8 +11,7 @@ Plataforma unificada (Sistema Englobado) para la automatización de procesos fin
 ## Estructura
 
 ```
-backend/    -> API REST + Tareas asíncronas (IMAP, OCR, XML)
-frontend/   -> Interfaz web en React (Activa)
+backend/ -> API REST + Tareas asíncronas (IMAP, OCR, XML, SMTP) frontend/ -> Interfaz web en React (Activa) docs/ -> Documentación viva de la arquitectura y flujos del sistema
 ```
 
 ## Módulos Actuales
@@ -24,7 +23,7 @@ frontend/   -> Interfaz web en React (Activa)
 - **Módulo 3:** Cálculo de Comisiones e Intereses (EN DESARROLLO)
 - **Módulo 4:** Interfaz Web (Dashboard Interactivo, Notificaciones en Vivo, Súper Buscador Global, Navegación por Carpetas, Exportación a Excel con Formato, Validación OCR)
 - **[✅ COMPLETADO] Módulo 5:** Generador Dinámico de Cotizaciones en PDF (Backend Django + Pandas + ReportLab, Paginación Inteligente, Extracción Heurística sin encabezados, Frontend React con Gestor Modal de Membretadas, Soporte para Múltiples Plantillas Personalizadas)
-- **[✅ COMPLETADO] Módulo 6 (Reclutamiento y Selección):** Sistema "Perfilador" (Replicación avanzada de herramientas en Excel). Carga automatizada de catálogo con 3,675 competencias. Wizard de Vacantes interactivo con navegación por pasos, prevención de errores, autocompletado y cálculo de sueldos. Expediente digital del candidato con Entrevistas y dictamen automático. Tablero ATS con visualización de documento legal. Generación de Reportes Ejecutivos en PDF de forma 100% dinámica con layout 'Corporate Premium'.
+- **[✅ COMPLETADO] Módulo 6 (Reclutamiento y Selección):** Sistema "Perfilador" (Replicación avanzada de herramientas en Excel). Carga automatizada de catálogo con 3,675 competencias. Wizard de Vacantes interactivo con navegación por pasos, prevención de errores, autocompletado y cálculo de sueldos. Expediente digital del candidato con Entrevistas y dictamen automático. Tablero ATS con visualización de documento legal. Generación de Reportes Ejecutivos en PDF y su **Envío Automatizado al Cliente (Flujo 1-Click)** mediante plantillas HTML corporativas e integración de tareas asíncronas de alto rendimiento con Celery y Redis.
 - **[✅ COMPLETADO] Arquitectura Docker:** Dockerización de todos los servicios (Django, Vite, Celery, Redis) garantizando entornos locales 100% estandarizados con hot-reloading y persistencia segura de datos.
 - **[🏗️ EN PREPARACIÓN] Módulo 7 (Comercial):** Interfaz CRM (Tablero Comercial).
 

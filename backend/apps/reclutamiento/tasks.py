@@ -3,6 +3,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from .models import Candidato
+import base64 
 
 @shared_task
 def enviar_correo_entrevista_task(candidato_id, fecha, hora, modalidad, detalles):
@@ -79,3 +80,45 @@ def enviar_correo_cambio_estatus_task(candidato_id, nuevo_estatus):
         return f"Correo de estatus enviado a {candidato.correo}"
     except Exception as e:
         return f"Error enviando correo de estatus: {str(e)}"
+
+@shared_task
+def enviar_reporte_pdf_task(email_cliente, candidato_nombre, vacante_nombre, pdf_base64, filename, reclutador_nombre, mensaje_adicional=""):
+    try:
+        # 1. Armamos un asunto dinámico dependiendo si es Vacante o Candidato
+        if candidato_nombre:
+            asunto = f"Reporte Ejecutivo - {candidato_nombre} ({vacante_nombre})"
+            texto_plano = f"Adjunto encontrará el reporte de {candidato_nombre}."
+        else:
+            asunto = f"Reporte Ejecutivo - {vacante_nombre}"
+            texto_plano = f"Adjunto encontrará el reporte de la vacante {vacante_nombre}."
+            
+        # 2. Inyectamos las variables al diseño HTML
+        contexto = {
+            'candidato_nombre': candidato_nombre,
+            'vacante_nombre': vacante_nombre,
+            'reclutador_nombre': reclutador_nombre,
+            'mensaje_adicional': mensaje_adicional
+        }
+        html_content = render_to_string('emails/reporte_cliente.html', contexto)
+        
+        # 3. Limpiamos y decodificamos el Base64 a bytes puros (binario PDF)
+        if "base64," in pdf_base64:
+            pdf_base64 = pdf_base64.split("base64,")[1]
+        pdf_bytes = base64.b64decode(pdf_base64)
+        
+        # 4. Construimos el correo
+        correo = EmailMultiAlternatives(
+            subject=asunto,
+            body=texto_plano,
+            from_email=settings.EMAIL_HOST_USER,
+            to=[email_cliente]
+        )
+        correo.attach_alternative(html_content, "text/html")
+        
+        # Adjuntamos los bytes generados
+        correo.attach(filename, pdf_bytes, 'application/pdf')
+        correo.send()
+        
+        return f"Reporte PDF enviado exitosamente a {email_cliente}"
+    except Exception as e:
+        return f"Error enviando reporte PDF: {str(e)}"

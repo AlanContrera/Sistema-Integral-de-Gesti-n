@@ -1,6 +1,6 @@
 // frontend/src/pages/reclutamiento/VistaReportes.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Download, UserCheck, FileSearch, Loader2 } from 'lucide-react';
+import { FileText, Download, UserCheck, FileSearch, Loader2, Mail, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { fetchConToken } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -39,10 +39,8 @@ const VistaReportes = () => {
                 ]);
 
                 if (resVacantes.ok && resCandidatos.ok) {
-                    const dataVacantes = await resVacantes.json();
-                    const dataCandidatos = await resCandidatos.json();
-                    setVacantes(dataVacantes);
-                    setCandidatos(dataCandidatos);
+                    setVacantes(await resVacantes.json());
+                    setCandidatos(await resCandidatos.json());
                 }
             } catch (error) {
                 console.error("Error de red:", error);
@@ -50,7 +48,6 @@ const VistaReportes = () => {
                 setCargando(false);
             }
         };
-
         cargarDatos();
     }, []);
 
@@ -58,25 +55,22 @@ const VistaReportes = () => {
         {
             id: 'perfilador',
             titulo: 'Reporte Perfilador',
-            descripcion: 'Descarga el resumen completo del levantamiento de la vacante.',
+            descripcion: 'Resumen completo del levantamiento de la vacante.',
             icono: FileSearch,
-            color: '#334155',
             requiere: 'vacante'
         },
         {
             id: 'inicial',
             titulo: 'Entrevista Inicial',
-            descripcion: 'Reporte del filtro rápido y viabilidad inicial del candidato.',
+            descripcion: 'Filtro rápido y viabilidad inicial del candidato.',
             icono: FileText,
-            color: '#96C2DB',
             requiere: 'candidato'
         },
         {
             id: 'profunda',
             titulo: 'Entrevista Profunda',
-            descripcion: 'Dossier ejecutivo con evaluación de rubros y dictamen.',
+            descripcion: 'Dossier ejecutivo con evaluación de rubros.',
             icono: UserCheck,
-            color: '#475569',
             requiere: 'candidato'
         }
     ];
@@ -110,32 +104,74 @@ const VistaReportes = () => {
                 success: '¡PDF descargado exitosamente!',
                 error: 'Error al generar el PDF.'
             }
-        ).finally(() => {
-            setDescargando(null);
-        });
+        ).finally(() => setDescargando(null));
     };
 
-    const handleDescarga = async (reporteId) => {
-        if (!seleccion) {
-            toast.error("Por favor, selecciona un registro antes de descargar.");
-            return;
-        }
+    const triggerPdfEmail = async (reporteId, filename, correo) => {
+        const elemento = pdfRefs[reporteId].current;
+        if (!elemento) return toast.error("Error: Plantilla no encontrada en el DOM");
 
+        const opciones = {
+            margin: [10, 0, 10, 0],
+            filename: `${filename}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+            pagebreak: { mode: 'css', avoid: ['tr', 'h2', 'h3', 'h4', '.evitar-salto', '[style*="pageBreakInside: avoid"]'] }
+        };
+
+        try {
+            const pdfBase64 = await window.html2pdf().set(opciones).from(elemento).output('datauristring');
+
+            const res = await fetchConToken('/reclutamiento/utilidades/enviar_pdf_email/', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email_cliente: correo,
+                    mensaje_adicional: '', // Eliminamos el mensaje adicional
+                    candidato_nombre: datosPdf.candidato ? datosPdf.candidato.nombre_completo : '', // SOLUCIÓN BUGS NOMBRES
+                    vacante_nombre: datosPdf.vacante?.puesto_nombre || datosPdf.vacante?.nombre_puesto || 'Posición',
+                    filename: `${filename}.pdf`,
+                    pdf_base64: pdfBase64
+                })
+            });
+
+            if (res.ok) {
+                toast.success("Correo enviado exitosamente al cliente.");
+            } else {
+                toast.error("Error del servidor al intentar enviar el correo.");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error generando el PDF para enviar.");
+        } finally {
+            setDescargando(null);
+        }
+    };
+
+    const handleAccion = async (reporteId, accion, correo_cliente = null) => {
+        if (!seleccion) return toast.error("Selecciona un registro primero.");
         setDescargando(reporteId);
 
         try {
+            // SOLUCIÓN BUG: Limpiamos por completo la memoria del estado anterior
+            let datosTemporales = { vacante: null, candidato: null, entrevistaInicial: null, entrevistaProfunda: null };
+
             if (reporteId === 'perfilador') {
                 const res = await fetchConToken(`/reclutamiento/vacantes/${seleccion}/`);
                 if (res.ok) {
                     const vacante = await res.json();
-                    setDatosPdf(prev => ({ ...prev, vacante }));
+                    datosTemporales = { ...datosTemporales, vacante };
+                    setDatosPdf(datosTemporales);
 
-                    // Esperar renderizado y disparar PDF
-                    setTimeout(() => triggerPdf('perfilador', `Perfilador_${vacante.puesto_nombre?.replace(/\s+/g, '_') || 'Vacante'}`), 500);
+                    setTimeout(() => {
+                        const nombreArchivo = `Perfilador_${vacante.puesto_nombre?.replace(/\s+/g, '_') || 'Vacante'}`;
+                        if (accion === 'descargar') triggerPdf('perfilador', nombreArchivo);
+                        else triggerPdfEmail('perfilador', nombreArchivo, correo_cliente);
+                    }, 500);
                 }
-            } else if (reporteId === 'inicial') {
+            } else if (reporteId === 'inicial' || reporteId === 'profunda') {
                 const resCand = await fetchConToken(`/reclutamiento/candidatos/${seleccion}/`);
-                const resEnt = await fetchConToken(`/reclutamiento/entrevistas-iniciales/?candidato=${seleccion}`);
+                const resEnt = await fetchConToken(`/reclutamiento/entrevistas-${reporteId === 'inicial' ? 'iniciales' : 'profundas'}/?candidato=${seleccion}`);
 
                 if (resCand.ok && resEnt.ok) {
                     const candidato = await resCand.json();
@@ -143,45 +179,32 @@ const VistaReportes = () => {
                     const miEntrevista = entrevistas.find(e => e.candidato === parseInt(seleccion));
 
                     if (!miEntrevista) {
-                        toast.error("Este candidato aún no tiene una entrevista inicial registrada.");
+                        toast.error(`El candidato no tiene una entrevista ${reporteId} registrada.`);
                         setDescargando(null);
                         return;
                     }
 
-                    // Fetch de la vacante para obtener datos del encabezado (sueldos, ubicacion)
                     let vacanteData = null;
                     if (candidato.vacante) {
                         const resVac = await fetchConToken(`/reclutamiento/vacantes/${candidato.vacante}/`);
                         if (resVac.ok) vacanteData = await resVac.json();
                     }
 
-                    setDatosPdf(prev => ({ ...prev, candidato, entrevistaInicial: miEntrevista, vacante: vacanteData }));
-                    setTimeout(() => triggerPdf('inicial', `Entrevista_Inicial_${candidato.nombre_completo.replace(/\s+/g, '_')}`), 500);
-                }
-            } else if (reporteId === 'profunda') {
-                const resCand = await fetchConToken(`/reclutamiento/candidatos/${seleccion}/`);
-                const resEnt = await fetchConToken(`/reclutamiento/entrevistas-profundas/?candidato=${seleccion}`);
+                    datosTemporales = {
+                        ...datosTemporales,
+                        candidato,
+                        vacante: vacanteData,
+                        entrevistaInicial: reporteId === 'inicial' ? miEntrevista : null,
+                        entrevistaProfunda: reporteId === 'profunda' ? miEntrevista : null
+                    };
 
-                if (resCand.ok && resEnt.ok) {
-                    const candidato = await resCand.json();
-                    const entrevistas = await resEnt.json();
-                    const miEntrevista = entrevistas.find(e => e.candidato === parseInt(seleccion));
+                    setDatosPdf(datosTemporales);
 
-                    if (!miEntrevista) {
-                        toast.error("Este candidato aún no tiene una entrevista profunda registrada.");
-                        setDescargando(null);
-                        return;
-                    }
-
-                    // Fetch de la vacante para obtener datos del encabezado (sueldos, ubicacion)
-                    let vacanteData = null;
-                    if (candidato.vacante) {
-                        const resVac = await fetchConToken(`/reclutamiento/vacantes/${candidato.vacante}/`);
-                        if (resVac.ok) vacanteData = await resVac.json();
-                    }
-
-                    setDatosPdf(prev => ({ ...prev, candidato, entrevistaProfunda: miEntrevista, vacante: vacanteData }));
-                    setTimeout(() => triggerPdf('profunda', `Entrevista_Profunda_${candidato.nombre_completo.replace(/\s+/g, '_')}`), 500);
+                    setTimeout(() => {
+                        const nombreArchivo = `Entrevista_${reporteId === 'inicial' ? 'Inicial' : 'Profunda'}_${candidato.nombre_completo.replace(/\s+/g, '_')}`;
+                        if (accion === 'descargar') triggerPdf(reporteId, nombreArchivo);
+                        else triggerPdfEmail(reporteId, nombreArchivo, correo_cliente);
+                    }, 500);
                 }
             }
         } catch (error) {
@@ -192,15 +215,23 @@ const VistaReportes = () => {
     };
 
     if (cargando) {
-        return <div style={{ padding: '40px', color: '#64748B' }}>Cargando información de la base de datos...</div>;
+        return <div style={{ padding: '40px', color: '#64748B', display: 'flex', justifyContent: 'center' }}><Loader2 className="animate-spin" size={32} /></div>;
     }
 
     return (
-        <div style={{ fontFamily: "'Inter', sans-serif", color: '#334155', maxWidth: '900px', margin: '0 auto', paddingBottom: '40px' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '8px' }}>Reportes</h2>
-            <p style={{ color: '#64748B', marginBottom: '32px' }}>Selecciona el tipo de reporte ejecutivo y luego elige el registro correspondiente.</p>
+        <div style={{ fontFamily: "'Inter', sans-serif", color: '#0F172A', maxWidth: '1000px', margin: '0 auto', paddingBottom: '60px' }}>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+            <div style={{ marginBottom: '40px', borderBottom: '1px solid #E2E8F0', paddingBottom: '24px' }}>
+                <h2 style={{ fontSize: '32px', fontWeight: '800', margin: '0 0 8px 0', color: '#1E293B' }}>Centro de Reportes Ejecutivos</h2>
+                <p style={{ color: '#64748B', fontSize: '16px', margin: 0 }}>Genera, visualiza y envía expedientes PDF de forma automatizada.</p>
+            </div>
+
+            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ backgroundColor: '#1A237E', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</span>
+                Selecciona el tipo de reporte
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '40px' }}>
                 {reportesDisponibles.map((reporte) => {
                     const Icono = reporte.icono;
                     const isActivo = reporteActivo === reporte.id;
@@ -208,87 +239,133 @@ const VistaReportes = () => {
                     return (
                         <div
                             key={reporte.id}
+                            onClick={() => handleActivar(reporte.id)}
                             style={{
-                                backgroundColor: '#FFFFFF',
-                                border: '1px solid #E2E8F0',
+                                backgroundColor: isActivo ? '#F8FAFC' : '#FFFFFF',
+                                border: isActivo ? '2px solid #1A237E' : '1px solid #E2E8F0',
                                 borderRadius: '16px',
                                 padding: '24px',
-                                transition: 'all 0.3s ease',
-                                boxShadow: isActivo ? '0 10px 25px -5px rgba(150, 194, 219, 0.4)' : '0 4px 6px rgba(0,0,0,0.05)',
-                                transform: isActivo ? 'translateY(-4px)' : 'none',
-                                borderColor: isActivo ? '#96C2DB' : '#E2E8F0',
-                                display: 'flex',
-                                flexDirection: 'column'
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: isActivo ? '0 10px 15px -3px rgba(26, 35, 126, 0.1)' : '0 1px 3px rgba(0,0,0,0.05)',
+                                transform: isActivo ? 'translateY(-2px)' : 'none',
+                                position: 'relative'
                             }}
-                            onClick={() => !isActivo && handleActivar(reporte.id)}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', cursor: 'pointer' }}>
-                                <div style={{ backgroundColor: '#E5EDF1', padding: '12px', borderRadius: '12px' }}>
-                                    <Icono size={24} color={reporte.color} />
-                                </div>
-                                <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>{reporte.titulo}</h3>
-                            </div>
-
-                            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.5', marginBottom: '24px', flexGrow: 1 }}>
-                                {reporte.descripcion}
-                            </p>
-
                             {isActivo && (
-                                <div style={{ marginBottom: '16px', animation: 'fadeIn 0.3s ease' }}>
-                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748B', marginBottom: '8px', textTransform: 'uppercase' }}>
-                                        {reporte.requiere === 'vacante' ? 'Seleccionar Vacante' : 'Seleccionar Candidato'}
-                                    </label>
-                                    <select
-                                        value={seleccion}
-                                        onChange={(e) => setSeleccion(e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '10px 12px',
-                                            borderRadius: '8px',
-                                            border: '1px solid #CBD5E1',
-                                            backgroundColor: '#F8FAFC',
-                                            color: '#334155',
-                                            outline: 'none',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <option value="" disabled>-- Elige una opción --</option>
-                                        {reporte.requiere === 'vacante'
-                                            ? vacantes.map(v => <option key={v.id} value={v.id}>{v.puesto_nombre || v.nombre_puesto} - {v.cliente}</option>)
-                                            : candidatos.map(c => <option key={c.id} value={c.id}>{c.nombre_completo}</option>)
-                                        }
-                                    </select>
+                                <div style={{ position: 'absolute', top: '16px', right: '16px', color: '#1A237E' }}>
+                                    <CheckCircle2 size={24} fill="#EFF6FF" />
                                 </div>
                             )}
-
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleDescarga(reporte.id); }}
-                                disabled={isActivo && (!seleccion || descargando === reporte.id)}
-                                style={{
-                                    width: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    backgroundColor: (isActivo && !seleccion) ? '#CBD5E1' : '#96C2DB',
-                                    color: '#FFFFFF',
-                                    border: 'none',
-                                    padding: '12px',
-                                    borderRadius: '8px',
-                                    fontWeight: '600',
-                                    cursor: (isActivo && !seleccion) ? 'not-allowed' : 'pointer',
-                                    transition: 'background-color 0.2s'
-                                }}
-                            >
-                                {descargando === reporte.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                                {descargando === reporte.id ? 'Generando PDF...' : (isActivo ? 'Descargar' : 'Seleccionar')}
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+                                <div style={{ backgroundColor: isActivo ? '#E0E7FF' : '#F1F5F9', padding: '12px', borderRadius: '12px', transition: 'background-color 0.2s' }}>
+                                    <Icono size={28} color={isActivo ? '#1A237E' : '#64748B'} />
+                                </div>
+                                <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: isActivo ? '#1E293B' : '#475569' }}>
+                                    {reporte.titulo}
+                                </h3>
+                            </div>
+                            <p style={{ fontSize: '14px', color: '#64748B', lineHeight: '1.5', margin: 0 }}>
+                                {reporte.descripcion}
+                            </p>
                         </div>
                     );
                 })}
             </div>
 
-            {/* Plantillas ocultas para HTML2PDF */}
+            {reporteActivo && (
+                <div style={{ animation: 'slideUpFade 0.4s ease' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ backgroundColor: '#1A237E', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>2</span>
+                        Configurar y Generar
+                    </h3>
+
+                    <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '32px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+
+                        <div style={{ marginBottom: seleccion ? '32px' : '0', transition: 'margin 0.3s' }}>
+                            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {reportesDisponibles.find(r => r.id === reporteActivo)?.requiere === 'vacante' ? 'Busca y selecciona la Vacante' : 'Busca y selecciona el Candidato'}
+                            </label>
+
+                            <div style={{ position: 'relative' }}>
+                                <select
+                                    value={seleccion}
+                                    onChange={(e) => setSeleccion(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '16px 20px',
+                                        borderRadius: '12px',
+                                        border: '2px solid #E2E8F0',
+                                        backgroundColor: '#F8FAFC',
+                                        color: '#0F172A',
+                                        fontSize: '16px',
+                                        outline: 'none',
+                                        cursor: 'pointer',
+                                        appearance: 'none',
+                                        transition: 'border-color 0.2s'
+                                    }}
+                                >
+                                    <option value="" disabled>-- Haz clic aquí para elegir --</option>
+                                    {reportesDisponibles.find(r => r.id === reporteActivo)?.requiere === 'vacante'
+                                        ? vacantes.map(v => <option key={v.id} value={v.id}>{v.puesto_nombre || v.nombre_puesto} - {v.cliente}</option>)
+                                        : candidatos.map(c => <option key={c.id} value={c.id}>{c.nombre_completo}</option>)
+                                    }
+                                </select>
+                                <ChevronDown size={20} color="#64748B" style={{ position: 'absolute', right: '20px', top: '18px', pointerEvents: 'none' }} />
+                            </div>
+                        </div>
+
+                        {seleccion && (
+                            <div style={{ display: 'flex', gap: '16px', animation: 'slideUpFade 0.3s ease', paddingTop: '32px', borderTop: '1px solid #F1F5F9' }}>
+
+                                <button
+                                    onClick={() => handleAccion(reporteActivo, 'descargar')}
+                                    disabled={descargando === reporteActivo}
+                                    style={{
+                                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                                        backgroundColor: '#FFFFFF', color: '#1E293B',
+                                        border: '2px solid #E2E8F0', padding: '16px', borderRadius: '12px',
+                                        fontSize: '16px', fontWeight: '600', cursor: descargando === reporteActivo ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                    }}
+                                >
+                                    {descargando === reporteActivo ? <Loader2 size={22} className="animate-spin" /> : <Download size={22} color="#3B82F6" />}
+                                    Descargar PDF local
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        const req = reportesDisponibles.find(r => r.id === reporteActivo)?.requiere;
+                                        const correo = req === 'vacante'
+                                            ? vacantes.find(v => v.id === parseInt(seleccion))?.correo_contacto
+                                            : vacantes.find(v => v.id === candidatos.find(c => c.id === parseInt(seleccion))?.vacante)?.correo_contacto;
+
+                                        if (!correo) {
+                                            toast.error("El cliente asociado no tiene un correo de contacto registrado en la Vacante.");
+                                            return;
+                                        }
+
+                                        handleAccion(reporteActivo, 'email', correo);
+                                    }}
+                                    disabled={descargando === reporteActivo}
+                                    style={{
+                                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                                        backgroundColor: '#1A237E', color: '#FFFFFF',
+                                        border: 'none', padding: '16px', borderRadius: '12px',
+                                        fontSize: '16px', fontWeight: '600', cursor: descargando === reporteActivo ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(26, 35, 126, 0.2)'
+                                    }}
+                                >
+                                    {descargando === reporteActivo ? <Loader2 size={22} className="animate-spin" /> : <Mail size={22} />}
+                                    Enviar al Cliente
+                                </button>
+
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', visibility: 'hidden', zIndex: -1000 }}>
                 {datosPdf.vacante && <PDFPerfilador ref={pdfRefs.perfilador} vacante={datosPdf.vacante} />}
                 {datosPdf.candidato && datosPdf.entrevistaInicial && <PDFEntrevistaInicial ref={pdfRefs.inicial} candidato={datosPdf.candidato} entrevistaInicial={datosPdf.entrevistaInicial} vacante={datosPdf.vacante} />}
@@ -296,8 +373,8 @@ const VistaReportes = () => {
             </div>
 
             <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(-10px); }
+                @keyframes slideUpFade {
+                    from { opacity: 0; transform: translateY(15px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
                 @keyframes spin {
@@ -306,6 +383,9 @@ const VistaReportes = () => {
                 }
                 .animate-spin {
                     animation: spin 1s linear infinite;
+                }
+                button:hover {
+                    opacity: 0.95;
                 }
             `}</style>
         </div>

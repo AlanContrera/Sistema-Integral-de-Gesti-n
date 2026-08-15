@@ -1,12 +1,14 @@
 from django.http import HttpResponse
 from rest_framework.decorators import action
+from rest_framework.views import APIView  # <--- Esta fue la que nos faltó
 from rest_framework import status
-from .tasks import enviar_correo_entrevista_task
+from .tasks import enviar_correo_entrevista_task, enviar_reporte_pdf_task
 from .utils_pdf import generar_pdf_reporte_cliente
 from .utils_pdf import generar_pdf_propuesta_cliente
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+
 from .models import (
     CategoriaPreguntas, PlantillaPregunta, Vacante, 
     Candidato, EntrevistaInicial, EntrevistaProfunda, ReporteCliente, Estado, Municipio, PropuestaCliente, PreguntaEntrevistaInicial,
@@ -222,3 +224,33 @@ class PreguntaEntrevistaInicialViewSet(viewsets.ModelViewSet):
     queryset = PreguntaEntrevistaInicial.objects.all().order_by('id')
     serializer_class = PreguntaEntrevistaInicialSerializer
     permission_classes = [IsAuthenticated]
+
+class EnviarReporteEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        email_cliente = request.data.get('email_cliente')
+        candidato_nombre = request.data.get('candidato_nombre', 'Candidato')
+        vacante_nombre = request.data.get('vacante_nombre', 'Posición')
+        pdf_base64 = request.data.get('pdf_base64')
+        filename = request.data.get('filename', 'Reporte.pdf')
+        mensaje_adicional = request.data.get('mensaje_adicional', '')
+
+        if not email_cliente or not pdf_base64:
+            return Response({'error': 'Faltan datos obligatorios (correo o PDF).'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Usamos el nombre del usuario logueado (reclutador) para firmar el correo automáticamente
+        reclutador_nombre = request.user.get_full_name() or request.user.username
+
+        # ¡Despachamos la orden asíncrona a Celery de inmediato! (.delay)
+        enviar_reporte_pdf_task.delay(
+            email_cliente,
+            candidato_nombre,
+            vacante_nombre,
+            pdf_base64,
+            filename,
+            reclutador_nombre,
+            mensaje_adicional
+        )
+
+        return Response({'mensaje': 'Correo encolado para envío exitosamente.'}, status=status.HTTP_200_OK)

@@ -12,3 +12,4 @@
 
 "El usuario utiliza Obsidian como su Segundo Cerebro. Al finalizar cualquier tarea significativa o refactorización, debes crear siempre un artefacto 'Walkthrough' excelentemente formateado, claro y conciso para que el usuario pueda referenciarlo en su bóveda."
 
+- **DOCUMENTACIÓN VIVA EN REPOSITORIO**: El usuario utiliza Obsidian como su Segundo Cerebro. En lugar de generar artefactos 'Walkthrough' temporales que se pierden, el agente debe crear y mantener actualizada la carpeta `docs/` dentro del proyecto con archivos markdown excelentemente formateados (ej. arquitectura.md, docker.md, etc.) al finalizar cualquier tarea significativa. El usuario se encargará de copiar estos archivos a su bóveda personal cuando lo necesite.

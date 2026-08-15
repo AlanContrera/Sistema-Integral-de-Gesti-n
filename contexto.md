@@ -142,6 +142,9 @@ La documentación específica de cada módulo se encuentra en la carpeta `docs/`
 | 2026-08-13 | Módulo TI y Asignación de Vacantes (RBAC) | Se construyó la pantalla VistaUsuarios para administrar cuentas y jerarquías (Supervisores vs Asistentes). Se integró el campo `consultor` en los modelos para asignar vacantes y candidatos a reclutadores específicos, protegiendo las vistas con el AuthContext. |
 | 2026-08-13 | Cartera de Candidatos y Refactorización UI | Se implementó el estado 'cartera' en el flujo de reclutamiento con su respectiva `VistaCartera`. Se rediseñaron los selectores de estado a nivel global mediante el componente `SelectorPremium`. Se realizó una depuración masiva de archivos temporales (scripts de pruebas y HTML/JSX sueltos) en backend y frontend. |
 | 2026-08-13 | Dockerización (Entorno Local) | Se implementó Docker y Docker Compose para empaquetar Django, React, Redis y Celery, manteniendo SQLite montado como volumen para proteger la información. Se estandarizó el hot-reloading y dependencias. |
+| 2026-08-14 | Integración SMTP Corporativo y Celery | Se habilitó el envío de correos asíncronos para el agendamiento de entrevistas. Se configuraron las variables de entorno para usar el SMTP corporativo de cPanel (Puerto 465/587) y se conectó el contenedor de Celery Worker con Redis para despachar las invitaciones sin congelar la pantalla. Se inauguró la carpeta `docs/` como repositorio de documentación técnica. |
+| 2026-08-14 | Flujo 1-Click: Reportes y Correo | Se automatizó el envío de Reportes PDF al cliente. Reestructuración de la vista de reportes hacia un formato "Wizard" paso a paso. El Backend decodifica PDFs desde la memoria (Base64), lo delega al Celery Worker para procesamiento en segundo plano y se envían asíncronamente por SMTP usando plantillas HTML "Corporate Premium" a prueba de gestores corporativos. |
+
 
 
 ## Notas de Sesión

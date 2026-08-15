@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     CategoriaPreguntasViewSet, PlantillaPreguntaViewSet, VacanteViewSet, 
     CandidatoViewSet, EntrevistaInicialViewSet, EntrevistaProfundaViewSet, ReporteClienteViewSet, EstadoViewSet,
-    MunicipioViewSet, PropuestaClienteViewSet, PreguntaEntrevistaInicialViewSet
+    MunicipioViewSet, PropuestaClienteViewSet, PreguntaEntrevistaInicialViewSet, EnviarReporteEmailView
 )
 
 router = DefaultRouter()
@@ -24,5 +24,11 @@ router.register(r'preguntas-iniciales', PreguntaEntrevistaInicialViewSet)
 
 
 urlpatterns = [
+   
+    # Ruta personalizada para enviar el correo (¡Ponla antes del router!)
+    path('utilidades/enviar_pdf_email/', EnviarReporteEmailView.as_view(), name='enviar_pdf_email'),
+    
     path('', include(router.urls)),
 ]
+
+
