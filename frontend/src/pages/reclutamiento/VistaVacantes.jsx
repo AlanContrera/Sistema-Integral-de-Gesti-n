@@ -76,9 +76,9 @@ const VistaVacantes = () => {
                         </div>
                         <button
                             onClick={() => setMostrarModal(true)}
-                            style={{ backgroundColor: '#5C7E8F', color: '#FFFFFF', border: 'none', padding: '10px 20px', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(92, 126, 143, 0.2)', transition: 'all 0.2s' }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#496777'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#5C7E8F'}
+                            style={{ backgroundColor: '#96C2DB', color: '#FFFFFF', border: 'none', padding: '10px 20px', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(150, 194, 219, 0.2)', transition: 'all 0.2s' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7FAAC2'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#96C2DB'}
                         >
                             <Plus size={18} />
                             Nuevo Levantamiento

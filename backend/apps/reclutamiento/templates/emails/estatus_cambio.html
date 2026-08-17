@@ -3,84 +3,58 @@
 
 <head>
     <meta charset="UTF-8">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f5;
-            margin: 0;
-            padding: 20px;
-            color: #334155;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .header {
-            background-color: #1e293b;
-            color: #ffffff;
-            padding: 24px;
-            text-align: center;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .content {
-            padding: 32px;
-            line-height: 1.6;
-        }
-
-        .status-box {
-            padding: 16px;
-            margin: 24px 0;
-            border-radius: 0 4px 4px 0;
-            background-color: #f8fafc;
-        }
-
-        .footer {
-            background-color: #f1f5f9;
-            padding: 16px;
-            text-align: center;
-            font-size: 12px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-        }
-    </style>
 </head>
 
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Departamento de Atracción de Talento</h1>
-        </div>
-        <div class="content">
-            <p>Estimado/a <strong>{{ candidato_nombre }}</strong>,</p>
+<body style="margin: 0; padding: 0; background-color: #F3F4F6; font-family: 'Segoe UI', Arial, sans-serif;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #F3F4F6; padding: 40px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="0"
+                    style="background-color: #FFFFFF; border-radius: 8px; overflow: hidden; border: 1px solid #E5E7EB;">
+                    <tr>
+                        <td style="background-color: #1A237E; padding: 35px 40px; text-align: center;">
+                            <h1
+                                style="color: #FFFFFF; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px; font-family: 'Segoe UI', Arial, sans-serif;">
+                                Departamento de Atracción de Talento
+                            </h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 40px; color: #374151; line-height: 1.6; font-size: 16px; font-family: 'Segoe UI', Arial, sans-serif;">
+                            <p style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 24px 0;">
+                                Estimado/a <strong>{{ candidato_nombre }}</strong>,
+                            </p>
 
-            <!-- Aquí pusimos el color directamente para que tu editor no marque error -->
-            <div class="status-box" style="border-left: 4px solid {{ color }};">
-                <p style="margin: 0;">{{ mensaje_principal }}</p>
-            </div>
+                            <!-- Nota: El color de esta barra izquierda es dinámico dependiendo de la tarea -->
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0"
+                                style="background-color: #F8FAFC; border-left: 4px solid {{ color }}; margin-bottom: 24px;">
+                                <tr>
+                                    <td style="padding: 16px 24px; font-family: 'Segoe UI', Arial, sans-serif;">
+                                        <p style="margin: 0; font-size: 15px; color: #1F2937;">{{ mensaje_principal }}
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
 
-            <p>Agradecemos sinceramente su interés en formar parte de nuestro equipo. Quedamos a su entera disposición
-                ante cualquier consulta.</p>
-            <p>Atentamente,</p>
-            <p><strong>El Equipo de Atracción de Talento</strong></p>
-        </div>
-        <div class="footer">
-            <p>Este es un correo automático generado por nuestro Sistema Integral de Gestión. Por favor, mantenga la
-                discreción de la información compartida.</p>
-        </div>
-    </div>
+                            <p style="margin: 0 0 32px 0;">Agradecemos sinceramente su interés en formar parte de
+                                nuestro equipo. Quedamos a su entera disposición ante cualquier consulta adicional.</p>
+                            <p style="margin: 0; font-weight: 600; color: #111827;">Atentamente,</p>
+                            <p style="margin: 4px 0 0 0; color: #3B82F6; font-weight: 600;">El Equipo de Atracción de
+                                Talento</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="background-color: #F9FAFB; padding: 24px 40px; text-align: center; font-size: 13px; color: #6B7280; border-top: 1px solid #E5E7EB;">
+                            Este es un correo automático generado por nuestro Sistema Integral de Gestión.<br>Por favor,
+                            mantenga la discreción de la información compartida.<br>&copy; 2026 Partners & Masters
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 
 </html>

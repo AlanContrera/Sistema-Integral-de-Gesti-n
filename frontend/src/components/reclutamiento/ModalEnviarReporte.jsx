@@ -37,7 +37,7 @@ const ModalEnviarReporte = ({ isOpen, onClose, onSend, candidatoNombre, vacanteN
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', overflow: 'hidden', animation: 'modalSlideUp 0.3s ease-out'
             }}>
                 {/* Encabezado */}
-                <div style={{ backgroundColor: '#1A237E', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ backgroundColor: '#96C2DB', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'white' }}>
                         <Mail size={24} />
                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Enviar Reporte al Cliente</h3>
@@ -87,7 +87,7 @@ const ModalEnviarReporte = ({ isOpen, onClose, onSend, candidatoNombre, vacanteN
                         disabled={!email || enviando}
                         style={{
                             width: '100%', padding: '14px', borderRadius: '8px', border: 'none',
-                            backgroundColor: email ? '#1A237E' : '#94A3B8', color: 'white', fontWeight: '600',
+                            backgroundColor: email ? '#96C2DB' : '#94A3B8', color: 'white', fontWeight: '600',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: email ? 'pointer' : 'not-allowed',
                             transition: 'background-color 0.2s'
                         }}

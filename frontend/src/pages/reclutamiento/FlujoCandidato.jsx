@@ -6,19 +6,26 @@ import toast from 'react-hot-toast';
 
 const SelectorEstatusPremium = ({ estatusActual, onChange }) => {
     const [abierto, setAbierto] = useState(false);
+
+    // Estados para controlar nuestro Modal personalizado
+    const [modalConfig, setModalConfig] = useState({ visible: false, estatusPendiente: null, label: '' });
     const ref = React.useRef(null);
 
-    const opciones = [
-        { id: 'nuevo', label: 'Nuevo' },
-        { id: 'en_proceso', label: 'En Proceso' },
-        { id: 'viable', label: 'Viable' },
-        { id: 'no_viable', label: 'No Viable' },
-        { id: 'enviado_cliente', label: 'Enviado al Cliente' },
+    const todasLasOpciones = {
+        'nuevo': 'Nuevo',
+        'en_proceso': 'En Proceso',
+        'viable': 'Viable',
+        'no_viable': 'No Viable',
+        'enviado_cliente': 'Enviado al Cliente',
+        'seleccionado': '¡Seleccionado!',
+        'cartera': 'A Cartera'
+    };
+
+    const opcionesManuales = [
         { id: 'seleccionado', label: '¡Seleccionado!' },
         { id: 'cartera', label: 'A Cartera' }
     ];
 
-    // Cerrar al dar clic afuera
     React.useEffect(() => {
         const handleClickFuera = (event) => {
             if (ref.current && !ref.current.contains(event.target)) {
@@ -29,61 +36,117 @@ const SelectorEstatusPremium = ({ estatusActual, onChange }) => {
         return () => document.removeEventListener('mousedown', handleClickFuera);
     }, []);
 
-    const seleccionado = opciones.find(o => o.id === estatusActual) || opciones[0];
+    const labelEstatus = todasLasOpciones[estatusActual] || todasLasOpciones['nuevo'];
+
+    // Esta función atrapa el clic y levanta el modal en vez de mandarlo directo
+    const solicitarCambio = (idEstatus, label) => {
+        setAbierto(false);
+        setModalConfig({ visible: true, estatusPendiente: idEstatus, label });
+    };
+
+    const confirmarCambio = () => {
+        onChange(modalConfig.estatusPendiente);
+        setModalConfig({ visible: false, estatusPendiente: null, label: '' });
+    };
 
     return (
-        <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
-            <div
-                onClick={() => setAbierto(!abierto)}
-                style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '6px 14px', borderRadius: '12px',
-                    backgroundColor: '#F8FAFC', color: '#475569', // Siempre un color neutral y consistente
-                    fontSize: '13px', fontWeight: '700', textTransform: 'uppercase',
-                    cursor: 'pointer', userSelect: 'none',
-                    transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                    border: '1px solid #E2E8F0'
-                }}
-            >
-                {seleccionado.label}
-                <ChevronDown size={14} style={{ transform: abierto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+        <>
+            <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+                <div
+                    onClick={() => setAbierto(!abierto)}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '6px 14px', borderRadius: '12px',
+                        backgroundColor: '#F8FAFC', color: '#475569',
+                        fontSize: '13px', fontWeight: '700', textTransform: 'uppercase',
+                        cursor: 'pointer', userSelect: 'none',
+                        transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                        border: '1px solid #E2E8F0'
+                    }}
+                >
+                    {labelEstatus}
+                    <ChevronDown size={14} style={{ transform: abierto ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                </div>
+
+                {abierto && (
+                    <div style={{
+                        position: 'absolute', top: '100%', left: 0, marginTop: '8px',
+                        width: '220px', backgroundColor: '#FFF',
+                        borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+                        border: '1px solid #E2E8F0', zIndex: 50, overflow: 'hidden',
+                        display: 'flex', flexDirection: 'column'
+                    }}>
+                        {opcionesManuales.map((opc) => {
+                            const esSeleccionado = opc.id === estatusActual;
+                            return (
+                                <div
+                                    key={opc.id}
+                                    onClick={() => solicitarCambio(opc.id, opc.label)}
+                                    onMouseEnter={(e) => { if (!esSeleccionado) e.currentTarget.style.backgroundColor = '#F8FAFC' }}
+                                    onMouseLeave={(e) => { if (!esSeleccionado) e.currentTarget.style.backgroundColor = 'transparent' }}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '12px 16px', cursor: 'pointer',
+                                        backgroundColor: esSeleccionado ? '#EFF6FF' : 'transparent',
+                                        color: esSeleccionado ? '#2563EB' : '#475569',
+                                        fontWeight: esSeleccionado ? '600' : '500',
+                                        fontSize: '14px', transition: 'background-color 0.2s'
+                                    }}
+                                >
+                                    {opc.label}
+                                    {esSeleccionado && <Check size={16} />}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
-            {abierto && (
+            {/* MODAL PERSONALIZADO (Flota sobre toda la pantalla) */}
+            {modalConfig.visible && (
                 <div style={{
-                    position: 'absolute', top: '100%', left: 0, marginTop: '8px',
-                    width: '220px', backgroundColor: '#FFF',
-                    borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
-                    border: '1px solid #E2E8F0', zIndex: 50, overflow: 'hidden',
-                    display: 'flex', flexDirection: 'column'
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
                 }}>
-                    {opciones.map((opc) => {
-                        const esSeleccionado = opc.id === estatusActual;
-                        return (
-                            <div
-                                key={opc.id}
-                                onClick={() => { onChange(opc.id); setAbierto(false); }}
-                                onMouseEnter={(e) => { if (!esSeleccionado) e.currentTarget.style.backgroundColor = '#F8FAFC' }}
-                                onMouseLeave={(e) => { if (!esSeleccionado) e.currentTarget.style.backgroundColor = 'transparent' }}
-                                style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '12px 16px', cursor: 'pointer',
-                                    backgroundColor: esSeleccionado ? '#EFF6FF' : 'transparent',
-                                    color: esSeleccionado ? '#2563EB' : '#475569',
-                                    fontWeight: esSeleccionado ? '600' : '500',
-                                    fontSize: '14px', transition: 'background-color 0.2s'
-                                }}
+                    <div style={{
+                        backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '90%', maxWidth: '400px',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                    }}>
+                        <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px',
+                            borderRadius: '50%', backgroundColor: '#EFF6FF', margin: '0 auto 16px auto'
+                        }}>
+                            <Mail size={24} color="#3B82F6" />
+                        </div>
+                        <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: '700', color: '#1E293B', textAlign: 'center' }}>
+                            ¿Confirmar Veredicto Final?
+                        </h3>
+
+
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={() => setModalConfig({ visible: false, estatusPendiente: null, label: '' })}
+                                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: 'white', color: '#475569', fontWeight: '600', cursor: 'pointer' }}
                             >
-                                {opc.label}
-                                {esSeleccionado && <Check size={18} color="#2563EB" strokeWidth={3} />}
-                            </div>
-                        );
-                    })}
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={confirmarCambio}
+                                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#3B82F6', color: 'white', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)' }}
+                            >
+                                Confirmar y Enviar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
+
+
+
 
 
 
@@ -214,6 +277,7 @@ const FlujoCandidato = () => {
     };
 
     const handleCambiarEstatusCandidato = async (nuevoEstatus) => {
+
         try {
             const res = await fetchConToken(`/reclutamiento/candidatos/${id}/`, {
                 method: 'PATCH',
@@ -221,15 +285,16 @@ const FlujoCandidato = () => {
             });
             if (res.ok) {
                 setCandidato({ ...candidato, estatus: nuevoEstatus });
-                // Opcional: toast.success('Estatus actualizado');
+                toast.success('Veredicto final guardado y correo enviado.');
             } else {
-                alert('Error al actualizar el estatus del candidato.');
+                toast.error('Error al actualizar el estatus del candidato.');
             }
         } catch (error) {
             console.error(error);
-            alert('Error de red al actualizar estatus.');
+            toast.error('Error de red al actualizar estatus.');
         }
     };
+
 
 
     const handleRespuestaInicial = (campo, valor) => {
@@ -497,10 +562,9 @@ const FlujoCandidato = () => {
             </div>
 
             {/* Pestaña: Entrevista Inicial */}
-            {/* Pestaña: Entrevista Inicial (Perfilador) */}
             {tab === 'inicial' && (
                 <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                    <h3 style={{ margin: '0 0 16px 0', color: '#1E293B', fontSize: '18px' }}>Entrevista Inicial (Perfilador)</h3>
+                    <h3 style={{ margin: '0 0 16px 0', color: '#1E293B', fontSize: '18px' }}>Entrevista Inicial</h3>
 
                     <form onSubmit={handleGuardarInicial}>
                         {/* Resumen Superior (Porcentaje en vivo) */}
@@ -598,7 +662,6 @@ const FlujoCandidato = () => {
                                         <div>
                                             <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', marginBottom: '8px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Notas del Entrevistador</label>
                                             <textarea
-                                                required
                                                 value={respuestasInicial[pregunta.id] || ''}
                                                 onChange={e => handleRespuestaInicial(pregunta.id, e.target.value)}
                                                 style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1', minHeight: '80px', fontFamily: 'inherit', fontSize: '13px', resize: 'vertical' }}
@@ -1027,6 +1090,16 @@ const FlujoCandidato = () => {
                                                 onChange={(e) => setAgendaCliente({ ...agendaCliente, detalles_agenda_cliente: e.target.value })}
                                                 style={{ ...inputStyle, borderColor: '#86EFAC', backgroundColor: 'white', resize: 'vertical' }}
                                             />
+                                        </div>
+                                        <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => enviarCorreoCita('profunda', entrevistaProfunda?.id)}
+                                                style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#3B82F6', color: 'white', fontWeight: '600', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)' }}
+                                            >
+                                                <Mail size={18} />
+                                                Enviar Correo de Cita
+                                            </button>
                                         </div>
                                     </div>
                                 )}

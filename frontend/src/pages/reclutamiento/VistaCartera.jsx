@@ -123,9 +123,7 @@ const VistaCartera = () => {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569' }}>
                                                 <Mail size={14} color="#94A3B8" /> {cand.correo}
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#475569' }}>
-                                                <MapPin size={14} color="#94A3B8" /> {cand.zona_ubicacion || 'No especificada'}
-                                            </div>
+
                                         </div>
                                     </td>
 

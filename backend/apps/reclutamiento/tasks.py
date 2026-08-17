@@ -52,7 +52,7 @@ def enviar_correo_cambio_estatus_task(candidato_id, nuevo_estatus):
             asunto = f"Actualización de su proceso - {candidato.vacante.nombre_puesto}"
             mensaje_principal = "Agradecemos profundamente el tiempo invertido en nuestro proceso de selección. En esta ocasión hemos decidido avanzar con otro perfil que se alinea más a los requerimientos actuales. Sin embargo, su perfil nos ha parecido muy interesante y lo conservaremos en cartera para futuras oportunidades."
             color = "#64748B" # Gris
-        elif nuevo_estatus in [Candidato.Estatus.EN_PROCESO, Candidato.Estatus.VIABLE, Candidato.Estatus.ENVIADO_CLIENTE]:
+        elif nuevo_estatus in [Candidato.Estatus.EN_PROCESO, Candidato.Estatus.VIABLE]:
             asunto = f"Avance en su proceso - {candidato.vacante.nombre_puesto}"
             mensaje_principal = "Le informamos que su perfil continúa avanzando favorablemente en el proceso de selección. Pronto nos comunicaremos para los siguientes pasos."
             color = "#3B82F6" # Azul
@@ -82,14 +82,22 @@ def enviar_correo_cambio_estatus_task(candidato_id, nuevo_estatus):
         return f"Error enviando correo de estatus: {str(e)}"
 
 @shared_task
-def enviar_reporte_pdf_task(email_cliente, candidato_nombre, vacante_nombre, pdf_base64, filename, reclutador_nombre, mensaje_adicional=""):
+def enviar_reporte_pdf_task(email_cliente, candidato_nombre, vacante_nombre, pdf_base64, filename, reclutador_nombre, mensaje_adicional="", tipo_reporte="general"):
     try:
-        # 1. Armamos un asunto dinámico dependiendo si es Vacante o Candidato
+        # 1. Armamos un asunto dinámico basado en el tipo
+        prefijo_asunto = "Reporte Ejecutivo"
+        if tipo_reporte == 'inicial':
+            prefijo_asunto = "Reporte de Entrevista Inicial"
+        elif tipo_reporte == 'profunda':
+            prefijo_asunto = "Reporte de Entrevista Profunda"
+        elif tipo_reporte == 'perfilador':
+            prefijo_asunto = "Reporte Perfilador de Vacante"
+            
         if candidato_nombre:
-            asunto = f"Reporte Ejecutivo - {candidato_nombre} ({vacante_nombre})"
+            asunto = f"{prefijo_asunto} - {candidato_nombre} ({vacante_nombre})"
             texto_plano = f"Adjunto encontrará el reporte de {candidato_nombre}."
         else:
-            asunto = f"Reporte Ejecutivo - {vacante_nombre}"
+            asunto = f"{prefijo_asunto} - {vacante_nombre}"
             texto_plano = f"Adjunto encontrará el reporte de la vacante {vacante_nombre}."
             
         # 2. Inyectamos las variables al diseño HTML
@@ -99,7 +107,16 @@ def enviar_reporte_pdf_task(email_cliente, candidato_nombre, vacante_nombre, pdf
             'reclutador_nombre': reclutador_nombre,
             'mensaje_adicional': mensaje_adicional
         }
-        html_content = render_to_string('emails/reporte_cliente.html', contexto)
+        
+        # --- AQUI ESTÁ LA MAGIA QUE ASOCIA TUS 3 REPORTES ---
+        if tipo_reporte == 'inicial':
+            template_name = 'emails/entrevista_inicial.html'
+        elif tipo_reporte == 'profunda':
+            template_name = 'emails/entrevista_profunda.html'
+        else:
+            template_name = 'emails/reporte_cliente.html'
+            
+        html_content = render_to_string(template_name, contexto)
         
         # 3. Limpiamos y decodificamos el Base64 a bytes puros (binario PDF)
         if "base64," in pdf_base64:

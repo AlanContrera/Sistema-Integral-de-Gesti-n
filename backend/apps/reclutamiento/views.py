@@ -64,13 +64,11 @@ class VacanteViewSet(viewsets.ModelViewSet):
     def autocompletar(self, request):
         categoria_id = request.query_params.get('categoria_id')
         if not categoria_id:
-            from rest_framework.response import Response
             return Response({'error': 'categoria_id requerido'}, status=400)
             
         try:
             categoria = CategoriaPreguntas.objects.get(id=categoria_id)
         except CategoriaPreguntas.DoesNotExist:
-            from rest_framework.response import Response
             return Response({'error': 'Categoria no encontrada'}, status=404)
             
         preguntas = categoria.preguntas.all()
@@ -99,9 +97,15 @@ class CandidatoViewSet(viewsets.ModelViewSet):
     serializer_class = CandidatoSerializer
     permission_classes = [IsAuthenticated]
     
-    # Filtrar candidatos por vacante si React lo pide: /api/candidatos/?vacante=1
     def get_queryset(self):
-        queryset = Candidato.objects.all()
+        user = self.request.user
+        
+        # Filtro de seguridad por rol
+        if user.rol == 'usuario_estandar':
+            queryset = Candidato.objects.filter(vacante__consultor=user)
+        else:
+            queryset = Candidato.objects.all()
+
         vacante_id = self.request.query_params.get('vacante', None)
         estatus = self.request.query_params.get('estatus', None)
         
@@ -113,10 +117,18 @@ class CandidatoViewSet(viewsets.ModelViewSet):
             
         return queryset
 
+
 class EntrevistaInicialViewSet(viewsets.ModelViewSet):
     queryset = EntrevistaInicial.objects.all()
     serializer_class = EntrevistaInicialSerializer
     permission_classes = [IsAuthenticated]
+
+    # Filtro de seguridad por rol
+    def get_queryset(self):
+        user = self.request.user
+        if user.rol == 'usuario_estandar':
+            return EntrevistaInicial.objects.filter(candidato__vacante__consultor=user)
+        return EntrevistaInicial.objects.all()
 
     @action(detail=True, methods=['post'])
     def enviar_correo_cita(self, request, pk=None):
@@ -149,6 +161,13 @@ class EntrevistaProfundaViewSet(viewsets.ModelViewSet):
     queryset = EntrevistaProfunda.objects.all()
     serializer_class = EntrevistaProfundaSerializer
     permission_classes = [IsAuthenticated]
+
+    # Filtro de seguridad por rol
+    def get_queryset(self):
+        user = self.request.user
+        if user.rol == 'usuario_estandar':
+            return EntrevistaProfunda.objects.filter(candidato__vacante__consultor=user)
+        return EntrevistaProfunda.objects.all()
 
     @action(detail=True, methods=['post'])
     def enviar_correo_cita(self, request, pk=None):
@@ -235,14 +254,15 @@ class EnviarReporteEmailView(APIView):
         pdf_base64 = request.data.get('pdf_base64')
         filename = request.data.get('filename', 'Reporte.pdf')
         mensaje_adicional = request.data.get('mensaje_adicional', '')
+        # Atrapamos qué tipo de reporte mandó React
+        tipo_reporte = request.data.get('tipo_reporte', 'general') 
 
         if not email_cliente or not pdf_base64:
             return Response({'error': 'Faltan datos obligatorios (correo o PDF).'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Usamos el nombre del usuario logueado (reclutador) para firmar el correo automáticamente
         reclutador_nombre = request.user.get_full_name() or request.user.username
 
-        # ¡Despachamos la orden asíncrona a Celery de inmediato! (.delay)
+        # Se la pasamos a Celery como último parámetro
         enviar_reporte_pdf_task.delay(
             email_cliente,
             candidato_nombre,
@@ -250,7 +270,8 @@ class EnviarReporteEmailView(APIView):
             pdf_base64,
             filename,
             reclutador_nombre,
-            mensaje_adicional
+            mensaje_adicional,
+            tipo_reporte 
         )
 
         return Response({'mensaje': 'Correo encolado para envío exitosamente.'}, status=status.HTTP_200_OK)

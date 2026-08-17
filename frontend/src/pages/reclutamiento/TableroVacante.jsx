@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchConToken } from '../../services/api';
-import { ArrowLeft, Users, Plus, User, CheckCircle, Clock, XCircle, FileText, Send, Target, FileSearch, Briefcase, FileSignature, UserCheck, Activity } from 'lucide-react';
+import { ArrowLeft, Users, Plus, User, CheckCircle, Clock, XCircle, Search, FileText, Send, Target, FileSearch, Briefcase, FileSignature, UserCheck, Activity } from 'lucide-react';
 import DocumentoPerfilador from './DocumentoReclutamiento';
 import SelectorPremium from '../../components/reclutamiento/SelectorPremium';
 
@@ -22,7 +22,7 @@ const TableroVacante = () => {
 
     const [mostrarModalCandidato, setMostrarModalCandidato] = useState(false);
     const [nuevoCandidato, setNuevoCandidato] = useState({
-        nombre_completo: '', correo: '', telefono: '', zona_ubicacion: '',
+        nombre_completo: '', correo: '', telefono: '', plataforma_origen: '',
     });
 
     useEffect(() => {
@@ -63,7 +63,7 @@ const TableroVacante = () => {
         try {
             const res = await fetchConToken(`/reclutamiento/vacantes/${id}/`, {
                 method: 'PATCH',
-                body: JSON.stringify({ consultor: nuevoConsultorId })
+                body: JSON.stringify({ ...nuevoCandidato, zona_ubicacion: 'No especificada' })
             });
             if (res.ok) {
                 setVacante({ ...vacante, consultor: nuevoConsultorId });
@@ -78,7 +78,7 @@ const TableroVacante = () => {
     const handleCrearCandidato = async (e) => {
         e.preventDefault();
         try {
-            const payload = { ...nuevoCandidato, vacante: id, estatus: 'nuevo', zona_ubicacion: nuevoCandidato.zona_ubicacion || 'No especificada' };
+            const payload = { ...nuevoCandidato, vacante: id, estatus: 'nuevo', zona_ubicacion: 'No especificada', plataforma_origen: nuevoCandidato.plataforma_origen || 'No especificada' };
             const res = await fetchConToken('/reclutamiento/candidatos/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -87,7 +87,7 @@ const TableroVacante = () => {
             if (!res.ok) throw new Error('Error al crear candidato');
 
             setMostrarModalCandidato(false);
-            setNuevoCandidato({ nombre_completo: '', correo: '', telefono: '', zona_ubicacion: '' });
+            setNuevoCandidato({ nombre_completo: '', correo: '', telefono: '', plataforma_origen: '' });
             cargarDatos();
         } catch (err) {
             alert(err.message);
@@ -115,6 +115,7 @@ const TableroVacante = () => {
 
     const renderBadgeEstatus = (estatus) => {
         const config = {
+            'seleccionado': { color: '#047857', bg: '#D1FAE5', text: '¡Seleccionado!', icon: <CheckCircle size={14} /> },
             'nuevo': { color: '#3B82F6', bg: '#DBEAFE', text: 'Nuevo Prospecto', icon: <User size={14} /> },
             'en_proceso': { color: '#EAB308', bg: '#FEF9C3', text: 'Filtro Inicial', icon: <Clock size={14} /> },
             'viable': { color: '#22C55E', bg: '#DCFCE7', text: 'Profunda Viable', icon: <CheckCircle size={14} /> },
@@ -156,12 +157,10 @@ const TableroVacante = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             {/* Selector de Estatus */}
                             <span style={{ fontSize: '13px', backgroundColor: '#F8FAFC', color: '#64748B', padding: '6px 12px', borderRadius: '8px', fontWeight: '500', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Briefcase size={14} color="#94A3B8" />
                                 Cliente: <strong style={{ color: '#1E293B', fontWeight: '700' }}>{vacante.cliente || 'Interno'}</strong>
                             </span>
 
                             <span style={{ fontSize: '13px', backgroundColor: '#F8FAFC', color: '#64748B', padding: '6px 12px', borderRadius: '8px', fontWeight: '500', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <FileSignature size={14} color='#94A3B8' />
                                 Levantanmiento: <strong style={{ color: '#1E293B', fontWeight: '700' }}> {vacante.creado_por_nombre || 'Desconocido'}</strong>
                             </span>
 
@@ -230,7 +229,7 @@ const TableroVacante = () => {
                             <tr style={{ borderBottom: '2px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
                                 <th style={{ padding: '16px 24px', color: '#64748B', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>CANDIDATO</th>
                                 <th style={{ padding: '16px', color: '#64748B', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>ESTATUS ACTUAL</th>
-                                <th style={{ padding: '16px', color: '#64748B', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>UBICACIÓN</th>
+                                <th style={{ padding: '16px', color: '#64748B', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>FUENTE</th>
                                 <th style={{ padding: '16px 24px', color: '#64748B', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px', textAlign: 'right' }}>ACCIÓN</th>
                             </tr>
                         </thead>
@@ -253,7 +252,7 @@ const TableroVacante = () => {
                                             {renderBadgeEstatus(cand.estatus)}
                                         </td>
                                         <td style={{ padding: '16px', color: '#475569', fontSize: '13px', fontWeight: '500' }}>
-                                            {cand.zona_ubicacion || 'No especificada'}
+                                            {cand.plataforma_origen || 'Fuente no especificada'}
                                         </td>
                                         <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                                             <button
@@ -299,9 +298,23 @@ const TableroVacante = () => {
                                 <input type="text" value={nuevoCandidato.telefono} onChange={e => setNuevoCandidato({ ...nuevoCandidato, telefono: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #CBD5E1', borderRadius: '8px', boxSizing: 'border-box' }} />
                             </div>
                             <div style={{ marginBottom: '32px' }}>
-                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', marginBottom: '6px', color: '#475569' }}>ZONA O UBICACIÓN</label>
-                                <input type="text" placeholder="Ej. Norte, a 30 min" value={nuevoCandidato.zona_ubicacion} onChange={e => setNuevoCandidato({ ...nuevoCandidato, zona_ubicacion: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #CBD5E1', borderRadius: '8px', boxSizing: 'border-box' }} />
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', marginBottom: '6px', color: '#475569' }}>FUENTE DE RECLUTAMIENTO</label>
+                                <select
+                                    value={nuevoCandidato.plataforma_origen}
+                                    onChange={e => setNuevoCandidato({ ...nuevoCandidato, plataforma_origen: e.target.value })}
+                                    style={{ width: '100%', padding: '10px 14px', border: '1px solid #CBD5E1', borderRadius: '8px', boxSizing: 'border-box', backgroundColor: 'white' }}
+                                >
+                                    <option value="" disabled>Selecciona la fuente...</option>
+                                    <option value="LinkedIn">LinkedIn</option>
+                                    <option value="OCC">OCC Mundial</option>
+                                    <option value="Indeed">Indeed</option>
+                                    <option value="Computrabajo">Computrabajo</option>
+                                    <option value="Referido">Referido</option>
+                                    <option value="Cartera Interna">Cartera Interna</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
                             </div>
+
 
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                                 <button type="button" onClick={() => setMostrarModalCandidato(false)} style={{ padding: '10px 20px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', fontWeight: '700' }}>Cancelar</button>

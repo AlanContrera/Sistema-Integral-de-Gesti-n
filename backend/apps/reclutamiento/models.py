@@ -364,14 +364,17 @@ class EntrevistaInicial(models.Model):
         # (models.py - Al final del método save de EntrevistaInicial)
         super().save(*args, **kwargs)
 
-        # ---------------------------------------------------------
-        # NUEVO: Actualización Automática de Estatus del Candidato
-        # ---------------------------------------------------------
-        candidato = self.candidato
-        # Si acabamos de hacer la entrevista inicial, el candidato ya está "En Proceso"
-        if candidato.estatus == Candidato.Estatus.NUEVO:
-            candidato.estatus = Candidato.Estatus.EN_PROCESO
-            candidato.save()
+                # Sincronizar automáticamente el estatus del candidato según el semáforo
+        if self.semaforo == 'verde':
+            self.candidato.estatus = 'viable'
+        elif self.semaforo == 'rojo':
+            self.candidato.estatus = 'no_viable'
+        else:
+            self.candidato.estatus = 'en_proceso'
+            
+        # Guardamos el candidato para que se actualice
+        self.candidato.save(update_fields=['estatus'])
+
 
 class PreguntaEntrevistaInicial(models.Model):
     clave = models.CharField(max_length=20, unique=True) # Aquí va f_escolaridad, p8, p9

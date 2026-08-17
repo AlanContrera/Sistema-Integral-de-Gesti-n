@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+</head>
+
+<body style="margin: 0; padding: 0; background-color: #F3F4F6; font-family: 'Segoe UI', Arial, sans-serif;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #F3F4F6; padding: 40px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" border="0" cellspacing="0" cellpadding="0"
+                    style="background-color: #FFFFFF; border-radius: 8px; overflow: hidden; border: 1px solid #E5E7EB;">
+                    <tr>
+                        <td style="background-color: #1A237E; padding: 35px 40px; text-align: center;">
+                            <h1
+                                style="color: #FFFFFF; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 0.5px; font-family: 'Segoe UI', Arial, sans-serif;">
+                                Reporte de Entrevista Profunda
+                            </h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="padding: 40px; color: #374151; line-height: 1.6; font-size: 16px; font-family: 'Segoe UI', Arial, sans-serif;">
+                            <p style="font-size: 18px; font-weight: 600; color: #111827; margin: 0 0 24px 0;">
+                                Estimado/a,</p>
+                            <p style="margin: 0 0 24px 0;">Es un placer saludarle. Hemos finalizado la etapa de
+                                evaluación técnica y por competencias. Adjunto le compartimos el dictamen
+                                correspondiente a la <strong>Entrevista Profunda</strong>.</p>
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0"
+                                style="background-color: #F8FAFC; border-left: 4px solid #3B82F6; margin-bottom: 24px;">
+                                <tr>
+                                    <td style="padding: 16px 24px; font-family: 'Segoe UI', Arial, sans-serif;">
+                                        {% if candidato_nombre %}
+                                        <p style="margin: 0 0 8px 0; font-size: 15px;"><strong>Candidato:</strong> <span
+                                                style="color: #1F2937;">{{ candidato_nombre }}</span></p>
+                                        {% endif %}
+                                        <p style="margin: 0; font-size: 15px;"><strong>Posición:</strong> <span
+                                                style="color: #1F2937;">{{ vacante_nombre }}</span></p>
+                                    </td>
+                                </tr>
+                            </table>
+                            {% if mensaje_adicional %}
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0"
+                                style="background-color: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; margin-bottom: 24px;">
+                                <tr>
+                                    <td style="padding: 16px; font-style: italic; color: #166534; font-size: 15px;">"{{
+                                        mensaje_adicional }}"</td>
+                                </tr>
+                            </table>
+                            {% endif %}
+                            <table width="100%" border="0" cellspacing="0" cellpadding="0"
+                                style="background-color: #EFF6FF; border-radius: 8px; margin-bottom: 32px;">
+                                <tr>
+                                    <td
+                                        style="padding: 16px; color: #1E40AF; font-size: 15px; font-weight: 600; text-align: center;">
+                                        El reporte PDF con la matriz de competencias se encuentra adjunto.</td>
+                                </tr>
+                            </table>
+                            <p style="margin: 0 0 32px 0;">Quedamos a la espera de sus comentarios para agendar la
+                                entrevista final directamente con ustedes si el perfil es de su agrado.</p>
+                            <p style="margin: 0; font-weight: 600; color: #111827;">Atentamente,</p>
+                            <p style="margin: 4px 0 0 0; color: #3B82F6; font-weight: 600;">{{ reclutador_nombre }}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td
+                            style="background-color: #F9FAFB; padding: 24px 40px; text-align: center; font-size: 13px; color: #6B7280; border-top: 1px solid #E5E7EB;">
+                            Este es un correo automático generado por nuestro Sistema Integral de Gestión
+                            Corporativa.<br>&copy; 2026 Partners & Masters</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

@@ -71,7 +71,8 @@ Este módulo representa la digitalización completa y avanzada de las herramient
   - *Entrevista Inicial:* Sistema de semáforos para respuestas de primer filtro.
   - *Entrevista Profunda:* Cálculos porcentuales de *match* en vivo basados en habilidades, con emisión de dictamen automatizado.
   - *Gestor de Preguntas:* Arquitectura full-stack que permite editar y guardar preguntas por categoría en tiempo real desde la interfaz.
-- **Tablero ATS (Applicant Tracking System):** Gestión visual del Pipeline de Candidatos, con selectores de estado (Activas, Cerradas, Canceladas) y vistas optimizadas de documentos legales de solo lectura.
+- **Tablero ATS (Applicant Tracking System):** Gestión visual del Pipeline de Candidatos, con selectores de estado (Activas, Cerradas, Canceladas) y vistas optimizadas de documentos legales de solo lectura. Incluye **progresión automática de estatus** (sincronizada con los semáforos de entrevistas) y **Modales Premium** para interacciones críticas (confirmación de veredictos, alertas) reemplazando diálogos nativos.
+- **Diseño UI/UX (RecluSystem):** Interfaz estandarizada con la paleta institucional (Azul Claro #96C2DB y Gris Pizarra #1E293B), eliminando colores genéricos y unificando el lenguaje visual en botones, reportes y estados.
 - **Generación de Reportes PDF:** Exportación del "Reporte Ejecutivo" del candidato. Convierte tablas complejas en un dossier de formato Consultoría Premium (1-2 hojas limpias) utilizando HTML2PDF con saltos de página inteligentes.
 - **Roles y Asignación (RBAC):** Jerarquización de usuarios (Supervisor vs Asistente). El campo `consultor` permite la asignación directa de vacantes y candidatos, blindando la privacidad para que los reclutadores estándar solo vean su propia carga de trabajo.
 
@@ -183,15 +184,9 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 
 ## PRÓXIMA FASE: Dockerización del Proyecto (Desarrollo Local)
 
-**Objetivo:** Empaquetar todo el Sistema Integral de Gestión (Frontend React, Backend Django, Celery, Redis) utilizando Docker para garantizar la portabilidad.
 
-**Fase A: Instalación de Entorno**
-- Instalación de Docker Desktop en Windows con integración a WSL 2.
 
-**Fase B: Orquestación (docker-compose)**
-- Creación de `docker-compose.yml` en la raíz del proyecto para conectar los 4 servicios.
-- Configuración de Volúmenes para montar el archivo `db.sqlite3` actual y evitar pérdida de datos.
+**Fase A: Crear propio diseño de plantilla de correo para entrevista inicla y profunda**
 
-**Fase C: Contenedores (Dockerfiles)**
-- Construcción de `backend/Dockerfile` (Python) y `frontend/Dockerfile` (Node).
-- Configuración de archivos `.dockerignore` para mantener las imágenes ligeras.
+
+- 

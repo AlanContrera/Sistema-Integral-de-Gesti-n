@@ -107,7 +107,7 @@ const VistaReportes = () => {
         ).finally(() => setDescargando(null));
     };
 
-    const triggerPdfEmail = async (reporteId, filename, correo) => {
+    const triggerPdfEmail = async (reporteId, filename, correo, cNombre = '', vNombre = 'Posición') => {
         const elemento = pdfRefs[reporteId].current;
         if (!elemento) return toast.error("Error: Plantilla no encontrada en el DOM");
 
@@ -122,16 +122,16 @@ const VistaReportes = () => {
 
         try {
             const pdfBase64 = await window.html2pdf().set(opciones).from(elemento).output('datauristring');
-
             const res = await fetchConToken('/reclutamiento/utilidades/enviar_pdf_email/', {
                 method: 'POST',
                 body: JSON.stringify({
                     email_cliente: correo,
-                    mensaje_adicional: '', // Eliminamos el mensaje adicional
-                    candidato_nombre: datosPdf.candidato ? datosPdf.candidato.nombre_completo : '', // SOLUCIÓN BUGS NOMBRES
-                    vacante_nombre: datosPdf.vacante?.puesto_nombre || datosPdf.vacante?.nombre_puesto || 'Posición',
+                    mensaje_adicional: '',
+                    candidato_nombre: cNombre,
+                    vacante_nombre: vNombre,
                     filename: `${filename}.pdf`,
-                    pdf_base64: pdfBase64
+                    pdf_base64: pdfBase64,
+                    tipo_reporte: reporteId
                 })
             });
 
@@ -165,9 +165,12 @@ const VistaReportes = () => {
 
                     setTimeout(() => {
                         const nombreArchivo = `Perfilador_${vacante.puesto_nombre?.replace(/\s+/g, '_') || 'Vacante'}`;
+                        const vName = vacante.puesto_nombre || vacante.nombre_puesto || 'Posición';
+
                         if (accion === 'descargar') triggerPdf('perfilador', nombreArchivo);
-                        else triggerPdfEmail('perfilador', nombreArchivo, correo_cliente);
+                        else triggerPdfEmail('perfilador', nombreArchivo, correo_cliente, '', vName); // <-- Actualizado
                     }, 500);
+
                 }
             } else if (reporteId === 'inicial' || reporteId === 'profunda') {
                 const resCand = await fetchConToken(`/reclutamiento/candidatos/${seleccion}/`);
@@ -202,9 +205,12 @@ const VistaReportes = () => {
 
                     setTimeout(() => {
                         const nombreArchivo = `Entrevista_${reporteId === 'inicial' ? 'Inicial' : 'Profunda'}_${candidato.nombre_completo.replace(/\s+/g, '_')}`;
+                        const vName = vacanteData?.puesto_nombre || vacanteData?.nombre_puesto || 'Posición';
+
                         if (accion === 'descargar') triggerPdf(reporteId, nombreArchivo);
-                        else triggerPdfEmail(reporteId, nombreArchivo, correo_cliente);
+                        else triggerPdfEmail(reporteId, nombreArchivo, correo_cliente, candidato.nombre_completo, vName); // <-- Actualizado
                     }, 500);
+
                 }
             }
         } catch (error) {
@@ -227,7 +233,7 @@ const VistaReportes = () => {
             </div>
 
             <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ backgroundColor: '#1A237E', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</span>
+                <span style={{ backgroundColor: '#96C2DB', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>1</span>
                 Selecciona el tipo de reporte
             </h3>
 
@@ -242,24 +248,24 @@ const VistaReportes = () => {
                             onClick={() => handleActivar(reporte.id)}
                             style={{
                                 backgroundColor: isActivo ? '#F8FAFC' : '#FFFFFF',
-                                border: isActivo ? '2px solid #1A237E' : '1px solid #E2E8F0',
+                                border: isActivo ? '2px solid #96C2DB' : '1px solid #E2E8F0',
                                 borderRadius: '16px',
                                 padding: '24px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
-                                boxShadow: isActivo ? '0 10px 15px -3px rgba(26, 35, 126, 0.1)' : '0 1px 3px rgba(0,0,0,0.05)',
+                                boxShadow: isActivo ? '0 10px 15px -3px rgba(150, 194, 219, 0.1)' : '0 1px 3px rgba(0,0,0,0.05)',
                                 transform: isActivo ? 'translateY(-2px)' : 'none',
                                 position: 'relative'
                             }}
                         >
                             {isActivo && (
-                                <div style={{ position: 'absolute', top: '16px', right: '16px', color: '#1A237E' }}>
+                                <div style={{ position: 'absolute', top: '16px', right: '16px', color: '#96C2DB' }}>
                                     <CheckCircle2 size={24} fill="#EFF6FF" />
                                 </div>
                             )}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
                                 <div style={{ backgroundColor: isActivo ? '#E0E7FF' : '#F1F5F9', padding: '12px', borderRadius: '12px', transition: 'background-color 0.2s' }}>
-                                    <Icono size={28} color={isActivo ? '#1A237E' : '#64748B'} />
+                                    <Icono size={28} color={isActivo ? '#96C2DB' : '#64748B'} />
                                 </div>
                                 <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: isActivo ? '#1E293B' : '#475569' }}>
                                     {reporte.titulo}
@@ -276,7 +282,7 @@ const VistaReportes = () => {
             {reporteActivo && (
                 <div style={{ animation: 'slideUpFade 0.4s ease' }}>
                     <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ backgroundColor: '#1A237E', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>2</span>
+                        <span style={{ backgroundColor: '#96C2DB', color: 'white', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>2</span>
                         Configurar y Generar
                     </h3>
 
@@ -350,10 +356,10 @@ const VistaReportes = () => {
                                     disabled={descargando === reporteActivo}
                                     style={{
                                         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-                                        backgroundColor: '#1A237E', color: '#FFFFFF',
+                                        backgroundColor: '#96C2DB', color: '#FFFFFF',
                                         border: 'none', padding: '16px', borderRadius: '12px',
                                         fontSize: '16px', fontWeight: '600', cursor: descargando === reporteActivo ? 'not-allowed' : 'pointer',
-                                        transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(26, 35, 126, 0.2)'
+                                        transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(150, 194, 219, 0.2)'
                                     }}
                                 >
                                     {descargando === reporteActivo ? <Loader2 size={22} className="animate-spin" /> : <Mail size={22} />}
