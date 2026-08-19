@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UploadCloud, FileSpreadsheet, CheckCircle2, Loader2, Calendar, Settings } from 'lucide-react';
+import { ArrowLeft, UploadCloud, FileSpreadsheet, CheckCircle2, Loader2, Calendar, Settings, Building2, UserPlus, Send, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GestorMembretadas from '../../components/cotizador/GestorMembretadas';
 
@@ -13,10 +13,114 @@ export default function ModuloCotizador() {
   const [showGestor, setShowGestor] = useState(false);
   const inputRef = useRef(null);
   const [fechaOperacion, setFechaOperacion] = useState(() => new Date().toISOString().split('T')[0]);
+  const [empresas, setEmpresas] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [selectedEmpresa, setSelectedEmpresa] = useState('');
+  const [selectedCliente, setSelectedCliente] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [showNewCliente, setShowNewCliente] = useState(false);
+  const [newClienteData, setNewClienteData] = useState({ nombre: '', correo: '', empresa: '' });
+
 
   useEffect(() => {
     setMounted(true);
+    fetchEmpresasYClientes();
   }, []);
+
+  const fetchEmpresasYClientes = async () => {
+    try {
+      const resEmpresas = await fetch(`http://${window.location.hostname}:8000/api/cotizador/empresas-emisoras/`);
+      if (resEmpresas.ok) {
+        const dataEmpresas = await resEmpresas.json();
+        setEmpresas(Array.isArray(dataEmpresas) ? dataEmpresas : []);
+      }
+
+      const resClientes = await fetch(`http://${window.location.hostname}:8000/api/cotizador/clientes/`);
+      if (resClientes.ok) {
+        const dataClientes = await resClientes.json();
+        setClientes(Array.isArray(dataClientes) ? dataClientes : []);
+      }
+    } catch (e) {
+      console.error("Error cargando catálogos:", e);
+      setEmpresas([]);
+      setClientes([]);
+    }
+  }
+
+
+  const handleCrearCliente = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`http://${window.location.hostname}:8000/api/cotizador/clientes/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newClienteData)
+      });
+      if (res.ok) {
+        toast.success("Cliente creado");
+        setShowNewCliente(false);
+        setNewClienteData({ nombre: '', correo: '', empresa: '' });
+        fetchEmpresasYClientes();
+      } else {
+        toast.error("Error al crear cliente. Verifica los datos.");
+      }
+    } catch (e) {
+      toast.error("Error al crear cliente");
+    }
+  }
+
+  const handleUploadAndSend = async () => {
+    if (!file) return toast.error('Por favor, selecciona un archivo');
+    if (!selectedEmpresa) return toast.error('Por favor, selecciona la empresa emisora');
+    if (!selectedCliente) return toast.error('Por favor, selecciona el cliente destino');
+
+    setSendingEmail(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('fecha', fechaOperacion);
+
+    const toastId = toast.loading('Generando PDF y enviando correo...');
+
+    try {
+      // 1. Generar PDF
+      const resPdf = await fetch(`http://${window.location.hostname}:8000/api/cotizador/generar/`, {
+        method: 'POST', body: formData
+      });
+      if (!resPdf.ok) throw new Error("Error generando PDF de la cotización");
+      const blob = await resPdf.blob();
+
+      // 2. Convertir Blob a Base64
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = async () => {
+        const base64data = reader.result.split(',')[1];
+
+        // 3. Enviar por correo
+        const resEmail = await fetch(`http://${window.location.hostname}:8000/api/cotizador/enviar-cotizacion/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cliente_id: selectedCliente,
+            empresa_id: selectedEmpresa,
+            pdf_base64: base64data
+          })
+        });
+
+        if (!resEmail.ok) {
+          const errData = await resEmail.json();
+          throw new Error(errData.error || "Error al encolar correo");
+        }
+        toast.success('¡Cotización enviada por correo!', { id: toastId });
+        setFile(null);
+        if (inputRef.current) inputRef.current.value = '';
+        setSendingEmail(false);
+      };
+    } catch (e) {
+      toast.error(e.message, { id: toastId });
+      setSendingEmail(false);
+    }
+  }
+
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -160,6 +264,49 @@ export default function ModuloCotizador() {
               Sube el archivo Excel de la operación para generar el PDF de cotizacion.
             </p>
           </div>
+
+          {/* Emisor y Cliente Section */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>
+                <Building2 size={16} color="#1A9BD7" /> Empresa Emisora
+              </label>
+              <select
+                value={selectedEmpresa}
+                onChange={e => setSelectedEmpresa(e.target.value)}
+                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E2E8F0', backgroundColor: '#F8FAFC', outline: 'none' }}
+              >
+                <option value="">-- Seleccionar --</option>
+                {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre_empresa}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><UserPlus size={16} color="#1A9BD7" /> Cliente Destino</span>
+                <button onClick={() => setShowNewCliente(!showNewCliente)} style={{ background: 'none', border: 'none', color: '#1A9BD7', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>+ Nuevo</button>
+              </label>
+              <select
+                value={selectedCliente}
+                onChange={e => setSelectedCliente(e.target.value)}
+                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E2E8F0', backgroundColor: '#F8FAFC', outline: 'none' }}
+              >
+                <option value="">-- Seleccionar --</option>
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.empresa ? `(${c.empresa})` : ''}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {showNewCliente && (
+            <div style={{ backgroundColor: '#F1F5F9', padding: '16px', borderRadius: '12px', marginBottom: '24px', animation: 'slideDown 0.3s ease-out' }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#0F172A' }}>Registrar Nuevo Cliente</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <input type="text" placeholder="Nombre completo *" value={newClienteData.nombre} onChange={e => setNewClienteData({ ...newClienteData, nombre: e.target.value })} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', outline: 'none' }} />
+                <input type="email" placeholder="Correo electrónico *" value={newClienteData.correo} onChange={e => setNewClienteData({ ...newClienteData, correo: e.target.value })} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', outline: 'none' }} />
+                <input type="text" placeholder="Empresa (Opcional)" value={newClienteData.empresa} onChange={e => setNewClienteData({ ...newClienteData, empresa: e.target.value })} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', gridColumn: 'span 2', outline: 'none' }} />
+              </div>
+              <button onClick={handleCrearCliente} style={{ width: '100%', padding: '10px 16px', backgroundColor: '#0B4A7A', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Guardar Cliente</button>
+            </div>
+          )}
 
           {/* Date Picker Section */}
           <div style={{ marginBottom: '32px' }}>
@@ -305,6 +452,35 @@ export default function ModuloCotizador() {
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : null}
             {loading ? 'Procesando Documento...' : 'Generar Cotización PDF'}
+          </button>
+
+          {/* Secondary Action: Email */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleUploadAndSend(); }}
+            disabled={!file || sendingEmail}
+            style={{
+              width: '100%', padding: '16px', borderRadius: '12px', fontSize: '16px', fontWeight: '600',
+              background: (!file || sendingEmail) ? '#F1F5F9' : '#FFFFFF',
+              color: (!file || sendingEmail) ? '#94A3B8' : '#0B4A7A',
+              border: `2px solid ${(!file || sendingEmail) ? '#E2E8F0' : '#0B4A7A'}`,
+              cursor: (!file || sendingEmail) ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              transition: 'all 0.3s',
+              marginTop: '16px'
+            }}
+            onMouseEnter={(e) => {
+              if (file && !sendingEmail) {
+                e.currentTarget.style.background = '#F0F9FF';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (file && !sendingEmail) {
+                e.currentTarget.style.background = '#FFFFFF';
+              }
+            }}
+          >
+            {sendingEmail ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+            {sendingEmail ? 'Enviando Correo...' : 'Generar y Enviar por Correo'}
           </button>
 
           <style>{`

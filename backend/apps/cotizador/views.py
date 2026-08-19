@@ -19,6 +19,12 @@ from reportlab.lib import colors
 import random
 import string
 from datetime import datetime
+from rest_framework import viewsets
+from .models import EmpresaEmisora, Cliente
+from .serializers import EmpresaEmisoraSerializer, ClienteSerializer
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .tasks import enviar_cotizacion_task
 
 # --- HELPERS DE DIBUJO ---
 def dibujar_texto_alineado(can, texto, x, y, fuente, tamano, color, alineacion="left"):
@@ -3111,3 +3117,25 @@ class GestorMembretadasView(APIView):
             return Response({"mensaje": f"Archivo {nombre_archivo} eliminado"})
         else:
             return Response({"error": "El archivo no existe"}, status=404)
+
+class EmpresaEmisoraViewSet(viewsets.ModelViewSet):
+    queryset = EmpresaEmisora.objects.all()
+    serializer_class = EmpresaEmisoraSerializer
+class ClienteViewSet(viewsets.ModelViewSet):
+    queryset = Cliente.objects.all().order_by('-fecha_registro')
+    serializer_class = ClienteSerializer
+@api_view(['POST'])
+def enviar_cotizacion_email(request):
+    try:
+        cliente_id = request.data.get('cliente_id')
+        empresa_id = request.data.get('empresa_id')
+        pdf_base64 = request.data.get('pdf_base64')
+        
+        if not all([cliente_id, empresa_id, pdf_base64]):
+            return Response({"error": "Faltan datos (cliente_id, empresa_id o pdf_base64)"}, status=400)
+            
+        enviar_cotizacion_task.delay(cliente_id, empresa_id, pdf_base64)
+        return Response({"mensaje": "Cotización encolada para envío correctamente"})
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
