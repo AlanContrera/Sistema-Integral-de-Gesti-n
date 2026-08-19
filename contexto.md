@@ -146,6 +146,7 @@ La documentación específica de cada módulo se encuentra en la carpeta `docs/`
 | 2026-08-14 | Integración SMTP Corporativo y Celery | Se habilitó el envío de correos asíncronos para el agendamiento de entrevistas. Se configuraron las variables de entorno para usar el SMTP corporativo de cPanel (Puerto 465/587) y se conectó el contenedor de Celery Worker con Redis para despachar las invitaciones sin congelar la pantalla. Se inauguró la carpeta `docs/` como repositorio de documentación técnica. |
 | 2026-08-14 | Flujo 1-Click: Reportes y Correo | Se automatizó el envío de Reportes PDF al cliente. Reestructuración de la vista de reportes hacia un formato "Wizard" paso a paso. El Backend decodifica PDFs desde la memoria (Base64), lo delega al Celery Worker para procesamiento en segundo plano y se envían asíncronamente por SMTP usando plantillas HTML "Corporate Premium" a prueba de gestores corporativos. |
 | 2026-08-18 | Cotizador Inteligente y Mini-CRM | Módulo Cotizador transformado con BD dinámica (EmpresaEmisora y Cliente). Generación y envío asíncrono de PDFs mediante Celery con plantillas HTML corporativas. Carga masiva de 23 emisoras mediante script. |
+| 2026-08-19 | Refactor UI/UX Cotizador y Sidebar | Rediseño completo del flujo del Cotizador hacia un 'Single Action Canvas' centrado. Integración de previsualización de PDF in-browser. Rediseño del Sidebar bloqueado en estado colapsado con integración limpia del logo P&M institucional en caja blanca. |
 
 ## Notas de Sesión
 
@@ -181,11 +182,9 @@ powershell -ExecutionPolicy Bypass -File "C:\Users\Sistemas P&M\wsl_portforward.
 ```
 El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 
-## PRÓXIMA FASE: Dockerización del Proyecto (Desarrollo Local)
+## PRÓXIMA FASE: 
 
 
-
-**Fase A: Crear propio diseño de plantilla de correo para entrevista inicla y profunda**
 
 
 - 

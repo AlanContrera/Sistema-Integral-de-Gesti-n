@@ -1,29 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UploadCloud, FileSpreadsheet, CheckCircle2, Loader2, Calendar, Settings, Building2, UserPlus, Send, Mail } from 'lucide-react';
+import { ArrowLeft, UploadCloud, FileSpreadsheet, CheckCircle2, Loader2, Calendar, LayoutTemplate, Building2, UserPlus, Send, FileText, PieChart, Users, Menu, AlertCircle, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GestorMembretadas from '../../components/cotizador/GestorMembretadas';
 
 export default function ModuloCotizador() {
   const navigate = useNavigate();
-  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const [activeTab, setActiveTab] = useState('generar');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const [file, setFile] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [showGestor, setShowGestor] = useState(false);
-  const inputRef = useRef(null);
-  const [fechaOperacion, setFechaOperacion] = useState(() => new Date().toISOString().split('T')[0]);
-  const [empresas, setEmpresas] = useState([]);
-  const [clientes, setClientes] = useState([]);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const [fechaOperacion, setFechaOperacion] = useState(new Date().toISOString().split('T')[0]);
+
+  const [analysisResult, setAnalysisResult] = useState(null);
   const [selectedEmpresa, setSelectedEmpresa] = useState('');
   const [selectedCliente, setSelectedCliente] = useState('');
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [showNewCliente, setShowNewCliente] = useState(false);
-  const [newClienteData, setNewClienteData] = useState({ nombre: '', correo: '', empresa: '' });
 
+  const [empresas, setEmpresas] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [showNewCliente, setShowNewCliente] = useState(false);
+  const [newClienteData, setNewClienteData] = useState({ empresa: '', correo: '' });
 
   useEffect(() => {
-    setMounted(true);
     fetchEmpresasYClientes();
   }, []);
 
@@ -42,14 +46,12 @@ export default function ModuloCotizador() {
       }
     } catch (e) {
       console.error("Error cargando catálogos:", e);
-      setEmpresas([]);
-      setClientes([]);
     }
   }
 
-
   const handleCrearCliente = async (e) => {
     e.preventDefault();
+    if (!newClienteData.empresa || !newClienteData.correo) return toast.error("Empresa y correo son obligatorios");
     try {
       const res = await fetch(`http://${window.location.hostname}:8000/api/cotizador/clientes/`, {
         method: 'POST',
@@ -57,45 +59,182 @@ export default function ModuloCotizador() {
         body: JSON.stringify(newClienteData)
       });
       if (res.ok) {
-        toast.success("Cliente creado");
+        const nuevo = await res.json();
+        toast.success("Cliente creado en el CRM");
         setShowNewCliente(false);
-        setNewClienteData({ nombre: '', correo: '', empresa: '' });
-        fetchEmpresasYClientes();
+        setNewClienteData({ empresa: '', correo: '' });
+        await fetchEmpresasYClientes();
+        setSelectedCliente(nuevo.id);
       } else {
         toast.error("Error al crear cliente. Verifica los datos.");
       }
     } catch (e) {
-      toast.error("Error al crear cliente");
+      toast.error("Error de conexión al crear cliente");
     }
   }
 
-  const handleUploadAndSend = async () => {
-    if (!file) return toast.error('Por favor, selecciona un archivo');
-    if (!selectedEmpresa) return toast.error('Por favor, selecciona la empresa emisora');
-    if (!selectedCliente) return toast.error('Por favor, selecciona el cliente destino');
+  const analyzeExcel = async (selectedFile) => {
+    setLoading(true);
+    const toastId = toast.loading('Analizando documento Excel...');
 
-    setSendingEmail(true);
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch(`http://${window.location.hostname}:8000/api/cotizador/analizar-excel/`, {
+        method: 'POST',
+        body: formData
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error("El servidor devolvió una respuesta no válida. Revisa tu Excel.");
+      }
+
+      if (!res.ok) throw new Error(data.error || "Error al analizar Excel");
+
+      toast.success('Documento procesado con éxito', { id: toastId });
+      setAnalysisResult(data);
+
+      if (data.empresa_emisora.match && data.empresa_emisora.id) {
+        setSelectedEmpresa(data.empresa_emisora.id);
+      } else {
+        setSelectedEmpresa('');
+      }
+
+      if (data.cliente.match && data.cliente.id) {
+        setSelectedCliente(data.cliente.id);
+      } else {
+        setSelectedCliente('');
+      }
+
+    } catch (error) {
+      toast.error(error.message, { id: toastId });
+      setFile(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleDrag = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+      analyzeExcel(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+      analyzeExcel(e.target.files[0]);
+    }
+  };
+
+  const validateForm = () => {
+    if (!selectedEmpresa) { toast.error("Por favor, confirma o selecciona una Empresa Emisora"); return false; }
+    if (!fechaOperacion) { toast.error("Selecciona una Fecha de Operación"); return false; }
+    if (!file) { toast.error("Sube un archivo Excel"); return false; }
+    return true;
+  }
+
+  const generatePDFBlob = async () => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('empresa_id', selectedEmpresa);
+    formData.append('fecha', fechaOperacion);
+
+    const resPdf = await fetch(`http://${window.location.hostname}:8000/api/cotizador/generar/`, {
+      method: 'POST', body: formData
+    });
+    if (!resPdf.ok) {
+      const errorData = await resPdf.json();
+      throw new Error(errorData.error || "Error generando PDF de la cotización");
+    }
+    return await resPdf.blob();
+  }
+
+  const handleUpload = async () => {
+    if (!validateForm()) return;
+    setLoading(true);
+    const toastId = toast.loading('Generando Cotización PDF...');
+
+    try {
+      const blob = await generatePDFBlob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Cotizacion_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast.success('Cotización generada y descargada', { id: toastId });
+      setAnalysisResult(null);
+      setFile(null);
+    } catch (error) {
+      toast.error(error.message, { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  const handlePreview = async () => {
+    if (!file || !analysisResult) return;
+    setLoading(true);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('fecha', fechaOperacion);
-
-    const toastId = toast.loading('Generando PDF y enviando correo...');
+    if (analysisResult.empresa_emisora.id) {
+      formData.append('empresa_id', analysisResult.empresa_emisora.id);
+    }
+    if (analysisResult.cliente.id) {
+      formData.append('cliente_id', analysisResult.cliente.id);
+    }
 
     try {
-      // 1. Generar PDF
-      const resPdf = await fetch(`http://${window.location.hostname}:8000/api/cotizador/generar/`, {
-        method: 'POST', body: formData
+      const res = await fetch(`http://${window.location.hostname}:8000/api/cotizador/generar/`, {
+        method: 'POST',
+        body: formData,
       });
-      if (!resPdf.ok) throw new Error("Error generando PDF de la cotización");
-      const blob = await resPdf.blob();
 
-      // 2. Convertir Blob a Base64
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Error al generar la vista previa');
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setLoading(false);
+    } catch (error) {
+      toast.error(error.message);
+      setLoading(false);
+    }
+  };
+
+  const handleUploadAndSend = async () => {
+    if (!validateForm()) return;
+    if (!selectedCliente) return toast.error("Por favor, confirma el Cliente Destino");
+
+    setSendingEmail(true);
+    const toastId = toast.loading('Generando y contactando al CRM...');
+
+    try {
+      const blob = await generatePDFBlob();
       const reader = new FileReader();
       reader.readAsDataURL(blob);
       reader.onloadend = async () => {
         const base64data = reader.result.split(',')[1];
-
-        // 3. Enviar por correo
         const resEmail = await fetch(`http://${window.location.hostname}:8000/api/cotizador/enviar-cotizacion/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -110,9 +249,9 @@ export default function ModuloCotizador() {
           const errData = await resEmail.json();
           throw new Error(errData.error || "Error al encolar correo");
         }
-        toast.success('¡Cotización enviada por correo!', { id: toastId });
+        toast.success('Cotización enviada exitosamente por correo', { id: toastId });
+        setAnalysisResult(null);
         setFile(null);
-        if (inputRef.current) inputRef.current.value = '';
         setSendingEmail(false);
       };
     } catch (e) {
@@ -121,444 +260,286 @@ export default function ModuloCotizador() {
     }
   }
 
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelection(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleChange = (e) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelection(e.target.files[0]);
-    }
-  };
-
-  const handleFileSelection = (selectedFile) => {
-    const validExtensions = ['.xls', '.xlsx'];
-    const isValid = validExtensions.some(ext => selectedFile.name.toLowerCase().endsWith(ext));
-
-    if (!isValid) {
-      toast.error('Solo se permiten archivos Excel (.xls o .xlsx)');
-      return;
-    }
-
-    setFile(selectedFile);
-    toast.success('Archivo preparado correctamente');
-  };
-
-  const handleUpload = async () => {
-    if (!file) {
-      toast.error('Por favor, selecciona un archivo primero');
-      return;
-    }
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('fecha', fechaOperacion);
-
-    const toastId = toast.loading('Generando cotización oficial...');
-
-    try {
-      const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/generar/`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al generar la cotización');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Cotizacion_${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success('¡Cotización generada con éxito!', { id: toastId });
-      setFile(null);
-      if (inputRef.current) inputRef.current.value = '';
-
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message, { id: toastId });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#F8FAFC',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-      padding: '40px 20px',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, fontFamily: "'Outfit', sans-serif", backgroundColor: '#F8FAFC', zIndex: 40 }}>
 
-      {/* Decorative background blobs */}
-      <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '40%', height: '50%', background: 'radial-gradient(circle, rgba(26,155,215,0.06) 0%, rgba(255,255,255,0) 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', right: '-5%', width: '50%', height: '60%', background: 'radial-gradient(circle, rgba(11,74,122,0.04) 0%, rgba(255,255,255,0) 70%)', borderRadius: '50%', zIndex: 0, pointerEvents: 'none' }} />
+      <div className={!isSidebarOpen ? 'sidebar-collapsed' : ''} style={{ width: isSidebarOpen ? '280px' : '90px', backgroundColor: '#1E1B4B', color: '#FFFFFF', display: 'flex', flexDirection: 'column', padding: '24px 16px', boxShadow: '4px 0 24px rgba(0,0,0,0.1)', zIndex: 10, transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+        
 
-      <div style={{
-        width: '100%',
-        maxWidth: '540px',
-        zIndex: 1,
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? 'translateY(0)' : 'translateY(30px)',
-        transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
-      }}>
-
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
-            gap: '8px', color: '#64748B', fontSize: '15px', fontWeight: '500', marginBottom: '32px', padding: 0,
-            transition: 'color 0.2s, transform 0.2s', letterSpacing: '-0.3px'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#0B4A7A'; e.currentTarget.style.transform = 'translateX(-4px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#64748B'; e.currentTarget.style.transform = 'translateX(0)'; }}
-        >
-          <ArrowLeft size={18} /> Volver al panel
-        </button>
-
-        {/* Main Clean Card */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          boxShadow: '0 20px 40px -10px rgba(11, 74, 122, 0.08), 0 1px 3px rgba(0,0,0,0.02)',
-          padding: '48px',
-          position: 'relative'
-        }}>
-
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-              Generar Cotización
-            </h1>
-            <p style={{ fontSize: '15px', color: '#64748B', margin: 0, lineHeight: '1.5' }}>
-              Sube el archivo Excel de la operación para generar el PDF de cotizacion.
-            </p>
-          </div>
-
-          {/* Emisor y Cliente Section */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>
-                <Building2 size={16} color="#1A9BD7" /> Empresa Emisora
-              </label>
-              <select
-                value={selectedEmpresa}
-                onChange={e => setSelectedEmpresa(e.target.value)}
-                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E2E8F0', backgroundColor: '#F8FAFC', outline: 'none' }}
-              >
-                <option value="">-- Seleccionar --</option>
-                {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre_empresa}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><UserPlus size={16} color="#1A9BD7" /> Cliente Destino</span>
-                <button onClick={() => setShowNewCliente(!showNewCliente)} style={{ background: 'none', border: 'none', color: '#1A9BD7', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>+ Nuevo</button>
-              </label>
-              <select
-                value={selectedCliente}
-                onChange={e => setSelectedCliente(e.target.value)}
-                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E2E8F0', backgroundColor: '#F8FAFC', outline: 'none' }}
-              >
-                <option value="">-- Seleccionar --</option>
-                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.empresa ? `(${c.empresa})` : ''}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {showNewCliente && (
-            <div style={{ backgroundColor: '#F1F5F9', padding: '16px', borderRadius: '12px', marginBottom: '24px', animation: 'slideDown 0.3s ease-out' }}>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#0F172A' }}>Registrar Nuevo Cliente</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <input type="text" placeholder="Nombre completo *" value={newClienteData.nombre} onChange={e => setNewClienteData({ ...newClienteData, nombre: e.target.value })} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', outline: 'none' }} />
-                <input type="email" placeholder="Correo electrónico *" value={newClienteData.correo} onChange={e => setNewClienteData({ ...newClienteData, correo: e.target.value })} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', outline: 'none' }} />
-                <input type="text" placeholder="Empresa (Opcional)" value={newClienteData.empresa} onChange={e => setNewClienteData({ ...newClienteData, empresa: e.target.value })} style={{ padding: '10px', borderRadius: '8px', border: '1px solid #CBD5E1', gridColumn: 'span 2', outline: 'none' }} />
-              </div>
-              <button onClick={handleCrearCliente} style={{ width: '100%', padding: '10px 16px', backgroundColor: '#0B4A7A', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Guardar Cliente</button>
-            </div>
-          )}
-
-          {/* Date Picker Section */}
-          <div style={{ marginBottom: '32px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>
-              <Calendar size={16} color="#1A9BD7" />
-              Fecha de la Operación
-            </label>
-            <input
-              type='date'
-              value={fechaOperacion}
-              onChange={(e) => setFechaOperacion(e.target.value)}
-              style={{
-                width: '100%', padding: '14px 16px', borderRadius: '12px',
-                border: '2px solid #E2E8F0', fontSize: '15px', color: '#0F172A', outline: 'none',
-                transition: 'all 0.2s ease', backgroundColor: '#F8FAFC',
-                fontFamily: 'inherit', fontWeight: '500'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#1A9BD7';
-                e.currentTarget.style.backgroundColor = '#FFFFFF';
-                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(26,155,215,0.1)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#E2E8F0';
-                e.currentTarget.style.backgroundColor = '#F8FAFC';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+        {/* HEADER DEL SIDEBAR (LOGO) */}
+        <div style={{ marginBottom: '40px', padding: isSidebarOpen ? '0 12px' : '0', display: 'flex', justifyContent: isSidebarOpen ? 'flex-start' : 'center', alignItems: 'center', height: '80px' }}>
+          <div style={{ 
+            backgroundColor: '#FFFFFF', 
+            padding: isSidebarOpen ? '12px 16px' : '8px', 
+            borderRadius: isSidebarOpen ? '16px' : '12px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
+            transition: 'all 0.3s ease',
+            width: isSidebarOpen ? '100%' : '58px',
+            height: isSidebarOpen ? 'auto' : '58px'
+          }}>
+            <img 
+              src="/logo.png" 
+              alt="P&M Logo" 
+              style={{ 
+                height: isSidebarOpen ? '50px' : '100%', 
+                width: isSidebarOpen ? 'auto' : '100%',
+                objectFit: 'contain',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              }} 
             />
           </div>
-
-
-
-          {/* Drag & Drop Zone */}
-          <div
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
-            style={{
-              border: `2px dashed ${dragActive ? '#1A9BD7' : '#CBD5E1'}`,
-              backgroundColor: dragActive ? '#F0F9FF' : '#FFFFFF',
-              borderRadius: '16px',
-              padding: '40px 24px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              marginBottom: '32px'
-            }}
-            onMouseEnter={(e) => {
-              if (!dragActive) {
-                e.currentTarget.style.borderColor = '#94A3B8';
-                e.currentTarget.style.backgroundColor = '#F8FAFC';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!dragActive) {
-                e.currentTarget.style.borderColor = '#CBD5E1';
-                e.currentTarget.style.backgroundColor = '#FFFFFF';
-              }
-            }}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".xls,.xlsx"
-              onChange={handleChange}
-              style={{ display: 'none' }}
-            />
-
-            <div style={{
-              backgroundColor: dragActive ? '#E0F2FE' : '#F1F5F9',
-              width: '64px', height: '64px', borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 20px auto',
-              color: dragActive ? '#0B4A7A' : '#64748B',
-              transition: 'all 0.3s'
-            }}>
-              <UploadCloud size={32} strokeWidth={2} />
-            </div>
-
-            <h3 style={{ fontSize: '17px', fontWeight: '600', color: '#0F172A', margin: '0 0 6px 0', letterSpacing: '-0.3px' }}>
-              {dragActive ? 'Suelta el archivo aquí' : 'Haz clic para subir un archivo'}
-            </h3>
-            <p style={{ color: '#64748B', margin: 0, fontSize: '14px', fontWeight: '400' }}>
-              o arrastra y suelta tu formato Excel (.xls, .xlsx)
-            </p>
-          </div>
-
-          {/* File Selected State */}
-          {file && (
-            <div
-              style={{
-                padding: '16px 20px', backgroundColor: '#F0F9FF', borderRadius: '12px',
-                border: '1px solid #BAE6FD', display: 'flex', alignItems: 'center',
-                justifyContent: 'space-between', marginBottom: '32px',
-                animation: 'slideDown 0.3s ease-out forwards'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div style={{ backgroundColor: '#FFFFFF', padding: '10px', borderRadius: '8px', color: '#0B4A7A', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                  <FileSpreadsheet size={20} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600', color: '#0F172A', letterSpacing: '-0.2px' }}>{file.name}</p>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#0EA5E9', fontWeight: '500' }}>{(file.size / 1024).toFixed(2)} KB</p>
-                </div>
-              </div>
-              <div style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}>
-                <CheckCircle2 size={18} strokeWidth={2.5} />
-              </div>
-            </div>
-          )}
-
-          {/* Primary Action */}
-          <button
-            onClick={(e) => { e.stopPropagation(); handleUpload(); }}
-            disabled={!file || loading}
-            style={{
-              width: '100%', padding: '16px', borderRadius: '12px', fontSize: '16px', fontWeight: '600',
-              background: (!file || loading) ? '#E2E8F0' : '#0B4A7A',
-              color: (!file || loading) ? '#64748B' : '#FFFFFF',
-              border: 'none', cursor: (!file || loading) ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              transition: 'all 0.3s',
-              boxShadow: (!file || loading) ? 'none' : '0 8px 16px -4px rgba(11, 74, 122, 0.4)',
-              letterSpacing: '-0.3px'
-            }}
-            onMouseEnter={(e) => {
-              if (file && !loading) {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 12px 20px -4px rgba(11, 74, 122, 0.5)';
-                e.currentTarget.style.background = '#073253';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (file && !loading) {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 8px 16px -4px rgba(11, 74, 122, 0.4)';
-                e.currentTarget.style.background = '#0B4A7A';
-              }
-            }}
-          >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : null}
-            {loading ? 'Procesando Documento...' : 'Generar Cotización PDF'}
-          </button>
-
-          {/* Secondary Action: Email */}
-          <button
-            onClick={(e) => { e.stopPropagation(); handleUploadAndSend(); }}
-            disabled={!file || sendingEmail}
-            style={{
-              width: '100%', padding: '16px', borderRadius: '12px', fontSize: '16px', fontWeight: '600',
-              background: (!file || sendingEmail) ? '#F1F5F9' : '#FFFFFF',
-              color: (!file || sendingEmail) ? '#94A3B8' : '#0B4A7A',
-              border: `2px solid ${(!file || sendingEmail) ? '#E2E8F0' : '#0B4A7A'}`,
-              cursor: (!file || sendingEmail) ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              transition: 'all 0.3s',
-              marginTop: '16px'
-            }}
-            onMouseEnter={(e) => {
-              if (file && !sendingEmail) {
-                e.currentTarget.style.background = '#F0F9FF';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (file && !sendingEmail) {
-                e.currentTarget.style.background = '#FFFFFF';
-              }
-            }}
-          >
-            {sendingEmail ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-            {sendingEmail ? 'Enviando Correo...' : 'Generar y Enviar por Correo'}
-          </button>
-
-          <style>{`
-            @keyframes spin { 100% { transform: rotate(360deg); } }
-            .animate-spin { animation: spin 1s linear infinite; }
-            @keyframes slideDown {
-              from { opacity: 0; transform: translateY(-10px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-          `}</style>
         </div>
 
-        {/* Botón para Configuración de Plantillas */}
-        <button
-          onClick={() => setShowGestor(!showGestor)}
-          style={{
-            width: '100%', padding: '16px', borderRadius: '12px', fontSize: '15px', fontWeight: '600',
-            background: 'transparent', color: '#0B4A7A',
-            border: '2px dashed #CBD5E1', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-            transition: 'all 0.3s', marginTop: '24px'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#0B4A7A'; e.currentTarget.style.backgroundColor = '#F0F9FF'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.backgroundColor = 'transparent'; }}
-        >
-          <Settings size={20} />
-          Administrar Hojas Membretadas
+
+
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+          {isSidebarOpen && <p style={{ color: '#6366F1', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', padding: '0 8px' }}>Menú Principal</p>}
+          <button className="sidebar-btn" data-tooltip="Generar Cotización" onClick={() => setActiveTab('generar')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'generar' ? '#4F46E5' : 'transparent', color: activeTab === 'generar' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'generar') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'generar') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+            <FileText size={20} style={{ minWidth: '20px' }} />
+            {isSidebarOpen && <span>Generar Cotización</span>}
+          </button>
+          <button className="sidebar-btn" data-tooltip="Hojas Membretadas" onClick={() => setActiveTab('membretadas')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'membretadas' ? '#4F46E5' : 'transparent', color: activeTab === 'membretadas' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'membretadas') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'membretadas') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+            <LayoutTemplate size={20} style={{ minWidth: '20px' }} />
+            {isSidebarOpen && <span>Hojas Membretadas</span>}
+          </button>
+        </nav>
+
+        <button className="sidebar-btn" data-tooltip="Volver al Sistema" onClick={() => navigate(-1)} style={{ background: '#312E81', border: '1px solid #4338CA', color: '#C7D2FE', display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'center' : 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', padding: isSidebarOpen ? '16px' : '16px 0', borderRadius: '12px', transition: 'all 0.2s', marginTop: 'auto', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#4338CA'; e.currentTarget.style.color = '#FFFFFF'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#312E81'; e.currentTarget.style.color = '#C7D2FE'; }}>
+          <ArrowLeft size={20} style={{ minWidth: '20px' }} />
+          {isSidebarOpen && <span>Volver al Sistema</span>}
         </button>
+      </div>
+
+      <div style={{ flex: 1, padding: '48px 60px', overflowY: 'auto' }}>
+        <div style={{ marginBottom: '40px' }}>
+          <h2 style={{ fontSize: '32px', color: '#1E1B4B', margin: '0 0 8px 0', fontWeight: '700', letterSpacing: '-0.5px' }}>
+            {activeTab === 'generar' ? 'Generador de Cotizaciones' : 'Configuración de Plantillas'}
+          </h2>
+
+        </div>
+
+        {activeTab === 'generar' && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0', animation: 'fadeIn 0.5s ease-out' }}>
+
+            {/* CONTENEDOR CENTRALIZADO */}
+            <div style={{ width: '100%', maxWidth: '850px', backgroundColor: '#FFFFFF', borderRadius: '32px', boxShadow: '0 24px 50px -12px rgba(79, 70, 229, 0.15)', border: '1px solid #EEF2FF', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+              {/* HEADER / FECHA INTEGRADA */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '32px 48px', borderBottom: '1px solid #F1F5F9', backgroundColor: '#FAFAF9' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '800', color: '#1E1B4B', letterSpacing: '-0.5px' }}>Nueva Cotización</h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#6366F1', fontWeight: '500' }}>Selecciona la fecha oficial de emisión para tu documento.</p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#FFFFFF', padding: '10px 20px', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+                  <Calendar size={20} color="#4F46E5" />
+                  <input type="date" value={fechaOperacion} onChange={e => setFechaOperacion(e.target.value)} style={{ border: 'none', outline: 'none', color: '#1E1B4B', fontWeight: '800', fontSize: '16px', fontFamily: "'Outfit', sans-serif", cursor: 'pointer', backgroundColor: 'transparent' }} />
+                </div>
+              </div>
+
+              {/* DROPZONE AMPLIO Y LIMPIO */}
+              <div style={{ padding: '56px 48px' }}>
+                <div onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} onClick={() => fileInputRef.current.click()} style={{ border: `2px dashed ${dragActive ? '#4F46E5' : '#CBD5E1'}`, backgroundColor: dragActive ? '#F5F3FF' : '#FFFFFF', borderRadius: '24px', padding: '72px 24px', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }} onMouseEnter={e => { if (!dragActive) { e.currentTarget.style.backgroundColor = '#F8FAFC'; e.currentTarget.style.borderColor = '#94A3B8'; } }} onMouseLeave={e => { if (!dragActive) { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#CBD5E1'; } }}>
+
+                  <input ref={fileInputRef} type="file" accept=".xlsx, .xls" onChange={handleFileSelect} style={{ display: 'none' }} />
+
+                  <div style={{ backgroundColor: dragActive ? '#E0E7FF' : '#F1F5F9', width: '88px', height: '88px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px auto', color: dragActive ? '#4F46E5' : '#64748B', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: dragActive ? 'scale(1.1) translateY(-4px)' : 'scale(1)' }}>
+                    {loading ? <Loader2 size={40} className="animate-spin" /> : <UploadCloud size={40} strokeWidth={1.5} />}
+                  </div>
+
+                  <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#1E1B4B', margin: '0 0 12px 0', letterSpacing: '-0.5px' }}>
+                    {loading ? 'Analizando Documento...' : (dragActive ? 'Suelta tu archivo aquí' : 'Sube tu documento Excel (.xlsx)')}
+                  </h3>
+                  <p style={{ color: '#64748B', margin: 0, fontSize: '15px', fontWeight: '500', maxWidth: '420px', lineHeight: '1.6', textAlign: 'center' }}>
+                    Sube tu formato de prefactura y el sistema armará la cotización completa en segundos.
+                  </p>
+
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+
+
+        {activeTab === 'membretadas' && (
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '40px', boxShadow: '0 16px 40px -8px rgba(79, 70, 229, 0.15)', animation: 'fadeIn 0.4s ease-out' }}>
+            <GestorMembretadas />
+          </div>
+        )}
 
       </div>
 
-      {/* Modal para Gestor de Membretadas */}
-      {showGestor && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '20px',
-          animation: 'fadeIn 0.2s ease-out'
-        }} onClick={() => setShowGestor(false)}>
-          <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              maxWidth: '800px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              background: 'transparent',
-              animation: 'slideUp 0.3s ease-out'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Botón flotante para cerrar el modal */}
-            <button
-              onClick={() => setShowGestor(false)}
-              style={{
-                position: 'absolute', top: '15px', right: '15px',
-                background: '#F1F5F9', border: 'none', width: '32px', height: '32px',
-                borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', color: '#64748B', zIndex: 10
-              }}
-            >
-              ✕
-            </button>
-            <GestorMembretadas />
+      {
+        analysisResult && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '32px', width: '600px', maxWidth: '90%', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out', display: 'flex', flexDirection: 'column' }}>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#1E1B4B', margin: 0 }}>Confirmación de Datos</h3>
+                <button onClick={() => { setAnalysisResult(null); setFile(null); }} style={{ background: '#F1F5F9', border: 'none', width: '40px', height: '40px', borderRadius: '50%', color: '#64748B', cursor: 'pointer', fontWeight: 'bold' }}>X</button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>
+
+                {/* Remitente */}
+                <div style={{ backgroundColor: analysisResult.empresa_emisora.match ? '#EEF2FF' : '#F8FAFC', border: `1px solid ${analysisResult.empresa_emisora.match ? '#C7D2FE' : '#E2E8F0'}`, padding: '24px', borderRadius: '20px' }}>
+                  <p style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: '700', color: analysisResult.empresa_emisora.match ? '#4F46E5' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building2 size={16} /> Empresa Emisora (Remitente)
+                  </p>
+
+                  {analysisResult.empresa_emisora.match ? (
+                    <div>
+                      <p style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#1E1B4B' }}>{analysisResult.empresa_emisora.nombre}</p>
+                      {analysisResult.empresa_emisora.correo && (
+                        <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B', fontWeight: '500' }}>{analysisResult.empresa_emisora.correo}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ margin: '0 0 12px 0', color: '#475569', fontSize: '14px', fontWeight: '600' }}>
+                        No pudimos vincular "{analysisResult.empresa_emisora.nombre}" automáticamente. Selecciona una manualmente:
+                      </p>
+                      <select value={selectedEmpresa} onChange={e => setSelectedEmpresa(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', outline: 'none', color: '#1E1B4B', fontWeight: '600', fontSize: '15px', fontFamily: "'Outfit', sans-serif", transition: 'border 0.2s' }}>
+                        <option value="">-- Selecciona --</option>
+                        {empresas.map(emp => (
+                          <option key={emp.id} value={emp.id}>{emp.nombre_empresa}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Destinatario */}
+                <div style={{ backgroundColor: analysisResult.cliente.match ? '#EEF2FF' : '#F8FAFC', border: `1px solid ${analysisResult.cliente.match ? '#C7D2FE' : '#E2E8F0'}`, padding: '24px', borderRadius: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <p style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: analysisResult.cliente.match ? '#4F46E5' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Users size={16} /> Cliente (Destinatario)
+                    </p>
+                    {!analysisResult.cliente.match && (
+                      <button onClick={() => setShowNewCliente(!showNewCliente)} style={{ background: '#F1F5F9', border: '1px solid #CBD5E1', color: '#4F46E5', cursor: 'pointer', fontSize: '12px', fontWeight: '700', padding: '6px 12px', borderRadius: '8px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#E2E8F0'} onMouseLeave={e => e.currentTarget.style.background = '#F1F5F9'}>+ NUEVO CLIENTE</button>
+                    )}
+                  </div>
+
+                  {analysisResult.cliente.match ? (
+                    <div>
+                      <p style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: '#1E1B4B' }}>{analysisResult.cliente.nombre}</p>
+                      {analysisResult.cliente.correo && (
+                        <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#64748B', fontWeight: '500' }}>{analysisResult.cliente.correo}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      {showNewCliente ? (
+                        <div style={{ animation: 'fadeIn 0.3s' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginBottom: '12px' }}>
+                            <input type="text" placeholder="Nombre de la empresa *" value={newClienteData.empresa} onChange={e => setNewClienteData({ ...newClienteData, empresa: e.target.value })} style={{ padding: '14px', borderRadius: '10px', border: '1px solid #CBD5E1', outline: 'none', fontSize: '14px', fontFamily: "'Outfit', sans-serif" }} />
+                            <input type="email" placeholder="Correo electrónico *" value={newClienteData.correo} onChange={e => setNewClienteData({ ...newClienteData, correo: e.target.value })} style={{ padding: '14px', borderRadius: '10px', border: '1px solid #CBD5E1', outline: 'none', fontSize: '14px', fontFamily: "'Outfit', sans-serif" }} />
+                          </div>
+                          <button onClick={handleCrearCliente} style={{ width: '100%', padding: '14px', backgroundColor: '#4F46E5', color: '#FFFFFF', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#312E81'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#4F46E5'}>
+                            Guardar Cliente en CRM
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <p style={{ margin: '0 0 12px 0', color: '#475569', fontSize: '14px', fontWeight: '600' }}>
+                            No detectamos "{analysisResult.cliente.nombre}". Selecciónalo de la lista:
+                          </p>
+                          <select value={selectedCliente} onChange={e => setSelectedCliente(e.target.value)} style={{ width: '100%', padding: '16px', borderRadius: '12px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', outline: 'none', color: '#1E1B4B', fontWeight: '600', fontSize: '15px', fontFamily: "'Outfit', sans-serif", transition: 'border 0.2s' }}>
+                            <option value="">-- Selecciona --</option>
+                            {clientes.map(cli => (
+                              <option key={cli.id} value={cli.id}>{cli.empresa}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={handlePreview}
+                    disabled={loading || sendingEmail}
+                    title="Vista Previa"
+                    style={{ padding: '20px', borderRadius: '16px', background: '#F1F5F9', color: '#4F46E5', border: '2px solid #E2E8F0', cursor: (loading || sendingEmail) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0 }}
+                    onMouseEnter={(e) => { if (!loading && !sendingEmail) { e.currentTarget.style.background = '#EEF2FF'; e.currentTarget.style.borderColor = '#C7D2FE'; } }}
+                    onMouseLeave={(e) => { if (!loading && !sendingEmail) { e.currentTarget.style.background = '#F1F5F9'; e.currentTarget.style.borderColor = '#E2E8F0'; } }}
+                  >
+                    {loading ? <Loader2 size={20} className="animate-spin" /> : <Eye size={20} />}
+                  </button>
+
+                  <button
+                    onClick={handleUpload}
+                    disabled={loading || sendingEmail}
+                    style={{ flex: 1, padding: '20px', borderRadius: '16px', fontSize: '15px', fontWeight: '700', background: '#F1F5F9', color: '#475569', border: '2px solid #E2E8F0', cursor: (loading || sendingEmail) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}
+                    onMouseEnter={(e) => { if (!loading && !sendingEmail) { e.currentTarget.style.background = '#E2E8F0'; } }}
+                    onMouseLeave={(e) => { if (!loading && !sendingEmail) { e.currentTarget.style.background = '#F1F5F9'; } }}
+                  >
+                    {loading ? <Loader2 size={20} className="animate-spin" /> : <FileText size={20} />}
+                    {loading ? 'Procesando...' : 'Descargar'}
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleUploadAndSend}
+                  disabled={loading || sendingEmail}
+                  style={{ padding: '20px', borderRadius: '16px', fontSize: '16px', fontWeight: '700', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: (loading || sendingEmail) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}
+                  onMouseEnter={(e) => { if (!loading && !sendingEmail) { e.currentTarget.style.background = '#312E81'; } }}
+                  onMouseLeave={(e) => { if (!loading && !sendingEmail) { e.currentTarget.style.background = '#4F46E5'; } }}
+                >
+                  {sendingEmail ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                  {sendingEmail ? 'Enviando...' : 'Generar y Enviar'}
+                </button>
+              </div>
+
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(30px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #C7D2FE; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #818CF8; }
+        
+        .sidebar-collapsed .sidebar-btn { position: relative; }
+        .sidebar-collapsed .sidebar-btn::after {
+          content: attr(data-tooltip); position: absolute; left: 100%; top: 50%; transform: translateY(-50%) translateX(10px);
+          background-color: #4F46E5; color: #FFFFFF; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+          white-space: nowrap; opacity: 0; visibility: hidden; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); pointer-events: none; z-index: 50;
+        }
+        .sidebar-collapsed .sidebar-btn::before {
+          content: ''; position: absolute; left: 100%; top: 50%; transform: translateY(-50%) translateX(4px);
+          border-width: 6px; border-style: solid; border-color: transparent #4F46E5 transparent transparent;
+          opacity: 0; visibility: hidden; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; z-index: 50;
+        }
+        .sidebar-collapsed .sidebar-btn:hover::after { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(16px); }
+        .sidebar-collapsed .sidebar-btn:hover::before { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(10px); }
       `}</style>
-    </div>
+    </div >
   );
 }

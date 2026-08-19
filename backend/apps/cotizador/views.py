@@ -3139,3 +3139,76 @@ def enviar_cotizacion_email(request):
         
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
+class AnalizarExcelView(APIView):
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        archivo = request.FILES.get('file')
+        if not archivo:
+            return Response({"error": "No se envió ningún archivo"}, status=400)
+
+        if not archivo.name.endswith(('.xlsx', '.xls')):
+            return Response({"error": "El archivo debe ser Excel (.xlsx, .xls)"}, status=400)
+
+        try:
+            # Leer el Excel
+            df = pd.read_excel(archivo, sheet_name='4.0')
+            
+            # Función segura para extraer valores sin causar IndexError si el Excel es muy pequeño
+            def safe_iloc(row, col):
+                if row < df.shape[0] and col < df.shape[1]:
+                    val = df.iloc[row, col]
+                    return str(val).strip() if pd.notna(val) else ""
+                return ""
+
+            # Buscar Empresa Emisora en D3
+            empresa_factura_excel = safe_iloc(0, 3)
+            
+            # Buscar Cliente Receptor iterando
+            def buscar_valor_derecha(etiqueta, filas_max=17):
+                etiqueta = etiqueta.upper()
+                for r in range(min(filas_max, df.shape[0])):
+                    for c in range(min(df.shape[1], 10)):
+                        val = str(df.iloc[r, c]).strip().upper()
+                        if val and val != 'NAN' and etiqueta in val:
+                            max_c = min(c + 4, df.shape[1])
+                            for next_c in range(c + 1, max_c):
+                                next_val = df.iloc[r, next_c]
+                                if pd.notna(next_val) and str(next_val).strip() != "":
+                                    if str(next_val).strip().upper() != "NAN":
+                                        return str(next_val).strip()
+                            return ""
+                return ""
+
+            cliente_receptor_excel = buscar_valor_derecha("RAZON SOCIAL") or safe_iloc(6, 3)
+            
+            # Limpiar saltos de línea
+            empresa_factura_excel = empresa_factura_excel.replace('\n', ' ').replace('\r', '')
+            cliente_receptor_excel = cliente_receptor_excel.replace('\n', ' ').replace('\r', '')
+
+            # Buscar en DB usando icontains (case insensitive)
+            empresa_db = EmpresaEmisora.objects.filter(nombre_empresa__icontains=empresa_factura_excel).first() if empresa_factura_excel else None
+            
+            # AHORA BUSCAMOS POR EMPRESA
+            cliente_db = Cliente.objects.filter(empresa__icontains=cliente_receptor_excel).first() if cliente_receptor_excel else None
+            
+            return Response({
+                "empresa_emisora": {
+                    "id": empresa_db.id if empresa_db else None,
+                    "nombre": empresa_db.nombre_empresa if empresa_db else (empresa_factura_excel or "Desconocida"),
+                    "correo": empresa_db.correo_remitente if empresa_db else "",
+                    "match": bool(empresa_db)
+                },
+                "cliente": {
+                    "id": cliente_db.id if cliente_db else None,
+                    "nombre": cliente_db.empresa if cliente_db else (cliente_receptor_excel or "Desconocido"),
+                    "correo": cliente_db.correo if cliente_db else "",
+                    "match": bool(cliente_db)
+                }
+            })
+            
+        except Exception as e:
+            # Si algo falla (ej. la hoja '4.0' no existe), lo atrapamos y devolvemos un JSON de error
+            return Response({"error": f"El documento no tiene el formato esperado: {str(e)}"}, status=400)
+

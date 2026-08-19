@@ -17,13 +17,12 @@ class EmpresaEmisora(models.Model):
         verbose_name_plural = 'Empresas Emisoras'
 
 class Cliente(models.Model):
-    nombre = models.CharField(max_length=200, help_text='Nombre del contacto o prospecto')
+    empresa = models.CharField(max_length=200, help_text='Nombre de la empresa del cliente')
     correo = models.EmailField(help_text='Correo donde se enviará la cotización')
-    empresa = models.CharField(max_length=200, blank=True, null=True, help_text='Nombre de la empresa del cliente')
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.nombre} ({self.empresa or "Sin Empresa"})'
+        return self.empresa
 
     class Meta:
         verbose_name = 'Cliente'

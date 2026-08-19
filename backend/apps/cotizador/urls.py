@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import GenerarCotizacionView, GestorMembretadasView, EmpresaEmisoraViewSet, ClienteViewSet, enviar_cotizacion_email
+# IMPORTAR AnalizarExcelView
+from .views import GenerarCotizacionView, GestorMembretadasView, EmpresaEmisoraViewSet, ClienteViewSet, enviar_cotizacion_email, AnalizarExcelView
 
 router = DefaultRouter()
 router.register(r'empresas-emisoras', EmpresaEmisoraViewSet)
@@ -11,4 +12,6 @@ urlpatterns = [
     path('generar/', GenerarCotizacionView.as_view()),
     path('membretadas/', GestorMembretadasView.as_view()),
     path('enviar-cotizacion/', enviar_cotizacion_email),
+    # RUTA PARA EXTRAER DATOS
+    path('analizar-excel/', AnalizarExcelView.as_view()),
 ]
