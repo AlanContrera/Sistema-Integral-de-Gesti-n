@@ -10,7 +10,7 @@ Se abandonó el layout de "tarjetas múltiples" o Bento Box a favor de un diseñ
 
 ## 2. Mejoras Funcionales en el Modal de Confirmación
 El modal final, que aparece tras generar el PDF, fue enriquecido funcionalmente sin perder su estética limpia:
-- **Visualización de Correos:** Se mapearon y mostraron visualmente en el modal el `correo_remitente` y el `correo` (cliente), extraídos de los datos pre-cargados de las emisoras.
+- **Integración de Correos Automáticos:** Se integró visual y funcionalmente el **envío automático de correos** (vía Celery/Redis). El modal ahora mapea y expone el `correo_remitente` y el `correo` (cliente) extraídos dinámicamente de la base de datos, culminando en un flujo automatizado de 1-click.
 - **Vista Previa de PDF In-Browser:** Se agregó un botón secundario ("Ojo") que toma el `blob` del PDF generado y lo abre en una nueva pestaña usando `window.open(URL.createObjectURL(blob))`, permitiendo al usuario revisar el documento antes de confirmar el envío por correo.
 
 ## 3. Sidebar: Ajustes de Logo y Colapso Permanente
