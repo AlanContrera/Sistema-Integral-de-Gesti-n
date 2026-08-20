@@ -1,6 +1,6 @@
 # CONTEXTO MAESTRO - Sistema Integral (App_Facturacion)
 
-> **Última actualización:** 2026-08-07
+> **Última actualización:** 2026-08-20
 > **Estado general del proyecto:** 🟢 En construcción — Setup de rastreo de creadores completado. En pausa por migración de equipo. Preparando inicio del Módulo de Administración de Usuarios.
 > **Sesión actual enfocada en:** Definición de la arquitectura para el Módulo TI y jerarquía de Roles.
 
@@ -56,10 +56,13 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 - Renderizado limpio de cuerpo de correos (eliminación de basura y metadatos de Outlook).
 - Interfaz de "Modo Edición" para validación humana de errores del OCR.
 
-### ✅ Módulo 5: Generador de Cotizaciones PDF
+### ✅ Módulo 5: Generador de Cotizaciones PDF y Correos
 - Procesamiento en backend de archivos Excel (Django + Pandas).
 - Generación de PDF dinámicos y membretados mediante motor Platypus (ReportLab).
 - Interfaz web dedicada en React (Drag & Drop) para generación y descarga interactiva.
+- **Flujo de Envío 1-Click:** Integración con Celery y Redis para envío de correos asíncronos en segundo plano sin congelar UI.
+- **Plantillas Dinámicas:** Inyección de textos y asuntos dinámicos desde Base de Datos según Empresa Emisora.
+- **Folio y Diseño Premium:** Extracción oculta del folio generado en PDF para nombrar el archivo adjunto y maquetación de correo con tablas HTML premium.
 
 ### Módulo 6: Reclutamiento y Selección
 Este módulo representa la digitalización completa y avanzada de las herramientas de perfilamiento y seguimiento que previamente se manejaban en Excel, transformándolas en un sistema de grado empresarial con estética 'Corporate Premium'.

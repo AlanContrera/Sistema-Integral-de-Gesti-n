@@ -12,6 +12,6 @@
 
 "El usuario utiliza Obsidian como su Segundo Cerebro. Al finalizar cualquier tarea significativa o refactorizaci贸n, debes crear siempre un artefacto 'Walkthrough' excelentemente formateado, claro y conciso para que el usuario pueda referenciarlo en su b贸veda."
 
-- **DOCUMENTACI脫N VIVA EN REPOSITORIO**: El usuario utiliza Obsidian como su Segundo Cerebro. En lugar de generar artefactos 'Walkthrough' temporales que se pierden, el agente debe crear y mantener actualizada la carpeta `docs/` dentro del proyecto con archivos markdown excelentemente formateados (ej. arquitectura.md, docker.md, etc.) al finalizar cualquier tarea significativa. El usuario se encargar谩 de copiar estos archivos a su b贸veda personal cuando lo necesite.
+- **DOCUMENTACI脫N VIVA EN REPOSITORIO**: El usuario utiliza Obsidian como su Segundo Cerebro. En lugar de generar artefactos 'Walkthrough' temporales que se pierden, el agente debe crear y mantener actualizada la carpeta `docs/` dentro del proyecto con archivos markdown excelentemente formateados (ej. arquitectura.md, docker.md, etc.) al finalizar cualquier tarea significativa. El usuario se encargar谩 de copiar estos archivos a su b贸veda personal cuando lo necesite. Tambi茅n organizar los archivos y ponerle fecha al nombre del archivo y dentro del mismo 
 
-- **MODALES PERSONALIZADOS**: Prohibido usar window.confirm o alert nativos. Siempre dise馻r e implementar Modales (Dialogs) personalizados en React con la misma paleta de colores y UX corporativa del sistema.
+- **MODALES PERSONALIZADOS**: Prohibido usar window.confirm o alert nativos. Siempre dise锟絘r e implementar Modales (Dialogs) personalizados en React con la misma paleta de colores y UX corporativa del sistema.

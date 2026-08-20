@@ -8,6 +8,9 @@ class EmpresaEmisora(models.Model):
     usar_ssl = models.BooleanField(default=True)
     correo_remitente = models.EmailField(help_text='Correo corporativo que enviará el mensaje')
     password = models.CharField(max_length=255, help_text='Contraseña del correo')
+    asunto_cotizacion = models.CharField(max_length=255, blank=True, null=True, help_text='Asunto personalizado del correo')
+    cuerpo_cotizacion = models.TextField(blank=True, null=True, help_text='Cuerpo del correo personalizado')
+
 
     def __str__(self):
         return self.nombre_empresa
@@ -18,7 +21,8 @@ class EmpresaEmisora(models.Model):
 
 class Cliente(models.Model):
     empresa = models.CharField(max_length=200, help_text='Nombre de la empresa del cliente')
-    correo = models.EmailField(help_text='Correo donde se enviará la cotización')
+    correo = models.EmailField(help_text='Correo principal donde se enviará la cotización')
+    correos_cc = models.CharField(max_length=500, blank=True, null=True, help_text='Correos secundarios separados por coma (ej. uno@mail.com, dos@mail.com)')
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -27,3 +31,4 @@ class Cliente(models.Model):
     class Meta:
         verbose_name = 'Cliente'
         verbose_name_plural = 'Clientes'
+

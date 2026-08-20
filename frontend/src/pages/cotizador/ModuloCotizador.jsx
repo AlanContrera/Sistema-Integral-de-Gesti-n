@@ -160,7 +160,11 @@ export default function ModuloCotizador() {
       const errorData = await resPdf.json();
       throw new Error(errorData.error || "Error generando PDF de la cotización");
     }
-    return await resPdf.blob();
+
+    const blob = await resPdf.blob();
+    const folio = resPdf.headers.get('X-Folio-Generado') || "Generada";
+
+    return { blob, folio };
   }
 
   const handleUpload = async () => {
@@ -173,7 +177,7 @@ export default function ModuloCotizador() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Cotizacion_${Date.now()}.pdf`;
+      a.download = `${folio}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -230,7 +234,7 @@ export default function ModuloCotizador() {
     const toastId = toast.loading('Generando y contactando al CRM...');
 
     try {
-      const blob = await generatePDFBlob();
+      const { blob, folio } = await generatePDFBlob();
       const reader = new FileReader();
       reader.readAsDataURL(blob);
       reader.onloadend = async () => {
@@ -241,7 +245,8 @@ export default function ModuloCotizador() {
           body: JSON.stringify({
             cliente_id: selectedCliente,
             empresa_id: selectedEmpresa,
-            pdf_base64: base64data
+            pdf_base64: base64data,
+            folio: folio
           })
         });
 
@@ -264,31 +269,31 @@ export default function ModuloCotizador() {
     <div style={{ display: 'flex', height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, fontFamily: "'Outfit', sans-serif", backgroundColor: '#F8FAFC', zIndex: 40 }}>
 
       <div className={!isSidebarOpen ? 'sidebar-collapsed' : ''} style={{ width: isSidebarOpen ? '280px' : '90px', backgroundColor: '#1E1B4B', color: '#FFFFFF', display: 'flex', flexDirection: 'column', padding: '24px 16px', boxShadow: '4px 0 24px rgba(0,0,0,0.1)', zIndex: 10, transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
-        
+
 
         {/* HEADER DEL SIDEBAR (LOGO) */}
         <div style={{ marginBottom: '40px', padding: isSidebarOpen ? '0 12px' : '0', display: 'flex', justifyContent: isSidebarOpen ? 'flex-start' : 'center', alignItems: 'center', height: '80px' }}>
-          <div style={{ 
-            backgroundColor: '#FFFFFF', 
-            padding: isSidebarOpen ? '12px 16px' : '8px', 
-            borderRadius: isSidebarOpen ? '16px' : '12px', 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            padding: isSidebarOpen ? '12px 16px' : '8px',
+            borderRadius: isSidebarOpen ? '16px' : '12px',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
             transition: 'all 0.3s ease',
             width: isSidebarOpen ? '100%' : '58px',
             height: isSidebarOpen ? 'auto' : '58px'
           }}>
-            <img 
-              src="/logo.png" 
-              alt="P&M Logo" 
-              style={{ 
-                height: isSidebarOpen ? '50px' : '100%', 
+            <img
+              src="/logo.png"
+              alt="P&M Logo"
+              style={{
+                height: isSidebarOpen ? '50px' : '100%',
                 width: isSidebarOpen ? 'auto' : '100%',
                 objectFit: 'contain',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              }} 
+              }}
             />
           </div>
         </div>

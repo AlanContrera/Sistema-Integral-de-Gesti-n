@@ -3055,8 +3055,10 @@ class GenerarCotizacionView(APIView):
             # 4. Devolver el archivo final
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = 'attachment; filename="cotizacion_generada.pdf"'
+
+            response['X-Folio-Generado'] = folio_generado
+            response['Access-Control-Expose-Headers'] = 'X-Folio-Generado'
             output.write(response)
-            
             return response
 
 
@@ -3130,12 +3132,16 @@ def enviar_cotizacion_email(request):
         cliente_id = request.data.get('cliente_id')
         empresa_id = request.data.get('empresa_id')
         pdf_base64 = request.data.get('pdf_base64')
+        # NUEVO: Extraemos el folio (si no viene de React, dirá 'Oficial')
+        folio = request.data.get('folio', 'Oficial')
         
         if not all([cliente_id, empresa_id, pdf_base64]):
             return Response({"error": "Faltan datos (cliente_id, empresa_id o pdf_base64)"}, status=400)
             
-        enviar_cotizacion_task.delay(cliente_id, empresa_id, pdf_base64)
+        # NUEVO: Le pasamos el folio a la tarea
+        enviar_cotizacion_task.delay(cliente_id, empresa_id, pdf_base64, folio)
         return Response({"mensaje": "Cotización encolada para envío correctamente"})
+
         
     except Exception as e:
         return Response({"error": str(e)}, status=500)
