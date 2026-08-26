@@ -20,11 +20,17 @@ import random
 import string
 from datetime import datetime
 from rest_framework import viewsets
-from .models import EmpresaEmisora, Cliente
+from .models import EmpresaEmisora, Cliente, OperacionFacturacion
 from .serializers import EmpresaEmisoraSerializer, ClienteSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from .excel_generator import generar_excel_prefactura
+import base64
+from django.test import RequestFactory
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.response import Response
-from .tasks import enviar_cotizacion_task
+from .tasks import enviar_cotizacion_task, enviar_prefactura_monterrey_task
+
 
 # --- HELPERS DE DIBUJO ---
 def dibujar_texto_alineado(can, texto, x, y, fuente, tamano, color, alineacion="left"):
@@ -3189,15 +3195,64 @@ class AnalizarExcelView(APIView):
 
             cliente_receptor_excel = buscar_valor_derecha("RAZON SOCIAL") or safe_iloc(6, 3)
             
-            # Limpiar saltos de línea
-            empresa_factura_excel = empresa_factura_excel.replace('\n', ' ').replace('\r', '')
-            cliente_receptor_excel = cliente_receptor_excel.replace('\n', ' ').replace('\r', '')
+            import re
 
-            # Buscar en DB usando icontains (case insensitive)
-            empresa_db = EmpresaEmisora.objects.filter(nombre_empresa__icontains=empresa_factura_excel).first() if empresa_factura_excel else None
-            
-            # AHORA BUSCAMOS POR EMPRESA
-            cliente_db = Cliente.objects.filter(empresa__icontains=cliente_receptor_excel).first() if cliente_receptor_excel else None
+            # Función para normalizar nombres y quitar regímenes societarios
+            def limpiar_razon_social(texto):
+                if not texto:
+                    return ""
+                t = str(texto).upper()
+                patrones = [
+                    r'\bS\.?A\.?\s+D\.?E?\s+C\.?V\.?\b',
+                    r'\bS\.?A\.?\s+DE\s+C\.?V\.?\b',
+                    r'\bSA\s+D\s+CV\b',
+                    r'\bSA\s+DE\s+CV\b',
+                    r'\bS\.?A\.?P\.?I\.?\s+(DE\s+)?C\.?V\.?\b',
+                    r'\bS\.?A\.?S\.?\b',
+                    r'\bS\.?\s+DE\s+R\.?L\.?\s+(DE\s+)?C\.?V\.?\b',
+                    r'\bS\.?C\.?\b',
+                    r'\bS\.?N\.?C\.?\b',
+                    r'\bS\.?C\.?P\.?\b',
+                    r'\bI\.?A\.?P\.?\b',
+                    r'\bA\.?C\.?\b',
+                ]
+                for pat in patrones:
+                    t = re.sub(pat, '', t, flags=re.IGNORECASE)
+                t = re.sub(r'[^A-Z0-9\s]', ' ', t)
+                return ' '.join(t.split())
+
+            def buscar_coincidencia(texto_buscado, lista_objetos, campo_nombre):
+                if not texto_buscado:
+                    return None
+                limpio_buscado = limpiar_razon_social(texto_buscado)
+                if not limpio_buscado:
+                    return None
+                
+                # 1. Coincidencia directa o contenida
+                for obj in lista_objetos:
+                    nombre_db = getattr(obj, campo_nombre, "")
+                    limpio_db = limpiar_razon_social(nombre_db)
+                    if limpio_db and (limpio_db == limpio_buscado or limpio_db in limpio_buscado or limpio_buscado in limpio_db):
+                        return obj
+                
+                # 2. Coincidencia por conjunto de palabras (tokens)
+                tokens_buscado = set(limpio_buscado.split())
+                for obj in lista_objetos:
+                    nombre_db = getattr(obj, campo_nombre, "")
+                    tokens_db = set(limpiar_razon_social(nombre_db).split())
+                    if tokens_db and tokens_db.issubset(tokens_buscado):
+                        return obj
+                return None
+
+            # Limpiar saltos de línea
+            empresa_factura_excel = empresa_factura_excel.replace('\n', ' ').replace('\r', '').strip()
+            cliente_receptor_excel = cliente_receptor_excel.replace('\n', ' ').replace('\r', '').strip()
+
+            # Búsqueda inteligente
+            empresa_db = buscar_coincidencia(empresa_factura_excel, list(EmpresaEmisora.objects.all()), 'nombre_empresa')
+            cliente_db = buscar_coincidencia(cliente_receptor_excel, list(Cliente.objects.all()), 'empresa')
+
+
             
             return Response({
                 "empresa_emisora": {
@@ -3217,4 +3272,264 @@ class AnalizarExcelView(APIView):
         except Exception as e:
             # Si algo falla (ej. la hoja '4.0' no existe), lo atrapamos y devolvemos un JSON de error
             return Response({"error": f"El documento no tiene el formato esperado: {str(e)}"}, status=400)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def descargar_excel_prefactura_view(request):
+    try:
+        data = request.data
+        excel_buffer, totales = generar_excel_prefactura(data)
+        
+        empresa_slug = str(data.get('empresa_nombre', 'EMPRESA')).replace(' ', '_')
+        receptor_slug = str(data.get('razon_social', 'CLIENTE')).replace(' ', '_')
+        fecha_slug = datetime.now().strftime('%Y%m%d')
+        filename = f"PREFACTURA_{empresa_slug}_{receptor_slug}_{fecha_slug}.xlsx"
+        
+        response = HttpResponse(
+            excel_buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        return response
+    except Exception as e:
+        return Response({"error": f"Error generando Excel: {str(e)}"}, status=400)
 
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def enviar_prefactura_web_view(request):
+    try:
+        data = request.data
+        cliente_id = data.get('cliente_id')
+        empresa_id = data.get('empresa_id')
+        
+        if not cliente_id or not empresa_id:
+            return Response({"error": "Debe especificar la empresa emisora y el cliente destino"}, status=400)
+
+        excel_buffer, totales = generar_excel_prefactura(data)
+        excel_b64 = base64.b64encode(excel_buffer.getvalue()).decode('utf-8')
+        
+        folio = f"PREFAC-{datetime.now().strftime('%d%m%Y')}-{empresa_id}{cliente_id}"
+
+        correo_monterrey = "giovannicontre24@gmail.com"
+        cc_monterrey = ""
+
+
+        enviar_prefactura_monterrey_task.delay(
+            cliente_id=cliente_id,
+            empresa_id=empresa_id,
+            pdf_base64=excel_b64,
+            folio=folio,
+            subtotal=totales['subtotal'],
+            impuestos=totales['impuestos_trasladados'],
+            total=totales['total'],
+            es_excel=True,
+            correo_destino=correo_monterrey,
+            correos_cc_destino=cc_monterrey
+        )
+
+        return Response({
+            "mensaje": "Prefactura procesada y encolada para envío a Monterrey",
+            "folio": folio,
+            "totales": totales
+        })
+    except Exception as e:
+        return Response({"error": f"Error al procesar envío: {str(e)}"}, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def solicitar_factura_monterrey_view(request):
+    """ Camino 2: Solicita la factura al equipo de Monterrey """
+    try:
+        data = request.data
+        cliente_id = data.get('cliente_id')
+        empresa_id = data.get('empresa_id')
+        
+        if not cliente_id or not empresa_id:
+            return Response({"error": "Debe especificar la empresa emisora y el cliente destino"}, status=400)
+
+        cliente = Cliente.objects.get(id=cliente_id)
+        empresa = EmpresaEmisora.objects.get(id=empresa_id)
+        
+        # 1. Crear el registro en la BD (El "Archivero Digital")
+        partidas = data.get('partidas', [])
+        subtotal = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0))) for p in partidas)
+        impuestos = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0)) * float(p.get('tasa_iva', 0.16))) for p in partidas)
+        
+        operacion = OperacionFacturacion.objects.create(
+            cliente=cliente,
+            empresa_emisora=empresa,
+            subtotal=subtotal,
+            impuestos=impuestos,
+            total=subtotal + impuestos,
+            datos_formulario=data,
+            estado_factura='ENVIADA_A_MONTERREY' 
+        )
+        
+        # 2. Generar el Excel (Prefactura) para Monterrey
+        excel_buffer, totales = generar_excel_prefactura(data)
+        excel_b64 = base64.b64encode(excel_buffer.getvalue()).decode('utf-8')
+        
+        # 3. Enviar a Monterrey por correo
+        folio_asunto = f"[REF: {operacion.referencia_unica}]"
+        
+        correo_monterrey = "giovannicontre24@gmail.com"
+        cc_monterrey = ""
+
+        enviar_prefactura_monterrey_task.delay(
+            cliente_id=cliente_id,
+            empresa_id=empresa_id,
+            pdf_base64=excel_b64,
+            folio=operacion.referencia_unica,
+            es_excel=True,
+            correo_destino=correo_monterrey,
+            correos_cc_destino=cc_monterrey
+        )
+
+
+        return Response({
+            "mensaje": "Factura solicitada a Monterrey exitosamente",
+            "referencia": operacion.referencia_unica
+        })
+    except Exception as e:
+        return Response({"error": f"Error al procesar solicitud a Monterrey: {str(e)}"}, status=400)
+
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def generar_cotizacion_view(request):
+    """ Camino 1: Genera Cotización al Cliente """
+    try:
+        data = request.data
+        cliente_id = data.get('cliente_id')
+        empresa_id = data.get('empresa_id')
+        
+        if not cliente_id or not empresa_id:
+            return Response({"error": "Debe especificar la empresa emisora y el cliente destino"}, status=400)
+
+        cliente = Cliente.objects.get(id=cliente_id)
+        empresa = EmpresaEmisora.objects.get(id=empresa_id)
+        
+        partidas = data.get('partidas', [])
+        subtotal = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0))) for p in partidas)
+        impuestos = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0)) * float(p.get('tasa_iva', 0.16))) for p in partidas)
+        
+        # 1. Crear el registro en la BD (Camino 1)
+        operacion = OperacionFacturacion.objects.create(
+            cliente=cliente,
+            empresa_emisora=empresa,
+            subtotal=subtotal,
+            impuestos=impuestos,
+            total=subtotal + impuestos,
+            datos_formulario=data,
+            cotizacion_enviada=True # Marcamos que es una cotización enviada
+        )
+        
+        # 2. Generar archivo a enviar (De momento mandamos la prefactura)
+        excel_buffer, totales = generar_excel_prefactura(data)
+        excel_b64 = base64.b64encode(excel_buffer.getvalue()).decode('utf-8')
+        
+        folio = f"COTIZACION-{datetime.now().strftime('%d%m%Y')}"
+
+        enviar_cotizacion_task.delay(
+            cliente_id=cliente_id,
+            empresa_id=empresa_id,
+            pdf_base64=excel_b64,
+            folio=folio,
+            subtotal=totales['subtotal'],
+            impuestos=totales['impuestos_trasladados'],
+            total=totales['total'],
+            es_excel=True
+        )
+
+        return Response({
+            "mensaje": "Cotización generada y enviada al cliente",
+            "referencia": operacion.referencia_unica
+        })
+    except Exception as e:
+        return Response({"error": f"Error al generar cotización: {str(e)}"}, status=400)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def preview_cotizacion_pdf_view(request):
+    """
+    Ruta para generar el PDF de la cotización desde el formulario web.
+    Recibe JSON, genera el Excel en memoria y lo inyecta a GenerarCotizacionView.
+    """
+    try:
+        data = request.data
+        # 1. Generar Excel en memoria usando nuestra función existente
+        excel_buffer, totales = generar_excel_prefactura(data)
+        
+        factory = RequestFactory()
+        excel_buffer.seek(0)
+        archivo_fake = SimpleUploadedFile(
+            'prefactura_en_memoria.xlsx',
+            excel_buffer.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        
+        # Inyectamos el archivo fantasma y el ID de la empresa
+        mock_request = factory.post('/api/cotizador/generar/', {
+            'file': archivo_fake,
+            'fecha': data.get('fecha_emision', ''),
+            'empresa_id': data.get('empresa_id', '')
+        })
+        
+        # 3. Invocar a tu vista original como si la hubiera llamado el Frontend
+        view = GenerarCotizacionView.as_view()
+        response = view(mock_request)
+        
+        return response
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def operaciones_pendientes_view(request):
+    """ Retorna las facturas listas para revisión (RECIBIDA_DE_MONTERREY) """
+    # Nota: Asegúrate de importar OperacionFacturacion arriba si no lo tienes importado globalmente
+    from .models import OperacionFacturacion
+    operaciones = OperacionFacturacion.objects.filter(estado_factura='RECIBIDA_DE_MONTERREY').select_related('cliente', 'empresa_emisora')
+    
+    data = []
+    for op in operaciones:
+        data.append({
+            'id': op.id,
+            'referencia': op.referencia_unica,
+            'cliente': op.cliente.empresa if op.cliente else 'Desconocido',
+            'empresa_emisora': op.empresa_emisora.nombre_empresa if op.empresa_emisora else 'Desconocida',
+            'subtotal': op.subtotal,
+            'total': op.total,
+            'fecha': op.fecha_actualizacion.strftime('%Y-%m-%d %H:%M'),
+            'pdf_url': request.build_absolute_uri(op.pdf_factura.url) if op.pdf_factura else None,
+            'xml_url': request.build_absolute_uri(op.xml_factura.url) if op.xml_factura else None,
+        })
+        
+    return Response(data)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def aprobar_operacion_view(request, operacion_id):
+    """ Aprueba la factura y la envía al cliente final """
+    try:
+        from .models import OperacionFacturacion
+        from .tasks import enviar_factura_oficial_task
+        operacion = OperacionFacturacion.objects.get(id=operacion_id, estado_factura='RECIBIDA_DE_MONTERREY')
+        
+        # 1. Encolar tarea de envío al cliente (XML y PDF)
+        enviar_factura_oficial_task.delay(operacion.id)
+        
+        # 2. Actualizar estado
+        operacion.estado_factura = 'ENVIADA_AL_CLIENTE'
+        operacion.save()
+        
+        return Response({"mensaje": "Factura aprobada y enviada al cliente"})
+        
+    except Exception as e:
+        return Response({"error": f"Error al aprobar: {str(e)}"}, status=400)

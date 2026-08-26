@@ -139,10 +139,11 @@ IMAP_FOLDER = config('IMAP_FOLDER', default='INBOX')
 
 CELERY_BEAT_SCHEDULE = {
     'revisar-bandeja-cada-2-minutos': {
-        'task': 'correos.revisar_bandeja',
+        'task': 'apps.cotizador.tasks.robot_lector_imap_task',
         'schedule': crontab(minute='*/2'),
     },
 }
+
 
 
 CORS_ALLOWED_ORIGINS = [

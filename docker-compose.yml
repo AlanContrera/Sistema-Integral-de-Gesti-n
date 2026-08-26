@@ -33,6 +33,20 @@ services:
       - redis
       - backend
     command: celery -A config worker -l info
+    # El Reloj (Celery Beat) que lanza tareas cada 2 minutos
+  celery-beat:
+    build:
+      context: ./backend
+    container_name: sig_celery_beat
+    volumes:
+      - ./backend:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - backend
+    command: celery -A config beat -l info
 
   # 3. Base de datos en memoria para Celery (Redis)
   redis:

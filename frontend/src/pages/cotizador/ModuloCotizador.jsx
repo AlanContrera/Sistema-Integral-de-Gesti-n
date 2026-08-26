@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UploadCloud, FileSpreadsheet, CheckCircle2, Loader2, Calendar, LayoutTemplate, Building2, UserPlus, Send, FileText, PieChart, Users, Menu, AlertCircle, Eye } from 'lucide-react';
+import { ArrowLeft, UploadCloud, FileSpreadsheet, CheckCircle, Loader2, Calendar, LayoutTemplate, Building2, UserPlus, Send, FileText, PieChart, Users, Menu, AlertCircle, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GestorMembretadas from '../../components/cotizador/GestorMembretadas';
+import FormularioPreFactura from '../../components/cotizador/FormularioPreFactura';
+import BandejaAprobacion from '../../components/cotizador/BandejaAprobacion';
 
 export default function ModuloCotizador() {
   const navigate = useNavigate();
@@ -173,7 +175,8 @@ export default function ModuloCotizador() {
     const toastId = toast.loading('Generando Cotización PDF...');
 
     try {
-      const blob = await generatePDFBlob();
+      // Extraemos tanto el blob como el folio
+      const { blob, folio } = await generatePDFBlob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -191,40 +194,38 @@ export default function ModuloCotizador() {
     }
   };
 
-
   const handlePreview = async () => {
-    if (!file || !analysisResult) return;
+    if (!validateForm()) return;
+
+    // 1. Abrimos la pestaña INMEDIATAMENTE (Evita que el navegador lo bloquee por ser asíncrono)
+    const nuevaPestana = window.open('', '_blank');
+
+    if (!nuevaPestana) {
+      toast.error("Por favor, desactiva el bloqueador de ventanas emergentes para este sitio.");
+      return;
+    }
+
+    // 2. Le ponemos un mensaje de carga a la nueva pestaña para que el usuario no se desespere
+    nuevaPestana.document.write('<html><body style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f1f5f9; color: #475569;"><h2>Generando vista previa del PDF... Por favor espera.</h2></body></html>');
+
     setLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('fecha', fechaOperacion);
-    if (analysisResult.empresa_emisora.id) {
-      formData.append('empresa_id', analysisResult.empresa_emisora.id);
-    }
-    if (analysisResult.cliente.id) {
-      formData.append('cliente_id', analysisResult.cliente.id);
-    }
 
     try {
-      const res = await fetch(`http://${window.location.hostname}:8000/api/cotizador/generar/`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Error al generar la vista previa');
-      }
-
-      const blob = await res.blob();
+      const { blob } = await generatePDFBlob();
       const url = window.URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setLoading(false);
+
+      // 3. Ya que tenemos el PDF, recargamos esa pestaña con el archivo real
+      nuevaPestana.location.href = url;
+
     } catch (error) {
+      nuevaPestana.close(); // Si falla, cerramos la pestaña que abrimos
       toast.error(error.message);
+    } finally {
       setLoading(false);
     }
   };
+
+
 
   const handleUploadAndSend = async () => {
     if (!validateForm()) return;
@@ -271,32 +272,7 @@ export default function ModuloCotizador() {
       <div className={!isSidebarOpen ? 'sidebar-collapsed' : ''} style={{ width: isSidebarOpen ? '280px' : '90px', backgroundColor: '#1E1B4B', color: '#FFFFFF', display: 'flex', flexDirection: 'column', padding: '24px 16px', boxShadow: '4px 0 24px rgba(0,0,0,0.1)', zIndex: 10, transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
 
 
-        {/* HEADER DEL SIDEBAR (LOGO) */}
-        <div style={{ marginBottom: '40px', padding: isSidebarOpen ? '0 12px' : '0', display: 'flex', justifyContent: isSidebarOpen ? 'flex-start' : 'center', alignItems: 'center', height: '80px' }}>
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            padding: isSidebarOpen ? '12px 16px' : '8px',
-            borderRadius: isSidebarOpen ? '16px' : '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
-            transition: 'all 0.3s ease',
-            width: isSidebarOpen ? '100%' : '58px',
-            height: isSidebarOpen ? 'auto' : '58px'
-          }}>
-            <img
-              src="/logo.png"
-              alt="P&M Logo"
-              style={{
-                height: isSidebarOpen ? '50px' : '100%',
-                width: isSidebarOpen ? 'auto' : '100%',
-                objectFit: 'contain',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-            />
-          </div>
-        </div>
+
 
 
 
@@ -310,6 +286,14 @@ export default function ModuloCotizador() {
             <LayoutTemplate size={20} style={{ minWidth: '20px' }} />
             {isSidebarOpen && <span>Hojas Membretadas</span>}
           </button>
+          <button className="sidebar-btn" data-tooltip="Prefactura Web" onClick={() => setActiveTab('llenado_web')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'llenado_web' ? '#4F46E5' : 'transparent', color: activeTab === 'llenado_web' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'llenado_web') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'llenado_web') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+            <FileSpreadsheet size={20} style={{ minWidth: '20px' }} />
+            {isSidebarOpen && <span>Prefactura Web</span>}
+          </button>
+          <button className="sidebar-btn" data-tooltip="Bandeja de Aprobación" onClick={() => setActiveTab('bandeja_aprovación')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_aprovación' ? '#4F46E5' : 'transparent', color: activeTab === 'bandeja_aprovación' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'bandeja_aprovación') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'bandeja_aprovación') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+            <CheckCircle size={20} style={{ minWidth: '20px' }} />
+            {isSidebarOpen && <span>Bandeja de Aprobación</span>}
+          </button>
         </nav>
 
         <button className="sidebar-btn" data-tooltip="Volver al Sistema" onClick={() => navigate(-1)} style={{ background: '#312E81', border: '1px solid #4338CA', color: '#C7D2FE', display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'center' : 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', padding: isSidebarOpen ? '16px' : '16px 0', borderRadius: '12px', transition: 'all 0.2s', marginTop: 'auto', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#4338CA'; e.currentTarget.style.color = '#FFFFFF'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#312E81'; e.currentTarget.style.color = '#C7D2FE'; }}>
@@ -321,7 +305,7 @@ export default function ModuloCotizador() {
       <div style={{ flex: 1, padding: '48px 60px', overflowY: 'auto' }}>
         <div style={{ marginBottom: '40px' }}>
           <h2 style={{ fontSize: '32px', color: '#1E1B4B', margin: '0 0 8px 0', fontWeight: '700', letterSpacing: '-0.5px' }}>
-            {activeTab === 'generar' ? 'Generador de Cotizaciones' : 'Configuración de Plantillas'}
+            {activeTab === 'generar' ? 'Generador de Cotizaciones' : activeTab === 'llenado_web' ? 'Generador de Prefactura Web' : 'Configuración de Plantillas'}
           </h2>
 
         </div>
@@ -376,6 +360,19 @@ export default function ModuloCotizador() {
             <GestorMembretadas />
           </div>
         )}
+
+        {activeTab === 'llenado_web' && (
+          <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+            <FormularioPreFactura empresas={empresas} clientes={clientes} />
+          </div>
+        )}
+
+        {activeTab === 'bandeja_aprovación' && (
+          <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+            <BandejaAprobacion />
+          </div>
+        )}
+
 
       </div>
 
