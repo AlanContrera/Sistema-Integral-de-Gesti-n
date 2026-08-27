@@ -26,3 +26,6 @@ node_modules/
 *.egg-info/
 .coverage
 htmlcov/
+
+# Respaldos de base de datos
+*.json

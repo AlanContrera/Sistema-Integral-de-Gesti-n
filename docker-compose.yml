@@ -69,3 +69,17 @@ services:
       - CHOKIDAR_USEPOLLING=true # Obligatorio para Hot-Reloading en WSL/Docker
       - WATCHPACK_POLLING=true
     command: npm run dev -- --host 0.0.0.0
+  # Base de Datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: sig_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=sig_db
+      - POSTGRES_USER=sistemas
+      - POSTGRES_PASSWORD=sistemas_pwd
+    ports:
+      - "5432:5432"
+volumes:
+  postgres_data:

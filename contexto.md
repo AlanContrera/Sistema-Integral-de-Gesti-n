@@ -194,3 +194,4 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 
 - 
 | 2026-08-26 | Cotizador: Mejoras Finales | Refinamiento de la UX con rediseño CSS Grid de partidas, estandarización de payloads de backend para inyección de datos del cliente, redondeo preciso a 2 decimales, folios secuenciales estables en BBDD, limpieza de Códigos Postales, e incorporación de plantilla HTML corporativa para facturación final a clientes. |
+| 2026-08-27 | Arquitectura SaaS (Single-Tenant) | Análisis y adopción de modelo de distribución B2B (Servidores Dedicados). Transplante exitoso de la base de datos central embebida (SQLite) hacia PostgreSQL empresarial montado en Docker, incluyendo refactorización defensiva de Signals de Django e integración en el flujo de orquestación de Compose sin pérdida de datos. |
