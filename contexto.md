@@ -193,3 +193,4 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 
 
 - 
+| 2026-08-26 | Cotizador: Mejoras Finales | Refinamiento de la UX con rediseño CSS Grid de partidas, estandarización de payloads de backend para inyección de datos del cliente, redondeo preciso a 2 decimales, folios secuenciales estables en BBDD, limpieza de Códigos Postales, e incorporación de plantilla HTML corporativa para facturación final a clientes. |

@@ -282,8 +282,13 @@ class GenerarCotizacionView(APIView):
             else:
                 fecha_operacion = datetime.now().strftime("%d-%m-%Y")
 
-            letras_folio = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-            folio_generado = f"COT-{fecha_operacion.replace('-','')}-{letras_folio}"
+            # Generar folio secuencial basado en las operaciones creadas 
+            from datetime import date
+            hoy = date.today()
+            conteo = OperacionFacturacion.objects.filter(fecha_creacion__date=hoy).count() + 1
+            fecha_str = datetime.now().strftime("%d%m%Y")
+            folio_generado = f"COT-{fecha_str}-{str(conteo).zfill(4)}"
+
 
             partes_linea1 = [str(datos_generales['calle_numero']).strip(), str(datos_generales['colonia']).strip()]
             domicilio_linea1 = ", ".join(p for p in partes_linea1 if p)
@@ -3060,12 +3065,14 @@ class GenerarCotizacionView(APIView):
             
             # 4. Devolver el archivo final
             response = HttpResponse(content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename="cotizacion_generada.pdf"'
+            response['Content-Disposition'] = f'attachment; filename="{folio_generado}.pdf"'
 
             response['X-Folio-Generado'] = folio_generado
-            response['Access-Control-Expose-Headers'] = 'X-Folio-Generado'
+            response['Access-Control-Expose-Headers'] = 'X-Folio-Generado, Content-Disposition'
             output.write(response)
             return response
+
+
 
 
         except Exception as e:

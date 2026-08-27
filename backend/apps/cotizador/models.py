@@ -51,6 +51,13 @@ class Cliente(models.Model):
     correos_cc = models.CharField(max_length=500, blank=True, null=True, help_text='Correos secundarios separados por coma')
     fecha_registro = models.DateTimeField(auto_now_add=True)
 
+    empresas_emisoras = models.ManyToManyField(
+        'EmpresaEmisora',
+        blank=True,
+        related_name='clientes_relacionados',
+        help_text='Empresas emisoras autorizadas para este cliente'
+    )
+
     def __str__(self):
         return f"{self.empresa} ({self.rfc or 'Sin RFC'})"
 

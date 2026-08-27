@@ -1,3 +1,4 @@
+
 import base64
 import smtplib
 import imaplib
@@ -11,6 +12,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from celery import shared_task
 from .models import EmpresaEmisora, Cliente
+
 
 @shared_task
 def enviar_cotizacion_task(cliente_id, empresa_id, pdf_base64, folio="Oficial", subtotal=None, impuestos=None, total=None, es_excel=False, correo_destino=None, correos_cc_destino=None):
@@ -185,8 +187,13 @@ def enviar_factura_oficial_task(operacion_id):
         if cliente.correos_cc:
             msg['Cc'] = cliente.correos_cc
             
-        cuerpo = f"Estimado cliente {cliente.empresa},\n\nAdjuntamos la factura correspondiente a la operación {operacion.referencia_unica}.\n\nSaludos cordiales,\n{empresa.nombre_empresa}"
-        msg.attach(MIMEText(cuerpo, 'plain'))
+        contexto = {
+            'cliente_nombre': cliente.empresa,
+            'empresa_nombre': empresa.nombre_empresa,
+            'folio': operacion.referencia_unica
+        }
+        cuerpo_html = render_to_string('emails/envio_factura.html', contexto)
+        msg.attach(MIMEText(cuerpo_html, 'html'))
         
         if operacion.pdf_factura:
             pdf_adjunto = MIMEApplication(operacion.pdf_factura.read(), _subtype="pdf")
@@ -220,13 +227,6 @@ def enviar_factura_oficial_task(operacion_id):
 @shared_task
 def enviar_prefactura_monterrey_task(cliente_id, empresa_id, pdf_base64, folio, es_excel=False, correo_destino=None, correos_cc_destino=None):
     try:
-        from .models import EmpresaEmisora, Cliente
-        import smtplib
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-        from email.mime.application import MIMEApplication
-        from django.template.loader import render_to_string
-        import base64
 
         cliente = Cliente.objects.get(id=cliente_id)
         empresa = EmpresaEmisora.objects.get(id=empresa_id)
@@ -237,7 +237,7 @@ def enviar_prefactura_monterrey_task(cliente_id, empresa_id, pdf_base64, folio, 
         msg = MIMEMultipart()
         msg['From'] = empresa.correo_remitente
         msg['To'] = destinatario
-        msg['Subject'] = f"[REF: {folio}] Solicitud de Facturación Interna - {cliente.empresa}"
+        msg['Subject'] = f"[REF: {folio}] Solicitud de Facturación - {cliente.empresa}"
     
         if cc:
             msg['Cc'] = cc

@@ -22,7 +22,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     });
 
     const [partidas, setPartidas] = useState([
-        { id: Date.now(), clave_prod: '84111500', cantidad: 1, clave_unidad: 'E48', unidad: 'SERVICIO', descripcion: '', valor_unitario: 0, tasa_iva: 0.16, impuesto_label: '002 - IVA' }
+        { id: Date.now(), clave_prod: '', cantidad: 1, clave_unidad: 'E48', unidad: 'SERVICIO', descripcion: '', valor_unitario: 0, tasa_iva: 0.16, impuesto_label: '002 - IVA' }
     ]);
 
     // --- ESTADOS PARA MODALES DE CONFIRMACIÓN ---
@@ -55,6 +55,12 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         c.empresa.toLowerCase().includes(busquedaCliente.toLowerCase()) ||
         (c.rfc && c.rfc.toLowerCase().includes(busquedaCliente.toLowerCase()))
     ).slice(0, 5); // Mostrar solo top 5
+
+    const empresasDisponibles = clienteSeleccionado
+        ? (clienteSeleccionado.empresas_emisoras && clienteSeleccionado.empresas_emisoras.length > 0
+            ? empresas.filter(e => clienteSeleccionado.empresas_emisoras.includes(e.id))
+            : empresas) // Muestra todas si el cliente no tiene empresas vinculadas
+        : [];
 
     const handleChangeParam = (e) => setParametros({ ...parametros, [e.target.name]: e.target.value });
 
@@ -195,12 +201,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const handleSolicitarMonterrey = async () => {
         const loadingToast = toast.loading('Generando Excel y enviando a Monterrey...');
         try {
-            const payload = {
-                empresa_id: empresaSeleccionada.id,
-                cliente_id: clienteSeleccionado.id,
-                ...parametros,
-                partidas
-            };
+            const payload = construirPayload();
             const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/solicitar-factura-monterrey/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -231,12 +232,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const handleGenerarCotizacion = async () => {
         const loadingToast = toast.loading('Generando cotización y enviando al cliente...');
         try {
-            const payload = {
-                empresa_id: empresaSeleccionada.id,
-                cliente_id: clienteSeleccionado.id,
-                ...parametros,
-                partidas
-            };
+            const payload = construirPayload();
             const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/generar-cotizacion/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -265,12 +261,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         nuevaPestana.document.write('<html><body style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f1f5f9; color: #475569;"><h2>Generando vista previa del PDF... Por favor espera.</h2></body></html>');
 
         try {
-            const payload = {
-                empresa_id: empresaSeleccionada.id,
-                cliente_id: clienteSeleccionado.id,
-                ...parametros,
-                partidas
-            };
+            const payload = construirPayload();
 
             const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
                 method: 'POST',
@@ -298,12 +289,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
         const loadingToast = toast.loading('Generando PDF...');
         try {
-            const payload = {
-                empresa_id: empresaSeleccionada.id,
-                cliente_id: clienteSeleccionado.id,
-                ...parametros,
-                partidas
-            };
+            const payload = construirPayload();
 
             const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
                 method: 'POST',
@@ -312,11 +298,18 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             });
             if (!response.ok) throw new Error('Error en la petición');
 
+            // Leer el nombre dinámico que nos mandó Django (ej. COT-26082026-0001.pdf)
+            const disposition = response.headers.get('Content-Disposition');
+            let filename = `Cotizacion_${clienteSeleccionado.empresa.replace(/\s+/g, '_')}.pdf`;
+            if (disposition && disposition.includes('filename="')) {
+                filename = disposition.split('filename="')[1].split('"')[0];
+            }
+
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `Cotizacion_${clienteSeleccionado.empresa.replace(/\s+/g, '_')}.pdf`);
+            link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
             link.parentNode.removeChild(link);
@@ -328,22 +321,14 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     };
 
 
+
     return (
         <div style={styles.mainWrapper}>
 
             {/* --- SECCIÓN 1: CABECERA (EMISOR Y RECEPTOR) --- */}
             <div style={styles.headerCard}>
-                <div>
-                    <label style={styles.label}>Empresa que Factura</label>
-                    <div style={{ position: 'relative' }}>
-                        <Building2 size={18} color="#94A3B8" style={{ position: 'absolute', left: '16px', top: '16px' }} />
-                        <select style={{ ...styles.input, paddingLeft: '44px' }} value={empresaId} onChange={(e) => setEmpresaId(e.target.value)}>
-                            <option value="">-- Selecciona Empresa --</option>
-                            {empresas.map(e => <option key={e.id} value={e.id}>{e.nombre_empresa}</option>)}
-                        </select>
-                    </div>
-                </div>
 
+                {/* 1. Buscar Cliente Receptor */}
                 <div ref={buscadorRef} style={styles.searchBox}>
                     <label style={styles.label}>Cliente Receptor</label>
 
@@ -365,7 +350,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                 <h4 style={styles.clientCardTitle}>{clienteSeleccionado?.empresa}</h4>
                                 <p style={styles.clientCardSub}><FileText size={14} /> RFC: {clienteSeleccionado?.rfc || 'No registrado'}</p>
                             </div>
-                            <button onClick={() => { setClienteId(''); setBusquedaCliente(''); }} style={{ background: 'none', border: 'none', color: '#4F46E5', fontSize: '13px', fontWeight: '600', cursor: 'pointer', padding: '4px' }}>
+                            <button onClick={() => { setClienteId(''); setBusquedaCliente(''); setEmpresaId(''); }} style={{ background: 'none', border: 'none', color: '#4F46E5', fontSize: '13px', fontWeight: '600', cursor: 'pointer', padding: '4px' }}>
                                 Cambiar
                             </button>
                         </div>
@@ -386,6 +371,24 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                         </div>
                     )}
                 </div>
+
+                {/* 2. Empresa que Factura */}
+                <div>
+                    <label style={styles.label}>Empresa que Factura</label>
+                    <div style={{ position: 'relative' }}>
+                        <Building2 size={18} color={!clienteId ? "#CBD5E1" : "#94A3B8"} style={{ position: 'absolute', left: '16px', top: '16px' }} />
+                        <select
+                            style={{ ...styles.input, paddingLeft: '44px', backgroundColor: !clienteId ? '#F8FAFC' : '#FFFFFF', cursor: !clienteId ? 'not-allowed' : 'pointer' }}
+                            value={empresaId}
+                            onChange={(e) => setEmpresaId(e.target.value)}
+                            disabled={!clienteId}
+                        >
+                            <option value="">{clienteId ? '-- Selecciona Empresa --' : '-- Selecciona un Cliente primero --'}</option>
+                            {empresasDisponibles.map(e => <option key={e.id} value={e.id}>{e.nombre_empresa}</option>)}
+                        </select>
+                    </div>
+                </div>
+
             </div>
 
             {/* --- SECCIÓN 2: CONFIGURACIÓN FISCAL OCULTA --- */}
@@ -456,40 +459,70 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
                 <div>
                     {partidas.map((p, index) => (
-                        <div key={p.id} style={styles.row}>
-                            <div style={styles.colCant}>
-                                <label style={styles.label}>Cant.</label>
-                                <input type="number" min="1" value={p.cantidad} onChange={(e) => actualizarPartida(p.id, 'cantidad', parseFloat(e.target.value) || 0)} style={{ ...styles.bigInput, textAlign: 'center' }} />
-                            </div>
-                            <div style={styles.colDesc}>
-                                <label style={styles.label}>Descripción / Estrategia</label>
-                                <input type="text" placeholder="Ej. Implementación de Estrategia Operativa..." value={p.descripcion} onChange={(e) => actualizarPartida(p.id, 'descripcion', e.target.value)} style={styles.bigInput} />
-                            </div>
-                            <div style={styles.colPrecio}>
-                                <label style={styles.label}>Precio Unitario</label>
-                                <div style={{ position: 'relative' }}>
-                                    <span style={{ position: 'absolute', left: '16px', top: '15px', color: '#94A3B8', fontWeight: '600' }}>$</span>
-                                    <input type="number" step="0.01" value={p.valor_unitario} onChange={(e) => actualizarPartida(p.id, 'valor_unitario', parseFloat(e.target.value) || 0)} style={{ ...styles.bigInput, paddingLeft: '32px', textAlign: 'right' }} />
+                        <div key={p.id} style={{
+                            padding: '24px',
+                            border: '1px solid #E2E8F0',
+                            backgroundColor: '#FFFFFF',
+                            borderRadius: '16px',
+                            marginBottom: '16px',
+                            boxShadow: '0 2px 10px -4px rgba(0,0,0,0.02)',
+                            transition: 'all 0.2s ease-in-out'
+                        }}>
+                            {/* Nivel 1: Datos Fiscales SAT (Grid de 4 columnas) */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                                <div>
+                                    <label style={styles.label}>Clave Prod Serv</label>
+                                    <input type="text" placeholder="Ej. 84111500" value={p.clave_prod || ''} onChange={(e) => actualizarPartida(p.id, 'clave_prod', e.target.value)} style={styles.bigInput} />
+                                </div>
+                                <div>
+                                    <label style={styles.label}>Cant.</label>
+                                    <input type="number" min="1" value={p.cantidad} onChange={(e) => actualizarPartida(p.id, 'cantidad', parseFloat(e.target.value) || 0)} style={{ ...styles.bigInput, textAlign: 'center' }} />
+                                </div>
+                                <div>
+                                    <label style={styles.label}>Clave Unidad</label>
+                                    <input type="text" placeholder="Ej. E48" value={p.clave_unidad || ''} onChange={(e) => actualizarPartida(p.id, 'clave_unidad', e.target.value)} style={styles.bigInput} />
+                                </div>
+                                <div>
+                                    <label style={styles.label}>Unidad</label>
+                                    <input type="text" placeholder="Ej. SERVICIO" value={p.unidad || ''} onChange={(e) => actualizarPartida(p.id, 'unidad', e.target.value)} style={styles.bigInput} />
                                 </div>
                             </div>
-                            <div style={styles.colIva}>
-                                <label style={styles.label}>Impuesto (IVA)</label>
-                                <div style={{ ...styles.input, backgroundColor: '#F1F5F9', color: '#4F46E5', fontWeight: '700', textAlign: 'center', border: '1px solid #E2E8F0', cursor: 'not-allowed' }}>
-                                    16% IVA
+
+                            {/* Nivel 2: Comerciales y Totales (Grid de 5 columnas alineado por la base) */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '3fr 180px 150px 150px 40px', gap: '20px', alignItems: 'end' }}>
+                                <div>
+                                    <label style={styles.label}>Descripción / Estrategia</label>
+                                    <input type="text" placeholder="Ej. Implementación de Estrategia Operativa..." value={p.descripcion} onChange={(e) => actualizarPartida(p.id, 'descripcion', e.target.value)} style={styles.bigInput} />
                                 </div>
-                            </div>
-                            <div style={styles.colImporte}>
-                                <label style={styles.label}>Importe</label>
-                                <p style={styles.importeText}>${(p.cantidad * p.valor_unitario).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-                            </div>
-                            <div style={styles.colAction}>
-                                <button onClick={() => eliminarPartida(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '8px', opacity: 0.7, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.7} title="Eliminar fila">
-                                    <Trash2 size={20} />
-                                </button>
+                                <div>
+                                    <label style={styles.label}>Precio Unitario</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '16px', top: '15px', color: '#94A3B8', fontWeight: '600' }}>$</span>
+                                        <input type="number" step="0.01" value={p.valor_unitario} onChange={(e) => actualizarPartida(p.id, 'valor_unitario', parseFloat(e.target.value) || 0)} style={{ ...styles.bigInput, paddingLeft: '32px', textAlign: 'right' }} />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={styles.label}>Impuesto (IVA)</label>
+                                    <div style={{ ...styles.input, backgroundColor: '#F1F5F9', color: '#4F46E5', fontWeight: '700', textAlign: 'center', border: '1px solid #E2E8F0', cursor: 'not-allowed' }}>
+                                        16% IVA
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={styles.label}>Importe</label>
+                                    <p style={{ ...styles.importeText, margin: '0 0 10px 0' }}>
+                                        ${(p.cantidad * p.valor_unitario).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                                <div style={{ paddingBottom: '10px' }}>
+                                    <button onClick={() => eliminarPartida(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '8px', opacity: 0.7, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0.7} title="Eliminar fila">
+                                        <Trash2 size={20} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
                 </div>
+
             </div>
 
             {/* --- SECCIÓN 4: BARRA STICKY (TOTALES Y ACCIONES) --- */}
@@ -499,17 +532,17 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 <div style={styles.totalesBlock}>
                     <div style={styles.totalItem}>
                         <span style={styles.totalLabel}>Subtotal</span>
-                        <span style={styles.totalValue}>${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                        <span style={styles.totalValue}>${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div style={{ width: '1px', height: '30px', backgroundColor: '#E2E8F0' }}></div>
                     <div style={styles.totalItem}>
                         <span style={styles.totalLabel}>IVA Trasladado</span>
-                        <span style={styles.totalValue}>${iva.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                        <span style={styles.totalValue}>${iva.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div style={{ width: '1px', height: '30px', backgroundColor: '#E2E8F0' }}></div>
                     <div style={styles.totalItem}>
                         <span style={styles.totalLabel}>Total Final</span>
-                        <span style={styles.totalFinalValue}>${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                        <span style={styles.totalFinalValue}>${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                 </div>
                 {/* Botones de Acción: Bifurcación del Proceso (Diseño Compacto) */}
