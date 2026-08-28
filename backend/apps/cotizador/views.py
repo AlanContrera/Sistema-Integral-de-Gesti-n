@@ -28,8 +28,10 @@ from .excel_generator import generar_excel_prefactura
 import base64
 from django.test import RequestFactory
 from django.core.files.uploadedfile import SimpleUploadedFile
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
 from .tasks import enviar_cotizacion_task, enviar_prefactura_monterrey_task
+
 
 
 # --- HELPERS DE DIBUJO ---
@@ -287,7 +289,16 @@ class GenerarCotizacionView(APIView):
             hoy = date.today()
             conteo = OperacionFacturacion.objects.filter(fecha_creacion__date=hoy).count() + 1
             fecha_str = datetime.now().strftime("%d%m%Y")
-            folio_generado = f"COT-{fecha_str}-{str(conteo).zfill(4)}"
+            folio_generado = f"COT-{fecha_str}-{str(conteo).zfill(4)}"            # Generar folio (Usar el oficial si nos lo mandan, o calcularlo si es solo vista previa)
+            folio_oficial = request.POST.get('folio_oficial')
+            if folio_oficial:
+                folio_generado = folio_oficial
+            else:
+                from datetime import date
+                hoy = date.today()
+                conteo = OperacionFacturacion.objects.filter(fecha_creacion__date=hoy).count() + 1
+                fecha_str = datetime.now().strftime("%d%m%Y")
+                folio_generado = f"COT-{fecha_str}-{str(conteo).zfill(4)}"
 
 
             partes_linea1 = [str(datos_generales['calle_numero']).strip(), str(datos_generales['colonia']).strip()]
@@ -3364,15 +3375,40 @@ def solicitar_factura_monterrey_view(request):
         subtotal = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0))) for p in partidas)
         impuestos = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0)) * float(p.get('tasa_iva', 0.16))) for p in partidas)
         
-        operacion = OperacionFacturacion.objects.create(
-            cliente=cliente,
-            empresa_emisora=empresa,
-            subtotal=subtotal,
-            impuestos=impuestos,
-            total=subtotal + impuestos,
-            datos_formulario=data,
-            estado_factura='ENVIADA_A_MONTERREY' 
-        )
+        # Buscamos si React nos mandó una cotización de origen
+        referencia_cotizacion = data.get('referencia_cotizacion_origen')
+        cotizacion_padre = None
+        if referencia_cotizacion:
+            cotizacion_padre = OperacionFacturacion.objects.filter(referencia_unica=referencia_cotizacion).first()
+
+        # Evitar crear clones si le dan clic varias veces a enviar a Monterrey
+        operacion = None
+        if cotizacion_padre:
+            operacion = OperacionFacturacion.objects.filter(
+                tipo_operacion='PREFACTURA',
+                cotizacion_origen=cotizacion_padre
+            ).first()
+
+        if operacion:
+            operacion.subtotal = subtotal
+            operacion.impuestos = impuestos
+            operacion.total = subtotal + impuestos
+            operacion.datos_formulario = data
+            operacion.estado_factura = 'ENVIADA_A_MONTERREY'
+            operacion.save()
+        else:
+            operacion = OperacionFacturacion.objects.create(
+                tipo_operacion='PREFACTURA',
+                cotizacion_origen=cotizacion_padre,
+                cliente=cliente,
+                empresa_emisora=empresa,
+                subtotal=subtotal,
+                impuestos=impuestos,
+                total=subtotal + impuestos,
+                datos_formulario=data,
+                estado_factura='ENVIADA_A_MONTERREY' 
+            )
+
         
         # 2. Generar el Excel (Prefactura) para Monterrey
         excel_buffer, totales = generar_excel_prefactura(data)
@@ -3423,33 +3459,67 @@ def generar_cotizacion_view(request):
         subtotal = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0))) for p in partidas)
         impuestos = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0)) * float(p.get('tasa_iva', 0.16))) for p in partidas)
         
-        # 1. Crear el registro en la BD (Camino 1)
-        operacion = OperacionFacturacion.objects.create(
-            cliente=cliente,
-            empresa_emisora=empresa,
-            subtotal=subtotal,
-            impuestos=impuestos,
-            total=subtotal + impuestos,
-            datos_formulario=data,
-            cotizacion_enviada=True # Marcamos que es una cotización enviada
+        # 1. Crear o Actualizar la Cotización (Camino 1)
+        referencia_existente = data.get('referencia_cotizacion_origen')
+        if referencia_existente:
+            operacion = OperacionFacturacion.objects.filter(referencia_unica=referencia_existente).first()
+            if operacion:
+                operacion.subtotal = subtotal
+                operacion.impuestos = impuestos
+                operacion.total = subtotal + impuestos
+                operacion.datos_formulario = data
+                operacion.cotizacion_enviada = True
+                operacion.save()
+            else:
+                operacion = OperacionFacturacion.objects.create(
+                    tipo_operacion='COTIZACION', cliente=cliente, empresa_emisora=empresa,
+                    subtotal=subtotal, impuestos=impuestos, total=subtotal + impuestos,
+                    datos_formulario=data, cotizacion_enviada=True
+                )
+        else:
+            operacion = OperacionFacturacion.objects.create(
+                tipo_operacion='COTIZACION', cliente=cliente, empresa_emisora=empresa,
+                subtotal=subtotal, impuestos=impuestos, total=subtotal + impuestos,
+                datos_formulario=data, cotizacion_enviada=True
+            )
+        
+        # 2. Generar archivo a enviar (Convertir Excel a PDF en memoria)
+        excel_buffer, totales = generar_excel_prefactura(data)
+        
+        factory = RequestFactory()
+        excel_buffer.seek(0)
+        archivo_fake = SimpleUploadedFile(
+            'prefactura_en_memoria.xlsx',
+            excel_buffer.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         
-        # 2. Generar archivo a enviar (De momento mandamos la prefactura)
-        excel_buffer, totales = generar_excel_prefactura(data)
-        excel_b64 = base64.b64encode(excel_buffer.getvalue()).decode('utf-8')
+        mock_request = factory.post('/api/cotizador/generar/', {
+            'file': archivo_fake,
+            'fecha': data.get('fecha_emision', ''),
+            'empresa_id': data.get('empresa_id', ''),
+            'folio_oficial': operacion.referencia_unica  # <--Le pasamos el ID oficial de la BD
+        })
         
-        folio = f"COTIZACION-{datetime.now().strftime('%d%m%Y')}"
+        view = GenerarCotizacionView.as_view()
+        pdf_response = view(mock_request)
+
+        
+        # Obtener los bytes del PDF generado y codificarlos
+        pdf_bytes = pdf_response.content
+        pdf_b64 = base64.b64encode(pdf_bytes).decode('utf-8')
 
         enviar_cotizacion_task.delay(
             cliente_id=cliente_id,
             empresa_id=empresa_id,
-            pdf_base64=excel_b64,
-            folio=folio,
+            pdf_base64=pdf_b64,
+            folio=operacion.referencia_unica,
             subtotal=totales['subtotal'],
             impuestos=totales['impuestos_trasladados'],
             total=totales['total'],
-            es_excel=True
+            es_excel=False
         )
+
 
         return Response({
             "mensaje": "Cotización generada y enviada al cliente",

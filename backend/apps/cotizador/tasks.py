@@ -5,6 +5,7 @@ import imaplib
 import email
 from email.header import decode_header
 import re
+import email.utils
 from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
 from email.mime.multipart import MIMEMultipart
@@ -24,7 +25,13 @@ def enviar_cotizacion_task(cliente_id, empresa_id, pdf_base64, folio="Oficial", 
         destinatario = correo_destino if correo_destino else cliente.correo
         cc = correos_cc_destino if correos_cc_destino is not None else cliente.correos_cc
         
-        msg = MIMEMultipart()
+        # ESTRUCTURA ANTI-SPAM (Mixed y Headers)
+        msg = MIMEMultipart('mixed')
+
+        msg['Message-ID'] = email.utils.make_msgid(domain=empresa.correo_remitente.split('@')[-1])
+        msg['Date'] = email.utils.formatdate(localtime=True)
+        msg['Reply-To'] = empresa.correo_remitente
+        
         msg['From'] = empresa.correo_remitente
         msg['To'] = destinatario
         msg['Subject'] = empresa.asunto_cotizacion if empresa.asunto_cotizacion else f"Propuesta Comercial / Pre-factura - {empresa.nombre_empresa}"
@@ -46,8 +53,18 @@ def enviar_cotizacion_task(cliente_id, empresa_id, pdf_base64, folio="Oficial", 
             'total': total_fmt,
             'es_excel': es_excel
         }
+        
         cuerpo_html = render_to_string('emails/envio_cotizacion.html', contexto)
-        msg.attach(MIMEText(cuerpo_html, 'html'))
+        
+        # Bloque Anti-Spam: Todo buen correo debe tener versión en texto plano (MIMEMultipart alternative)
+        texto_plano = re.sub('<[^<]+>', '', cuerpo_html).strip()
+        
+        alt_body = MIMEMultipart('alternative')
+        alt_body.attach(MIMEText(texto_plano, 'plain'))
+        alt_body.attach(MIMEText(cuerpo_html, 'html'))
+        
+        msg.attach(alt_body)
+
         
         file_bytes = base64.b64decode(pdf_base64)
         if es_excel:
@@ -118,8 +135,9 @@ def robot_lector_imap_task():
                             except:
                                 subject = subject.decode("latin-1", errors="ignore")
                         
-                        # 4. Buscar el patrón [REF: OP-XXXXXX] en el asunto del correo
-                        match = re.search(r'\[REF:\s*(OP-[A-Z0-9\-]+)\]', subject)
+                        # 4. Buscar el patrón [REF: OP/COT/PRE-XXXXXX] en el asunto del correo
+                        match = re.search(r'\[REF:\s*((?:OP|COT|PRE)-[A-Z0-9\-]+)\]', subject)
+
                         if match:
                             referencia = match.group(1)
                             
@@ -179,7 +197,12 @@ def enviar_factura_oficial_task(operacion_id):
         cliente = operacion.cliente
         empresa = operacion.empresa_emisora
         
-        msg = MIMEMultipart()
+        msg = MIMEMultipart('mixed')
+
+        msg['Message-ID'] = email.utils.make_msgid(domain=empresa.correo_remitente.split('@')[-1])
+        msg['Date'] = email.utils.formatdate(localtime=True)
+        msg['Reply-To'] = empresa.correo_remitente
+        
         msg['From'] = empresa.correo_remitente
         msg['To'] = cliente.correo
         msg['Subject'] = f"Factura Oficial - {empresa.nombre_empresa} - {operacion.referencia_unica}"
@@ -192,8 +215,18 @@ def enviar_factura_oficial_task(operacion_id):
             'empresa_nombre': empresa.nombre_empresa,
             'folio': operacion.referencia_unica
         }
+        
         cuerpo_html = render_to_string('emails/envio_factura.html', contexto)
-        msg.attach(MIMEText(cuerpo_html, 'html'))
+        
+        # Bloque Anti-Spam
+        texto_plano = re.sub('<[^<]+>', '', cuerpo_html).strip()
+        
+        alt_body = MIMEMultipart('alternative')
+        alt_body.attach(MIMEText(texto_plano, 'plain'))
+        alt_body.attach(MIMEText(cuerpo_html, 'html'))
+        
+        msg.attach(alt_body)
+
         
         if operacion.pdf_factura:
             pdf_adjunto = MIMEApplication(operacion.pdf_factura.read(), _subtype="pdf")
@@ -234,7 +267,14 @@ def enviar_prefactura_monterrey_task(cliente_id, empresa_id, pdf_base64, folio, 
         destinatario = correo_destino
         cc = correos_cc_destino
         
-        msg = MIMEMultipart()
+        msg = MIMEMultipart('mixed')
+        
+        import email.utils
+        import re
+        msg['Message-ID'] = email.utils.make_msgid(domain=empresa.correo_remitente.split('@')[-1])
+        msg['Date'] = email.utils.formatdate(localtime=True)
+        msg['Reply-To'] = empresa.correo_remitente
+        
         msg['From'] = empresa.correo_remitente
         msg['To'] = destinatario
         msg['Subject'] = f"[REF: {folio}] Solicitud de Facturación - {cliente.empresa}"
@@ -248,9 +288,19 @@ def enviar_prefactura_monterrey_task(cliente_id, empresa_id, pdf_base64, folio, 
             'folio': folio,
             'es_excel': es_excel
         }
+        
         # AQUI USAMOS LA NUEVA PLANTILLA NARANJA
         cuerpo_html = render_to_string('emails/envio_prefactura.html', contexto)
-        msg.attach(MIMEText(cuerpo_html, 'html'))
+        
+        # Bloque Anti-Spam
+        texto_plano = re.sub('<[^<]+>', '', cuerpo_html).strip()
+        
+        alt_body = MIMEMultipart('alternative')
+        alt_body.attach(MIMEText(texto_plano, 'plain'))
+        alt_body.attach(MIMEText(cuerpo_html, 'html'))
+        
+        msg.attach(alt_body)
+
         
         file_bytes = base64.b64decode(pdf_base64)
         if es_excel:

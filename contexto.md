@@ -195,3 +195,14 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 - 
 | 2026-08-26 | Cotizador: Mejoras Finales | Refinamiento de la UX con rediseño CSS Grid de partidas, estandarización de payloads de backend para inyección de datos del cliente, redondeo preciso a 2 decimales, folios secuenciales estables en BBDD, limpieza de Códigos Postales, e incorporación de plantilla HTML corporativa para facturación final a clientes. |
 | 2026-08-27 | Arquitectura SaaS (Single-Tenant) | Análisis y adopción de modelo de distribución B2B (Servidores Dedicados). Transplante exitoso de la base de datos central embebida (SQLite) hacia PostgreSQL empresarial montado en Docker, incluyendo refactorización defensiva de Signals de Django e integración en el flujo de orquestación de Compose sin pérdida de datos. |
+
+## Arquitectura de Folios y Entregabilidad SMTP (Ago 2026)
+
+### Herencia de Folios y Memoria Frontend
+Se abandonó el formato genérico de UUIDs. Ahora, la BD controla la generación de folios como `COT-27082026-0001`. El Frontend en React (`FormularioPreFactura.jsx`) almacena un estado de memoria `cotizacionOrigen` que se inyecta en los payloads al enviar a Monterrey. Si la operación es una Prefactura vinculada, hereda el número secuencial exacto de su cotización padre (`PRE-27082026-0001`), y el backend previene clonaciones múltiples reescribiendo la Prefactura si se solicitan correcciones consecutivas.
+
+### Entregabilidad Anti-Spam (Celery)
+Para sortear bloqueos de cPanel (SpamAssassin) o Gmail, el módulo de envío de correos asíncrono se reestructuró:
+1. **Estructura MIME:** Se usa `MIMEMultipart('mixed')` como contenedor principal, anidando un `MIMEMultipart('alternative')` interno.
+2. **Fallback:** Se renderiza el template HTML, se aplica un regex Strip-Tags y se adjunta obligatoriamente un `MIMEText(..., 'plain')` antes del HTML.
+3. **Headers Obligatorios:** Inyección nativa de `Message-ID`, `Date` y `Reply-To`.

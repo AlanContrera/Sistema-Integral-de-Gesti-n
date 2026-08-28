@@ -73,7 +73,15 @@ class OperacionFacturacion(models.Model):
         ('ENVIADA_AL_CLIENTE', 'Enviada al Cliente'),
     ]
     
-    referencia_unica = models.CharField(max_length=50, unique=True, blank=True, help_text="Código único como OP-2026-XYZ")
+    TIPO_OPERACION_CHOICES = [
+        ('COTIZACION', 'Cotización'),
+        ('PREFACTURA', 'Prefactura'),
+    ]
+    
+    tipo_operacion = models.CharField(max_length=20, choices=TIPO_OPERACION_CHOICES, default='COTIZACION')
+    cotizacion_origen = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='prefacturas', help_text="Cotización original si es una prefactura")
+    
+    referencia_unica = models.CharField(max_length=50, unique=True, blank=True, help_text="Código único como COT-XYZ o PRE-XYZ")
     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
     empresa_emisora = models.ForeignKey(EmpresaEmisora, on_delete=models.SET_NULL, null=True, blank=True)
     
@@ -82,25 +90,43 @@ class OperacionFacturacion(models.Model):
     impuestos = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
     
-    # Todo el JSON del formulario para poder regenerar el Excel o PDF cuando queramos
+    # Todo el JSON del formulario
     datos_formulario = JSONField(default=dict, blank=True, help_text="Guarda todas las partidas y configuraciones")
-    # Camino 1: Cotización
     cotizacion_enviada = models.BooleanField(default=False)
-    # Camino 2: Facturación (Monterrey)
     estado_factura = models.CharField(max_length=50, choices=ESTADOS_FACTURA, default='NO_SOLICITADA')
     xml_factura = models.FileField(upload_to='facturas/xml/', blank=True, null=True)
     pdf_factura = models.FileField(upload_to='facturas/pdf/', blank=True, null=True)
-    # Trazabilidad de tiempo
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
+
     def save(self, *args, **kwargs):
-        # Auto-generar la referencia si no existe
+        # Auto-generar el formato oficial
         if not self.referencia_unica:
-            # Crea un código tipo "OP-8F4A"
-            self.referencia_unica = f"OP-{str(uuid.uuid4())[:6].upper()}"
+            # Si es prefactura y viene de una cotización, ¡Heredamos su número exacto!
+            if self.tipo_operacion == 'PREFACTURA' and self.cotizacion_origen:
+                sufijo = self.cotizacion_origen.referencia_unica.replace('COT-', '')
+                self.referencia_unica = f"PRE-{sufijo}"
+            else:
+                # Si es una cotización nueva, calculamos el siguiente consecutivo
+                prefijo = 'COT' if self.tipo_operacion == 'COTIZACION' else 'PRE'
+                from datetime import date, datetime
+                hoy = date.today()
+                
+                # Solo contamos las "raíces" para que las prefacturas hijas no nos salten los números
+                conteo = OperacionFacturacion.objects.filter(
+                    fecha_creacion__date=hoy, 
+                    cotizacion_origen__isnull=True 
+                ).count() + 1
+                
+                fecha_str = datetime.now().strftime("%d%m%Y")
+                self.referencia_unica = f"{prefijo}-{fecha_str}-{str(conteo).zfill(4)}"
+                
         super().save(*args, **kwargs)
+
+
     def __str__(self):
         return f"{self.referencia_unica} - {self.cliente}"
+
     class Meta:
         verbose_name = 'Operación Comercial'
         verbose_name_plural = 'Operaciones Comerciales'

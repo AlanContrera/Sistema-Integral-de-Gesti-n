@@ -25,9 +25,14 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         { id: Date.now(), clave_prod: '', cantidad: 1, clave_unidad: 'E48', unidad: 'SERVICIO', descripcion: '', valor_unitario: 0, tasa_iva: 0.16, impuesto_label: '002 - IVA' }
     ]);
 
+    //  Memoria para recordar si ya mandaste la cotización de este cliente
+    const [cotizacionOrigen, setCotizacionOrigen] = useState(null);
+
     // --- ESTADOS PARA MODALES DE CONFIRMACIÓN ---
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [modalConfig, setModalConfig] = useState({ titulo: '', mensaje: '', onConfirm: () => { } });
+
+
 
     // Cerrar buscador al hacer clic fuera
     useEffect(() => {
@@ -59,8 +64,9 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const empresasDisponibles = clienteSeleccionado
         ? (clienteSeleccionado.empresas_emisoras && clienteSeleccionado.empresas_emisoras.length > 0
             ? empresas.filter(e => clienteSeleccionado.empresas_emisoras.includes(e.id))
-            : empresas) // Muestra todas si el cliente no tiene empresas vinculadas
+            : [...empresas]).sort((a, b) => a.nombre_empresa.localeCompare(b.nombre_empresa))
         : [];
+
 
     const handleChangeParam = (e) => setParametros({ ...parametros, [e.target.name]: e.target.value });
 
@@ -88,9 +94,11 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             cliente_id: clienteId, rfc_receptor: clienteSeleccionado?.rfc || '', razon_social: clienteSeleccionado?.razon_social || clienteSeleccionado?.empresa || '',
             calle_numero: clienteSeleccionado?.calle_numero || '', colonia: clienteSeleccionado?.colonia || '', ciudad: clienteSeleccionado?.ciudad || '',
             estado: clienteSeleccionado?.estado || '', codigo_postal: clienteSeleccionado?.codigo_postal || '', regimen_fiscal: clienteSeleccionado?.regimen_fiscal || '',
-            ...parametros, partidas: partidas
+            ...parametros, partidas: partidas,
+            referencia_cotizacion_origen: cotizacionOrigen // ID escondido
         };
     };
+
 
     const handleDescargarExcel = async () => {
         if (!empresaId || !clienteId) return toast.error('Selecciona Empresa y Cliente primero.');
@@ -240,12 +248,17 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             });
             if (!response.ok) throw new Error('Error en la petición');
             const data = await response.json();
+
+            // Guardamos el folio en memoria para pasarlo a la prefactura si se requiere
+            setCotizacionOrigen(data.referencia);
+
             toast.success(`Cotización enviada. Referencia: ${data.referencia}`, { id: loadingToast });
         } catch (error) {
             console.error(error);
             toast.error('Error al generar la cotización', { id: loadingToast });
         }
     };
+
 
     const handlePreviewCotizacion = async () => {
         if (!empresaSeleccionada || !clienteSeleccionado) {

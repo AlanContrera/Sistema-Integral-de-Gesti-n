@@ -99,7 +99,7 @@ MAPA_PLANTILLAS = {
     "TERIGEN": {"pdf": "MEMBRETADA_TERIGEN.pdf", 
         "coords": {"x_tabla_inicio": 60, "cliente": (60, 560), "folio": (400, 640)}, "tema": "TERIGEN"},
 
-    "TORRES": {"pdf": "MEMBRETADA_TORRES.pdf", 
+    "VEDRAS": {"pdf": "MEMBRETADA_TORRES.pdf", 
         "coords": {"x_tabla_inicio": 90, "cliente": (90, 580), "folio": (400, 630)}, "tema": "TORRES"},
         
     "VIMEX": {"pdf": "MEMBRETADA_VIMEX.pdf", 
