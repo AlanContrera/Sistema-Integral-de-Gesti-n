@@ -1,6 +1,9 @@
 import uuid
 from django.db import models
 from django.db.models import JSONField
+from django.conf import settings
+
+
 
 class EmpresaEmisora(models.Model):
     nombre_empresa = models.CharField(max_length=150, help_text='Nombre comercial o razón social de la empresa emisora')
@@ -79,7 +82,10 @@ class OperacionFacturacion(models.Model):
     ]
     
     tipo_operacion = models.CharField(max_length=20, choices=TIPO_OPERACION_CHOICES, default='COTIZACION')
-    cotizacion_origen = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='prefacturas', help_text="Cotización original si es una prefactura")
+    
+    creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, help_text="Usuario que generó la operación")
+    prefactura_origen = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='cotizaciones_hijas', help_text="Prefactura original si es una cotización generada desde la bandeja")
+
     
     referencia_unica = models.CharField(max_length=50, unique=True, blank=True, help_text="Código único como COT-XYZ o PRE-XYZ")
     cliente = models.ForeignKey(Cliente, on_delete=models.SET_NULL, null=True, blank=True)
@@ -102,20 +108,20 @@ class OperacionFacturacion(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generar el formato oficial
         if not self.referencia_unica:
-            # Si es prefactura y viene de una cotización, ¡Heredamos su número exacto!
-            if self.tipo_operacion == 'PREFACTURA' and self.cotizacion_origen:
-                sufijo = self.cotizacion_origen.referencia_unica.replace('COT-', '')
-                self.referencia_unica = f"PRE-{sufijo}"
+            # Ahora la Prefactura es la raíz. Si esto es una Cotización y viene de una prefactura, hereda su número.
+            if self.tipo_operacion == 'COTIZACION' and self.prefactura_origen:
+                sufijo = self.prefactura_origen.referencia_unica.replace('PRE-', '')
+                self.referencia_unica = f"COT-{sufijo}"
             else:
-                # Si es una cotización nueva, calculamos el siguiente consecutivo
+                # Si es una prefactura nueva, calculamos el siguiente consecutivo del día
                 prefijo = 'COT' if self.tipo_operacion == 'COTIZACION' else 'PRE'
                 from datetime import date, datetime
                 hoy = date.today()
                 
-                # Solo contamos las "raíces" para que las prefacturas hijas no nos salten los números
+                # Solo contamos las "raíces" para que las cotizaciones hijas no salten números
                 conteo = OperacionFacturacion.objects.filter(
                     fecha_creacion__date=hoy, 
-                    cotizacion_origen__isnull=True 
+                    prefactura_origen__isnull=True 
                 ).count() + 1
                 
                 fecha_str = datetime.now().strftime("%d%m%Y")

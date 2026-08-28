@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UploadCloud, FileSpreadsheet, CheckCircle, Loader2, Calendar, LayoutTemplate, Building2, UserPlus, Send, FileText, PieChart, Users, Menu, AlertCircle, Eye } from 'lucide-react';
+import { ArrowLeft, UploadCloud, Archive, FileSpreadsheet, CheckCircle, Loader2, Calendar, LayoutTemplate, Building2, UserPlus, Send, FileText, PieChart, Users, Menu, AlertCircle, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GestorMembretadas from '../../components/cotizador/GestorMembretadas';
 import FormularioPreFactura from '../../components/cotizador/FormularioPreFactura';
 import BandejaAprobacion from '../../components/cotizador/BandejaAprobacion';
+import BandejaCotizaciones from '../../components/cotizador/BandejaCotizaciones';
 
 export default function ModuloCotizador() {
   const navigate = useNavigate();
@@ -288,7 +289,11 @@ export default function ModuloCotizador() {
           </button>
           <button className="sidebar-btn" data-tooltip="Prefactura Web" onClick={() => setActiveTab('llenado_web')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'llenado_web' ? '#4F46E5' : 'transparent', color: activeTab === 'llenado_web' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'llenado_web') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'llenado_web') e.currentTarget.style.backgroundColor = 'transparent'; }}>
             <FileSpreadsheet size={20} style={{ minWidth: '20px' }} />
-            {isSidebarOpen && <span>Prefactura Web</span>}
+            {isSidebarOpen && <span>Prefactura</span>}
+          </button>
+          <button className="sidebar-btn" data-tooltip="Cotizaciones" onClick={() => setActiveTab('bandeja_cotizaciones')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_cotizaciones' ? '#4F46E5' : 'transparent', color: activeTab === 'bandeja_cotizaciones' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'bandeja_cotizaciones') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'bandeja_cotizaciones') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+            <Archive size={20} style={{ minWidth: '20px' }} />
+            {isSidebarOpen && <span>Cotizaciones</span>}
           </button>
           <button className="sidebar-btn" data-tooltip="Bandeja de Aprobación" onClick={() => setActiveTab('bandeja_aprovación')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_aprovación' ? '#4F46E5' : 'transparent', color: activeTab === 'bandeja_aprovación' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'bandeja_aprovación') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'bandeja_aprovación') e.currentTarget.style.backgroundColor = 'transparent'; }}>
             <CheckCircle size={20} style={{ minWidth: '20px' }} />
@@ -373,6 +378,11 @@ export default function ModuloCotizador() {
           </div>
         )}
 
+        {activeTab === 'bandeja_cotizaciones' && (
+          <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+            <BandejaCotizaciones />
+          </div>
+        )}
 
       </div>
 

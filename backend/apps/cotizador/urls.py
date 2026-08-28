@@ -13,7 +13,8 @@ from .views import (
     solicitar_factura_monterrey_view, 
     generar_cotizacion_view,
     operaciones_pendientes_view,
-    aprobar_operacion_view           
+    aprobar_operacion_view,
+    listar_prefacturas_view
 )
 
 router = DefaultRouter()
@@ -32,5 +33,6 @@ urlpatterns = [
     path('solicitar-factura-monterrey/', solicitar_factura_monterrey_view), 
     path('generar-cotizacion/', generar_cotizacion_view),
     path('operaciones-pendientes/', operaciones_pendientes_view),
+    path('listar-prefacturas/', listar_prefacturas_view),
     path('aprobar-operacion/<int:operacion_id>/', aprobar_operacion_view),                   
 ]

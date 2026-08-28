@@ -12,6 +12,9 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const [mostrarConfigFiscal, setMostrarConfigFiscal] = useState(false);
     const buscadorRef = useRef(null);
 
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [folioGuardado, setFolioGuardado] = useState(null);
+
     const [parametros, setParametros] = useState({
         fecha_pago: '',
         moneda: 'MXN - Peso Mexicano',
@@ -95,7 +98,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             calle_numero: clienteSeleccionado?.calle_numero || '', colonia: clienteSeleccionado?.colonia || '', ciudad: clienteSeleccionado?.ciudad || '',
             estado: clienteSeleccionado?.estado || '', codigo_postal: clienteSeleccionado?.codigo_postal || '', regimen_fiscal: clienteSeleccionado?.regimen_fiscal || '',
             ...parametros, partidas: partidas,
-            referencia_cotizacion_origen: cotizacionOrigen // ID escondido
+            prefactura_id: cotizacionOrigen
         };
     };
 
@@ -126,8 +129,49 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             } else {
                 toast.error('Error al generar el Excel', { id: loadingToast });
             }
-        } catch (e) {
-            toast.error('Error de red', { id: loadingToast });
+        } catch (error) {
+            toast.error('Error de conexión', { id: loadingToast });
+        }
+    };
+
+    const handleGuardarPrefactura = async () => {
+        if (!empresaSeleccionada || !clienteSeleccionado) {
+            toast.error('Por favor seleccione una empresa emisora y un cliente antes de guardar.', { duration: 4000 });
+            return;
+        }
+
+        const loadingToast = toast.loading('Guardando Prefactura en el sistema...');
+
+        try {
+            const payload = construirPayload();
+            payload.enviar_correo = false;
+
+            const token = localStorage.getItem('access_token');
+
+            const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/solicitar-factura-monterrey/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error al guardar prefactura en el sistema.');
+
+            toast.dismiss(loadingToast);
+
+            // Aquí activamos nuestro NUEVO modal de éxito, limpio y directo
+            setFolioGuardado(data.referencia);
+            setShowSuccessModal(true);
+
+            setCotizacionOrigen(data.prefactura_id);
+
+        } catch (error) {
+            console.error("Error en Guardar Prefactura:", error);
+            toast.dismiss(loadingToast);
+            toast.error(`Ocurrió un error al guardar: ${error.message}`, { duration: 6000 });
         }
     };
 
@@ -210,6 +254,8 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         const loadingToast = toast.loading('Generando Excel y enviando a Monterrey...');
         try {
             const payload = construirPayload();
+            payload.enviar_correo = true;
+
             const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/solicitar-factura-monterrey/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -260,80 +306,81 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     };
 
 
-    const handlePreviewCotizacion = async () => {
-        if (!empresaSeleccionada || !clienteSeleccionado) {
-            toast.error('Seleccione empresa emisora y cliente');
-            return;
-        }
-
-        const nuevaPestana = window.open('', '_blank');
-        if (!nuevaPestana) {
-            toast.error('Desactiva el bloqueador de ventanas emergentes para este sitio.');
-            return;
-        }
-        nuevaPestana.document.write('<html><body style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f1f5f9; color: #475569;"><h2>Generando vista previa del PDF... Por favor espera.</h2></body></html>');
-
-        try {
-            const payload = construirPayload();
-
-            const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) throw new Error('Error en la petición');
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            nuevaPestana.location.href = url;
-
-        } catch (error) {
-            console.error(error);
-            nuevaPestana.close();
-            toast.error('Error al generar la vista previa del PDF');
-        }
-    };
-
-    const handleDescargarCotizacion = async () => {
-        if (!empresaSeleccionada || !clienteSeleccionado) {
-            toast.error('Seleccione empresa emisora y cliente');
-            return;
-        }
-
-        const loadingToast = toast.loading('Generando PDF...');
-        try {
-            const payload = construirPayload();
-
-            const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) throw new Error('Error en la petición');
-
-            // Leer el nombre dinámico que nos mandó Django (ej. COT-26082026-0001.pdf)
-            const disposition = response.headers.get('Content-Disposition');
-            let filename = `Cotizacion_${clienteSeleccionado.empresa.replace(/\s+/g, '_')}.pdf`;
-            if (disposition && disposition.includes('filename="')) {
-                filename = disposition.split('filename="')[1].split('"')[0];
+    /*
+        const handlePreviewCotizacion = async () => {
+            if (!empresaSeleccionada || !clienteSeleccionado) {
+                toast.error('Seleccione empresa emisora y cliente');
+                return;
             }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode.removeChild(link);
-            toast.success('PDF descargado', { id: loadingToast });
-        } catch (error) {
-            console.error(error);
-            toast.error('Error al descargar el PDF', { id: loadingToast });
-        }
-    };
-
-
+    
+            const nuevaPestana = window.open('', '_blank');
+            if (!nuevaPestana) {
+                toast.error('Desactiva el bloqueador de ventanas emergentes para este sitio.');
+                return;
+            }
+            nuevaPestana.document.write('<html><body style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f1f5f9; color: #475569;"><h2>Generando vista previa del PDF... Por favor espera.</h2></body></html>');
+    
+            try {
+                const payload = construirPayload();
+    
+                const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error('Error en la petición');
+    
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                nuevaPestana.location.href = url;
+    
+            } catch (error) {
+                console.error(error);
+                nuevaPestana.close();
+                toast.error('Error al generar la vista previa del PDF');
+            }
+        };
+    
+        const handleDescargarCotizacion = async () => {
+            if (!empresaSeleccionada || !clienteSeleccionado) {
+                toast.error('Seleccione empresa emisora y cliente');
+                return;
+            }
+    
+            const loadingToast = toast.loading('Generando PDF...');
+            try {
+                const payload = construirPayload();
+    
+                const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error('Error en la petición');
+    
+                // Leer el nombre dinámico que nos mandó Django (ej. COT-26082026-0001.pdf)
+                const disposition = response.headers.get('Content-Disposition');
+                let filename = `Cotizacion_${clienteSeleccionado.empresa.replace(/\s+/g, '_')}.pdf`;
+                if (disposition && disposition.includes('filename="')) {
+                    filename = disposition.split('filename="')[1].split('"')[0];
+                }
+    
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode.removeChild(link);
+                toast.success('PDF descargado', { id: loadingToast });
+            } catch (error) {
+                console.error(error);
+                toast.error('Error al descargar el PDF', { id: loadingToast });
+            }
+        };
+    
+    */
 
     return (
         <div style={styles.mainWrapper}>
@@ -570,36 +617,17 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                             <button onClick={handleDescargarExcel} style={{ padding: '10px 14px', borderRadius: '8px', background: '#FFFFFF', color: '#475569', border: '1px solid #CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F1F5F9'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}>
                                 <FileText size={16} /> Descargar
                             </button>
+                            <button onClick={handleGuardarPrefactura} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: '600', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}>
+                                Guardar
+                            </button>
                             <button onClick={triggerSolicitarMonterrey} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: '#059669', color: '#FFFFFF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: '600', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#047857'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#059669'}>
                                 <Send size={18} /> Solicitar Factura
                             </button>
                         </div>
                     </div>
-
-                    {/* Separador visual */}
-                    <div style={{ width: '1px', height: '40px', backgroundColor: '#E2E8F0', marginTop: '16px' }}></div>
-
-                    {/* Camino 1: Cotización al Cliente */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            Vía Cotización (Cliente)
-                        </span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button onClick={handlePreviewCotizacion} title="Vista Previa PDF" style={{ padding: '12px 16px', borderRadius: '10px', background: '#FFFFFF', color: '#4F46E5', border: '1px solid #A5B4FC', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F5F3FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}>
-                                <Eye size={18} />
-                            </button>
-                            <button onClick={handleDescargarCotizacion} style={{ padding: '12px 16px', borderRadius: '10px', background: '#FFFFFF', color: '#475569', border: '1px solid #A5B4FC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F5F3FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}>
-                                <FileText size={18} /> Descargar
-                            </button>
-                            <button onClick={triggerGenerarCotizacion} style={{ flex: 1, padding: '12px', borderRadius: '10px', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: '600', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#4338CA'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#4F46E5'}>
-                                <Send size={18} /> Enviar
-                            </button>
-                        </div>
-                    </div>
-
                 </div>
 
-                {/* Modal de Confirmación Estilo Moderno */}
+                {/* Modal de Confirmación Estilo Moderno (El Original) */}
                 {showConfirmModal && (
                     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
                         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '32px', width: '600px', maxWidth: '90%', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out', display: 'flex', flexDirection: 'column' }}>
@@ -622,13 +650,13 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                     </div>
                                 </div>
 
-                                {/* Destinatario Dinámico (Detecta qué botón lo abrió por el título) */}
-                                <div style={{ backgroundColor: modalConfig.titulo.includes('Monterrey') ? '#FFFBEB' : '#EEF2FF', border: `1px solid ${modalConfig.titulo.includes('Monterrey') ? '#FDE68A' : '#C7D2FE'}`, padding: '24px', borderRadius: '20px' }}>
-                                    <p style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: modalConfig.titulo.includes('Monterrey') ? '#D97706' : '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                {/* Destinatario Dinámico */}
+                                <div style={{ backgroundColor: modalConfig.titulo?.includes('Monterrey') ? '#FFFBEB' : '#EEF2FF', border: `1px solid ${modalConfig.titulo?.includes('Monterrey') ? '#FDE68A' : '#C7D2FE'}`, padding: '24px', borderRadius: '20px' }}>
+                                    <p style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: modalConfig.titulo?.includes('Monterrey') ? '#D97706' : '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                                         <FileText size={16} /> Destinatario
                                     </p>
                                     <div>
-                                        {modalConfig.titulo.includes('Monterrey') ? (
+                                        {modalConfig.titulo?.includes('Monterrey') ? (
                                             <>
                                                 <p style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#92400E' }}>Equipo de Monterrey (Interno)</p>
                                                 <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#B45309', fontWeight: '600' }}>soportecnico@solucionesvallux.net</p>
@@ -645,16 +673,47 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                             </div>
 
                             <button
-                                onClick={() => { setShowConfirmModal(false); modalConfig.onConfirm(); }}
-                                style={{ padding: '16px 24px', borderRadius: '16px', background: modalConfig.titulo.includes('Monterrey') ? '#D97706' : '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '16px', transition: 'background 0.2s', width: '100%' }}
-                                onMouseEnter={e => e.currentTarget.style.backgroundColor = modalConfig.titulo.includes('Monterrey') ? '#B45309' : '#4338CA'}
-                                onMouseLeave={e => e.currentTarget.style.backgroundColor = modalConfig.titulo.includes('Monterrey') ? '#D97706' : '#4F46E5'}
+                                onClick={() => { setShowConfirmModal(false); if(modalConfig.onConfirm) modalConfig.onConfirm(); }}
+                                style={{ padding: '16px 24px', borderRadius: '16px', background: modalConfig.titulo?.includes('Monterrey') ? '#D97706' : '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '16px', transition: 'background 0.2s', width: '100%' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = modalConfig.titulo?.includes('Monterrey') ? '#B45309' : '#4338CA'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = modalConfig.titulo?.includes('Monterrey') ? '#D97706' : '#4F46E5'}
                             >
-                                {modalConfig.titulo.includes('Monterrey') ? 'Confirmar Solicitud a Monterrey' : 'Confirmar y Enviar Cotización'}
+                                {modalConfig.titulo?.includes('Monterrey') ? 'Confirmar Solicitud a Monterrey' : 'Confirmar y Enviar Cotización'}
                             </button>
                         </div>
                     </div>
                 )}
+
+                {/* Nuevo Modal Exclusivo de Éxito de Guardado */}
+                {showSuccessModal && (
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+                        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '32px', width: '400px', maxWidth: '90%', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+
+                            <div style={{ width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#D1FAE5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+                                <CheckCircle2 size={36} />
+                            </div>
+
+                            <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#1E1B4B', margin: '0 0 16px 0' }}>¡Borrador Guardado!</h3>
+
+                            <p style={{ fontSize: '15px', color: '#64748B', margin: '0 0 8px 0', lineHeight: '1.5' }}>
+                                La prefactura se guardó correctamente.
+                            </p>
+                            <p style={{ fontSize: '22px', fontWeight: '800', color: '#4F46E5', margin: '0 0 32px 0' }}>
+                                {folioGuardado}
+                            </p>
+
+                            <button
+                                onClick={() => { setShowSuccessModal(false); setFolioGuardado(null); }}
+                                style={{ width: '100%', padding: '16px', borderRadius: '16px', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '16px', transition: 'background 0.2s' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#4338CA'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#4F46E5'}
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             {/* Animaciones CSS inyectadas */}
@@ -668,3 +727,5 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         </div>
     );
 }
+
+// trigger rebuild
