@@ -310,7 +310,7 @@ export default function ModuloCotizador() {
       <div style={{ flex: 1, padding: '48px 60px', overflowY: 'auto' }}>
         <div style={{ marginBottom: '40px' }}>
           <h2 style={{ fontSize: '32px', color: '#1E1B4B', margin: '0 0 8px 0', fontWeight: '700', letterSpacing: '-0.5px' }}>
-            {activeTab === 'generar' ? 'Generador de Cotizaciones' : activeTab === 'llenado_web' ? 'Generador de Prefactura Web' : 'Configuración de Plantillas'}
+            {activeTab === 'generar' ? 'Generador de Cotizaciones' : activeTab === 'llenado_web' ? 'Generador de Prefactura Web' : activeTab === 'bandeja_cotizaciones' ? 'Bandeja de Cotizaciones' : 'Configuración de Plantillas'}
           </h2>
 
         </div>

@@ -3442,18 +3442,18 @@ def solicitar_factura_monterrey_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def generar_cotizacion_view(request):
-    """ Camino 1 Modificado: Genera Cotización a partir de una Prefactura """
+    """ Camino 1: Genera Cotizacion oficial a partir de una Prefactura y la envia por correo """
     try:
         data = request.data
         prefactura_id = data.get('prefactura_id')
         
         if not prefactura_id:
-            return Response({"error": "No se proporcionó el ID de la prefactura original."}, status=400)
+            return Response({"error": "No se proporciono el ID de la prefactura original."}, status=400)
             
         # 1. Traer la prefactura original
         prefactura = OperacionFacturacion.objects.get(id=prefactura_id)
         
-        # 2. Buscar si ya le habíamos generado una cotización hija antes
+        # 2. Buscar si ya le habiamos generado una cotizacion hija antes
         cotizacion_hija = OperacionFacturacion.objects.filter(
             tipo_operacion='COTIZACION',
             prefactura_origen=prefactura
@@ -3475,36 +3475,65 @@ def generar_cotizacion_view(request):
             )
         else:
             cotizacion_hija.cotizacion_enviada = True
+            if request.user.is_authenticated:
+                cotizacion_hija.creado_por = request.user
             cotizacion_hija.save()
 
-        # 4. Generar el PDF usando los datos crudos clonados
-        pdf_buffer = generar_cotizacion_pdf(cotizacion_hija.datos_formulario)
-        pdf_b64 = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
+        # 4. Generar el PDF oficial en memoria usando GenerarCotizacionView
+        excel_buffer, totales = generar_excel_prefactura(cotizacion_hija.datos_formulario)
+        factory = RequestFactory()
+        excel_buffer.seek(0)
+        archivo_fake = SimpleUploadedFile(
+            'prefactura_en_memoria.xlsx',
+            excel_buffer.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        mock_request = factory.post('/api/cotizador/generar/', {
+            'file': archivo_fake,
+            'fecha': cotizacion_hija.datos_formulario.get('fecha_pago', '') or cotizacion_hija.datos_formulario.get('fecha_emision', ''),
+            'empresa_id': cotizacion_hija.empresa_emisora.id if cotizacion_hija.empresa_emisora else '',
+            'folio_oficial': cotizacion_hija.referencia_unica
+        })
+
+        view = GenerarCotizacionView.as_view()
+        pdf_response = view(mock_request)
+
+        if pdf_response.status_code != 200:
+            return Response({"error": "Error interno al generar el PDF de la cotizacion."}, status=500)
+
+        pdf_b64 = base64.b64encode(pdf_response.content).decode('utf-8')
         
         # 5. Enviar por correo al cliente final
         correo_cliente = prefactura.cliente.correo if prefactura.cliente else ""
         if not correo_cliente:
             return Response({"error": "El cliente no tiene un correo registrado."}, status=400)
             
-        folio_asunto = f"[REF: {cotizacion_hija.referencia_unica}]"
-        
-        # Llamar a la tarea asíncrona (Celery)
-        enviar_cotizacion_email_task.delay(
+        # Llamar a la tarea asincrona de Celery existente
+        enviar_cotizacion_task.delay(
             cliente_id=prefactura.cliente.id,
             empresa_id=prefactura.empresa_emisora.id,
             pdf_base64=pdf_b64,
             folio=cotizacion_hija.referencia_unica,
+            subtotal=float(cotizacion_hija.subtotal),
+            impuestos=float(cotizacion_hija.impuestos),
+            total=float(cotizacion_hija.total),
             es_excel=False,
             correo_destino=correo_cliente
         )
         
+        # Marcamos la prefactura padre como enviada para que no aparezca en "Por Enviar"
+        prefactura.cotizacion_enviada = True
+        prefactura.save()
+
         return Response({
-            "mensaje": f"Cotización {cotizacion_hija.referencia_unica} generada y enviada a {correo_cliente}",
+            "mensaje": f"Cotizacion {cotizacion_hija.referencia_unica} generada y enviada a {correo_cliente}",
             "referencia": cotizacion_hija.referencia_unica
         })
         
     except Exception as e:
-        return Response({"error": f"Error al generar la cotización: {str(e)}"}, status=400)
+        return Response({"error": f"Error al generar la cotizacion: {str(e)}"}, status=400)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -3588,47 +3617,90 @@ def aprobar_operacion_view(request, operacion_id):
         
     except Exception as e:
         return Response({"error": f"Error al aprobar: {str(e)}"}, status=400)
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def listar_prefacturas_view(request):
     """
-    Devuelve la lista de prefacturas guardadas,
-    ordenadas de la más reciente a la más antigua.
+    Devuelve la lista de prefacturas o cotizaciones enviadas,
+    filtradas por el parametro 'estado':
+    - 'por_enviar': prefacturas pendientes (sin cotizacion enviada).
+    - 'enviadas': cotizaciones hijas que ya fueron enviadas al cliente.
+    - default / None: todas las prefacturas (retrocompatibilidad).
     """
     try:
-        # Traemos todas las prefacturas
-        prefacturas = OperacionFacturacion.objects.filter(
-            tipo_operacion='PREFACTURA'
-        ).order_by('-fecha_creacion')
-        
+        estado = request.GET.get('estado')
+
+        if estado == 'enviadas':
+            # Cotizaciones oficiales que ya fueron despachadas al cliente
+            cotizaciones = OperacionFacturacion.objects.filter(
+                tipo_operacion='COTIZACION',
+                cotizacion_enviada=True
+            ).select_related('cliente', 'empresa_emisora', 'creado_por', 'prefactura_origen', 'prefactura_origen__creado_por').order_by('-fecha_creacion')
+
+            datos = []
+            for c in cotizaciones:
+                # Usuario que realizo el envio de la cotizacion
+                enviado_por = "Desconocido"
+                if c.creado_por:
+                    enviado_por = f"{c.creado_por.first_name} {c.creado_por.last_name}".strip() or c.creado_por.username
+                elif c.prefactura_origen and c.prefactura_origen.creado_por:
+                    enviado_por = f"{c.prefactura_origen.creado_por.first_name} {c.prefactura_origen.creado_por.last_name}".strip() or c.prefactura_origen.creado_por.username
+
+                # Usuario que elaboro la prefactura original
+                creador_prefactura = "Desconocido"
+                if c.prefactura_origen and c.prefactura_origen.creado_por:
+                    creador_prefactura = f"{c.prefactura_origen.creado_por.first_name} {c.prefactura_origen.creado_por.last_name}".strip() or c.prefactura_origen.creado_por.username
+
+                folio_prefactura = c.prefactura_origen.referencia_unica if c.prefactura_origen else "N/A"
+
+                datos.append({
+                    "id": c.id,
+                    "referencia_unica": c.referencia_unica,
+                    "folio_prefactura": folio_prefactura,
+                    "cliente": c.cliente.razon_social or c.cliente.empresa if c.cliente else "N/A",
+                    "empresa_emisora": c.empresa_emisora.nombre_empresa if c.empresa_emisora else "N/A",
+                    "total": c.total,
+                    "estado_factura": c.estado_factura,
+                    "fecha_envio": c.fecha_creacion.strftime("%Y-%m-%dT%H:%M:%SZ") if c.fecha_creacion else None,
+                    "enviado_por": enviado_por,
+                    "creado_por_prefactura": creador_prefactura,
+                    "datos_formulario": c.datos_formulario
+                })
+
+            return Response(datos, status=200)
+
+        elif estado == 'por_enviar':
+            # Solo prefacturas que NO han sido enviadas aun
+            prefacturas = OperacionFacturacion.objects.filter(
+                tipo_operacion='PREFACTURA',
+                cotizaciones_hijas__isnull=True,
+                cotizacion_enviada=False
+            ).select_related('cliente', 'empresa_emisora', 'creado_por').order_by('-fecha_creacion')
+        else:
+            # Comportamiento general / retrocompatible
+            prefacturas = OperacionFacturacion.objects.filter(
+                tipo_operacion='PREFACTURA'
+            ).select_related('cliente', 'empresa_emisora', 'creado_por').order_by('-fecha_creacion')
+
         datos = []
         for p in prefacturas:
-            # Si el usuario existe, sacamos su nombre o username
             creador = "Desconocido"
             if p.creado_por:
                 creador = f"{p.creado_por.first_name} {p.creado_por.last_name}".strip() or p.creado_por.username
-                
+
             datos.append({
-                # ...
                 "id": p.id,
                 "referencia_unica": p.referencia_unica,
-                
-                # 1. Solución Cliente (Si razon_social está vacío, usa el nombre comercial "empresa")
                 "cliente": p.cliente.razon_social or p.cliente.empresa if p.cliente else "N/A",
-                
                 "empresa_emisora": p.empresa_emisora.nombre_empresa if p.empresa_emisora else "N/A",
                 "total": p.total,
                 "estado_factura": p.estado_factura,
-                
-                # 2. Solución Fecha (Agregamos la 'Z' de Zulu/UTC para que tu navegador reste la zona horaria)
                 "fecha_creacion": p.fecha_creacion.strftime("%Y-%m-%dT%H:%M:%SZ") if p.fecha_creacion else None,
-                
                 "creado_por": creador,
                 "datos_formulario": p.datos_formulario
-                # ...
-  # Toda la data cruda guardada
             })
-            
+
         return Response(datos, status=200)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
