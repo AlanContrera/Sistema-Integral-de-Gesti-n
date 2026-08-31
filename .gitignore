@@ -29,3 +29,8 @@ htmlcov/
 
 # Respaldos de base de datos
 *.json
+
+# Temporary Office/Windows files
+~\$*
+*:Zone.Identifier
+*.Zone.Identifier

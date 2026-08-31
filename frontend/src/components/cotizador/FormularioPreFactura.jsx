@@ -2,13 +2,30 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Plus, Trash2, Download, Send, Calculator, FileSpreadsheet, Search,
     ChevronDown, ChevronUp, Building2, FileText, CheckCircle2, Eye,
-    UserPlus, FolderOpen, Clock, RefreshCw, User, Calendar, X
+    UserPlus, FolderOpen, Clock, RefreshCw, User, Calendar, X, Mail
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import {
+    FORMAS_PAGO_CATALOGO,
+    METODOS_PAGO_CATALOGO,
+    USOS_CFDI_CATALOGO,
+    MONEDAS_CATALOGO,
+    REGIMENES_FISCALES_CATALOGO
+} from './CatalogoSat';
+
+
+
 
 export default function FormularioPreFactura({ empresas, clientes }) {
     // --- ESTADOS DE PESTAÑAS (FORMULARIO VS HISTORIAL) ---
-    const [subTab, setSubTab] = useState('formulario'); // 'formulario' | 'historial'
+    const [subTab, setSubTab] = useState(() => {
+        return localStorage.getItem('prefactura_subtab') || 'formulario';
+    }); // 'formulario' | 'historial'
+
+    const cambiarSubTab = (tab) => {
+        setSubTab(tab);
+        localStorage.setItem('prefactura_subtab', tab);
+    };
     const [historialPrefacturas, setHistorialPrefacturas] = useState([]);
     const [loadingHistorial, setLoadingHistorial] = useState(false);
     const [busquedaHistorial, setBusquedaHistorial] = useState('');
@@ -17,6 +34,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const [listaClientes, setListaClientes] = useState(clientes || []);
     const [empresaId, setEmpresaId] = useState('');
     const [clienteId, setClienteId] = useState('');
+    const [clienteTemporal, setClienteTemporal] = useState(null);
 
     // Sincronizar clientes que vienen de props
     useEffect(() => {
@@ -31,6 +49,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const [mostrarConfigFiscal, setMostrarConfigFiscal] = useState(false);
     const buscadorRef = useRef(null);
 
+
     // Estados para Modales de Éxito y Confirmación
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [folioGuardado, setFolioGuardado] = useState(null);
@@ -40,6 +59,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     // Estado para Modal de Cliente Nuevo / Única Operación
     const [showModalNuevoCliente, setShowModalNuevoCliente] = useState(false);
     const [nuevoClienteData, setNuevoClienteData] = useState({
+        tipo_registro: 'catalogo', // 'catalogo' | 'unica_operacion'
         empresa: '',
         rfc: '',
         correo: '',
@@ -53,6 +73,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         estado: ''
     });
 
+
     // Parámetros fiscales predeterminados
     const [parametros, setParametros] = useState({
         fecha_pago: '',
@@ -63,10 +84,11 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         uso_cfdi: 'G03 - GASTOS EN GENERAL'
     });
 
-    // Partidas
+    // Línea 67 aprox:
     const [partidas, setPartidas] = useState([
-        { id: Date.now(), clave_prod: '', cantidad: 1, clave_unidad: 'E48', unidad: 'SERVICIO', descripcion: '', valor_unitario: 0, tasa_iva: 0.16, impuesto_label: '002 - IVA' }
+        { id: Date.now(), clave_prod: '', cantidad: 1, clave_unidad: 'E48', unidad: 'SERVICIO', descripcion: '', valor_unitario: '', tasa_iva: 0.16, impuesto_label: '002 - IVA' }
     ]);
+
 
     // Memoria para recordar si estamos editando una prefactura existente
     const [cotizacionOrigen, setCotizacionOrigen] = useState(null);
@@ -111,7 +133,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         }
     }, [clienteId, listaClientes]);
 
-    const clienteSeleccionado = listaClientes.find(c => c.id.toString() === clienteId.toString());
+    const clienteSeleccionado = clienteId === 'temporal' ? clienteTemporal : (listaClientes.find(c => c.id.toString() === clienteId.toString()) || null);
     const empresaSeleccionada = empresas.find(e => e.id.toString() === empresaId.toString());
 
     const clientesFiltrados = listaClientes.filter(c =>
@@ -127,9 +149,11 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
     const handleChangeParam = (e) => setParametros({ ...parametros, [e.target.name]: e.target.value });
 
+    // Línea 130 aprox:
     const agregarPartida = () => {
-        setPartidas([...partidas, { id: Date.now(), clave_prod: '84111500', cantidad: 1, clave_unidad: 'E48', unidad: 'SERVICIO', descripcion: '', valor_unitario: 0, tasa_iva: 0.16, impuesto_label: '002 - IVA' }]);
+        setPartidas([...partidas, { id: Date.now(), clave_prod: '84111500', cantidad: 1, clave_unidad: 'E48', unidad: 'SERVICIO', descripcion: '', valor_unitario: '', tasa_iva: 0.16, impuesto_label: '002 - IVA' }]);
     };
+
 
     const eliminarPartida = (id) => {
         if (partidas.length > 1) setPartidas(partidas.filter(p => p.id !== id));
@@ -140,17 +164,35 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         setPartidas(partidas.map(p => p.id === id ? { ...p, [campo]: valor } : p));
     };
 
-    const subtotal = partidas.reduce((acc, p) => acc + (p.cantidad * p.valor_unitario), 0);
-    const iva = partidas.reduce((acc, p) => acc + (p.cantidad * p.valor_unitario * p.tasa_iva), 0);
+    // Reemplazar líneas 143-144:
+    const subtotal = partidas.reduce((acc, p) => acc + ((parseFloat(p.cantidad) || 0) * (parseFloat(p.valor_unitario) || 0)), 0);
+    const iva = partidas.reduce((acc, p) => acc + ((parseFloat(p.cantidad) || 0) * (parseFloat(p.valor_unitario) || 0) * (parseFloat(p.tasa_iva) || 0)), 0);
     const total = subtotal + iva;
 
     const construirPayload = () => {
         const empresaSel = empresas.find(e => e.id.toString() === empresaId.toString());
+        
+        // Sanitizar partidas para evitar errores de cadenas vacías
+        const partidasSanitizadas = partidas.map(p => {
+            const cant = parseFloat(p.cantidad) || 1;
+            const vUnit = parseFloat(p.valor_unitario) || 0;
+            return {
+                ...p,
+                cantidad: cant,
+                valor_unitario: vUnit,
+                importe: cant * vUnit
+            };
+        });
+
         return {
             empresa_id: empresaId,
             empresa_nombre: empresaSel?.nombre_empresa || '',
             tipo_comprobante: 'I - INGRESO',
-            cliente_id: clienteId,
+            cliente_id: (clienteSeleccionado && !clienteSeleccionado.es_temporal) ? clienteSeleccionado.id : null,
+            es_operacion_unica: Boolean(clienteSeleccionado?.es_temporal),
+            cliente_nombre: clienteSeleccionado?.empresa || '',
+            correo_receptor: clienteSeleccionado?.correo || '',
+            correos_cc: clienteSeleccionado?.correos_cc || '',
             rfc_receptor: clienteSeleccionado?.rfc || '',
             razon_social: clienteSeleccionado?.razon_social || clienteSeleccionado?.empresa || '',
             calle_numero: clienteSeleccionado?.calle_numero || '',
@@ -160,7 +202,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             codigo_postal: clienteSeleccionado?.codigo_postal || '',
             regimen_fiscal: clienteSeleccionado?.regimen_fiscal || '',
             ...parametros,
-            partidas: partidas,
+            partidas: partidasSanitizadas,
             prefactura_id: cotizacionOrigen
         };
     };
@@ -169,50 +211,92 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const handleCrearCliente = async (e) => {
         e.preventDefault();
         if (!nuevoClienteData.empresa.trim()) {
-            return toast.error('El nombre comercial o razón social es obligatorio');
+            return toast.error('La razón social o empresa es obligatoria');
         }
         if (!nuevoClienteData.correo.trim()) {
             return toast.error('El correo electrónico es obligatorio');
         }
 
-        const loadingToast = toast.loading('Registrando cliente...');
+        // CASO 1: OPERACIÓN ÚNICA (NO SE GUARDA EN LA BASE DE DATOS)
+        if (nuevoClienteData.tipo_registro === 'unica_operacion') {
+            const temp = {
+                id: 'temporal',
+                es_temporal: true,
+                empresa: `${nuevoClienteData.empresa.trim()} [Op. Única]`,
+                razon_social: nuevoClienteData.empresa.trim(),
+                rfc: nuevoClienteData.rfc ? nuevoClienteData.rfc.trim().toUpperCase() : '',
+                correo: nuevoClienteData.correo.trim(),
+                correos_cc: nuevoClienteData.correos_cc || '',
+                codigo_postal: nuevoClienteData.codigo_postal ? nuevoClienteData.codigo_postal.trim() : '',
+                regimen_fiscal: nuevoClienteData.regimen_fiscal,
+                uso_cfdi_preferido: nuevoClienteData.uso_cfdi_preferido,
+                empresas_emisoras: [] // Permite cualquier empresa emisora
+            };
+
+            setClienteTemporal(temp);
+            setClienteId('temporal');
+            setBusquedaCliente(temp.empresa);
+            setShowModalNuevoCliente(false);
+            setEmpresaId(''); // Permite elegir empresa
+
+            // Actualizar parámetros fiscales si el cliente tiene sugerencias
+            if (temp.uso_cfdi_preferido) {
+                setParametros(prev => ({ ...prev, uso_cfdi: temp.uso_cfdi_preferido }));
+            }
+
+            toast.success(`Cliente "${temp.empresa}" asignado para esta operación única (no guardado en catálogo)`);
+            return;
+        }
+
+        // CASO 2: CLIENTE FIJO / CATÁLOGO (SÍ SE GUARDA EN POSTGRESQL)
+        const loadingToast = toast.loading('Guardando cliente en catálogo...');
         try {
             const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/clientes/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...nuevoClienteData,
-                    razon_social: nuevoClienteData.razon_social || nuevoClienteData.empresa
+                    empresa: nuevoClienteData.empresa.trim(),
+                    razon_social: nuevoClienteData.empresa.trim()
                 })
             });
 
             if (!response.ok) {
                 const errData = await response.json();
-                throw new Error(errData.error || 'Error al crear cliente');
+                throw new Error(errData.error || 'Error al registrar cliente');
             }
 
-            const clienteCreado = await response.json();
+            const nuevoCliente = await response.json();
+            toast.success('Cliente guardado en catálogo y asignado exitosamente', { id: loadingToast });
 
-            // Agregar a la lista local y seleccionar automáticamente
-            setListaClientes(prev => [clienteCreado, ...prev]);
-            setClienteId(clienteCreado.id);
+            setClienteTemporal(null);
+            setListaClientes(prev => [...prev, nuevoCliente]);
+            setClienteId(nuevoCliente.id);
+            setBusquedaCliente(nuevoCliente.empresa);
             setShowModalNuevoCliente(false);
-            setBusquedaCliente('');
-            setMostrarResultados(false);
 
-            // Reiniciar formulario del modal
+            // Resetear formulario
             setNuevoClienteData({
-                empresa: '', rfc: '', correo: '', correos_cc: '',
+                tipo_registro: 'catalogo',
+                empresa: '',
+                rfc: '',
+                correo: '',
+                correos_cc: '',
                 regimen_fiscal: '601 - General de Ley Personas Morales',
                 uso_cfdi_preferido: 'G03 - GASTOS EN GENERAL',
-                codigo_postal: '', calle_numero: '', colonia: '', ciudad: '', estado: ''
+                codigo_postal: '',
+                calle_numero: '',
+                colonia: '',
+                ciudad: '',
+                estado: ''
             });
 
-            toast.success(`Cliente "${clienteCreado.empresa}" registrado y asignado`, { id: loadingToast });
         } catch (error) {
+            console.error("Error al registrar cliente:", error);
             toast.error(error.message, { id: loadingToast });
         }
     };
+
 
     // --- ACCIÓN: CARGAR PREFACTURA DESDE EL HISTORIAL ---
     const handleCargarPrefactura = (pref) => {
@@ -323,17 +407,12 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     // --- ACCIÓN: ENVIAR SOLICITUD A MONTERREY ---
     const triggerSolicitarMonterrey = () => {
         if (!empresaSeleccionada || !clienteSeleccionado) {
-            toast.error('Seleccione empresa emisora y cliente');
+            toast.error('Por favor seleccione una empresa emisora y un cliente antes de enviar.');
             return;
         }
-        setModalConfig({
-            titulo: 'Confirmar Solicitud a Monterrey',
-            mensaje: `Se solicitará la Factura Oficial al equipo de Monterrey.\n\nEmisor: ${empresaSeleccionada.nombre_empresa}\nCliente: ${clienteSeleccionado.empresa}\n\n¿Deseas proceder y despachar la solicitud?`,
-            onConfirm: handleSolicitarMonterrey
-        });
-
         setShowConfirmModal(true);
     };
+
 
     const handleSolicitarMonterrey = async () => {
         const loadingToast = toast.loading('Enviando solicitud a Monterrey...');
@@ -424,7 +503,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             {/* --- SELECTOR DE SUB-PESTAÑAS SUPERIOR --- */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', backgroundColor: '#F1F5F9', padding: '6px', borderRadius: '14px', width: 'fit-content' }}>
                 <button
-                    onClick={() => setSubTab('formulario')}
+                    onClick={() => cambiarSubTab('formulario')}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -520,7 +599,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                     }}
                                     style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#4F46E5', fontSize: '12px', fontWeight: '700', cursor: 'pointer', padding: '2px 6px' }}
                                 >
-                                    <UserPlus size={14} /> + Cliente Nuevo / Única Operación
+                                    Cliente Nuevo / Única Operación
                                 </button>
                             </div>
 
@@ -542,7 +621,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         <h4 style={styles.clientCardTitle}>{clienteSeleccionado?.empresa}</h4>
                                         <p style={styles.clientCardSub}><FileText size={14} /> RFC: {clienteSeleccionado?.rfc || 'No registrado'}</p>
                                     </div>
-                                    <button onClick={() => { setClienteId(''); setBusquedaCliente(''); setEmpresaId(''); }} style={{ background: 'none', border: 'none', color: '#4F46E5', fontSize: '13px', fontWeight: '600', cursor: 'pointer', padding: '4px' }}>
+                                    <button onClick={() => { setClienteId(''); setBusquedaCliente(''); setEmpresaId(''); setClienteTemporal(null); }} style={{ background: 'none', border: 'none', color: '#4F46E5', fontSize: '13px', fontWeight: '600', cursor: 'pointer', padding: '4px' }}>
                                         Cambiar
                                     </button>
                                 </div>
@@ -563,19 +642,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         </div>
                                     )}
 
-                                    {/* Opción para registrar directamente desde el buscador */}
-                                    <div
-                                        onClick={() => {
-                                            setNuevoClienteData(prev => ({ ...prev, empresa: busquedaCliente }));
-                                            setShowModalNuevoCliente(true);
-                                            setMostrarResultados(false);
-                                        }}
-                                        style={{ padding: '12px 16px', borderTop: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#4F46E5', fontWeight: '700', fontSize: '13px' }}
-                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#EEF2FF'}
-                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-                                    >
-                                        <UserPlus size={16} /> + Registrar "{busquedaCliente || 'Cliente Nuevo'}"
-                                    </div>
+
                                 </div>
                             )}
                         </div>
@@ -623,8 +690,9 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                             <div>
                                 <label style={styles.label}>Moneda</label>
                                 <select name="moneda" value={parametros.moneda} onChange={handleChangeParam} style={styles.input}>
-                                    <option value="MXN - Peso Mexicano">MXN - Peso Mexicano</option>
-                                    <option value="USD - Dolar americano">USD - Dólar americano</option>
+                                    {MONEDAS_CATALOGO.map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
@@ -634,27 +702,30 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                             <div>
                                 <label style={styles.label}>Forma de Pago</label>
                                 <select name="forma_pago" value={parametros.forma_pago} onChange={handleChangeParam} style={styles.input}>
-                                    <option value="03 - TRANSFERENCIA ELECTRÓNICA DE FONDOS">03 - TRANSFERENCIA ELECTRÓNICA DE FONDOS</option>
-                                    <option value="01 - EFECTIVO">01 - EFECTIVO</option>
-                                    <option value="02 - CHEQUE NOMINATIVO">02 - CHEQUE NOMINATIVO</option>
+                                    {FORMAS_PAGO_CATALOGO.map(fp => (
+                                        <option key={fp} value={fp}>{fp}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
                                 <label style={styles.label}>Método de Pago</label>
                                 <select name="metodo_pago" value={parametros.metodo_pago} onChange={handleChangeParam} style={styles.input}>
-                                    <option value="PUE - Pago en una sola exhibición">PUE - Pago en una sola exhibición</option>
-                                    <option value="PPD - Pago en parcialidades o diferido">PPD - Pago en parcialidades o diferido</option>
+                                    {METODOS_PAGO_CATALOGO.map(mp => (
+                                        <option key={mp} value={mp}>{mp}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div>
                                 <label style={styles.label}>Uso de CFDI</label>
                                 <select name="uso_cfdi" value={parametros.uso_cfdi} onChange={handleChangeParam} style={styles.input}>
-                                    <option value="G03 - GASTOS EN GENERAL">G03 - GASTOS EN GENERAL</option>
-                                    <option value="G01 - ADQUISICIÓN DE MERCANCIAS">G01 - ADQUISICIÓN DE MERCANCIAS</option>
+                                    {USOS_CFDI_CATALOGO.map(uc => (
+                                        <option key={uc} value={uc}>{uc}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
                     )}
+
 
                     {/* --- SECCIÓN 3: PARTIDAS DINÁMICAS --- */}
                     <div style={styles.partidasCard}>
@@ -668,7 +739,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                         <div>
                             {partidas.map((p) => (
                                 <div key={p.id} style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', backgroundColor: '#FFFFFF' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                                    <div className="prefactura-partida-row-1" style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                                         <div>
                                             <label style={styles.label}>Clave Prod Serv</label>
                                             <input type="text" placeholder="Ej. 84111500" value={p.clave_prod || ''} onChange={(e) => actualizarPartida(p.id, 'clave_prod', e.target.value)} style={styles.bigInput} />
@@ -687,7 +758,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 2fr) 1fr 140px 140px 40px', gap: '20px', alignItems: 'flex-start' }}>
+                                    <div className="prefactura-partida-row-2" style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 2fr) 1fr 140px 140px 40px', gap: '20px', alignItems: 'flex-start' }}>
                                         <div>
                                             <label style={styles.label}>Descripción</label>
                                             <textarea rows="2" placeholder="Descripción del producto o servicio..." value={p.descripcion || ''} onChange={(e) => actualizarPartida(p.id, 'descripcion', e.target.value)} style={{ ...styles.bigInput, resize: 'vertical' }} />
@@ -696,7 +767,15 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                             <label style={styles.label}>Precio Unitario</label>
                                             <div style={{ position: 'relative' }}>
                                                 <span style={{ position: 'absolute', left: '14px', top: '15px', color: '#64748B', fontWeight: 'bold' }}>$</span>
-                                                <input type="number" step="0.01" value={p.valor_unitario} onChange={(e) => actualizarPartida(p.id, 'valor_unitario', parseFloat(e.target.value) || 0)} style={{ ...styles.bigInput, paddingLeft: '30px' }} />
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={p.valor_unitario === 0 ? '' : p.valor_unitario}
+                                                    onFocus={(e) => e.target.select()}
+                                                    onChange={(e) => actualizarPartida(p.id, 'valor_unitario', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
+                                                    style={{ ...styles.bigInput, paddingLeft: '30px' }}
+                                                />
                                             </div>
                                         </div>
                                         <div>
@@ -708,9 +787,10 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         <div>
                                             <label style={styles.label}>Importe</label>
                                             <p style={styles.importeText}>
-                                                ${(p.cantidad * p.valor_unitario).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                ${(((parseFloat(p.cantidad) || 0) * (parseFloat(p.valor_unitario) || 0))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </p>
                                         </div>
+
                                         <div style={{ paddingTop: '28px' }}>
                                             <button onClick={() => eliminarPartida(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '8px', opacity: 0.7 }} title="Eliminar fila">
                                                 <Trash2 size={20} />
@@ -723,8 +803,8 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                     </div>
 
                     {/* --- SECCIÓN 4: BARRA STICKY (TOTALES Y ACCIONES) --- */}
-                    <div style={styles.stickyBar}>
-                        <div style={styles.totalesBlock}>
+                    <div className="prefactura-sticky-bar" style={styles.stickyBar}>
+                        <div className="prefactura-totales-block" style={styles.totalesBlock}>
                             <div style={styles.totalItem}>
                                 <span style={styles.totalLabel}>Subtotal</span>
                                 <span style={styles.totalValue}>${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -741,7 +821,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div className="prefactura-actions-block" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                             <button onClick={() => handleDescargarExcel()} style={{ padding: '12px 18px', borderRadius: '10px', background: '#FFFFFF', color: '#475569', border: '1px solid #CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F1F5F9'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}>
                                 <FileSpreadsheet size={16} /> Descargar Excel
                             </button>
@@ -794,8 +874,8 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                     {loadingHistorial ? (
                         <div style={{ textAlign: 'center', padding: '60px', color: '#64748B' }}>Cargando historial...</div>
                     ) : (
-                        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                            <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                                     <tr>
                                         <th style={{ padding: '14px 20px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Folio</th>
@@ -818,11 +898,11 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
                                         const estadoLabels = {
                                             'NO_SOLICITADA': { label: 'Borrador', bg: '#F1F5F9', color: '#475569' },
-                                            'ENVIADA_A_MONTERREY': { label: 'Enviada a MTY', bg: '#FEF3C7', color: '#D97706' },
+                                            'ENVIADA_A_MONTERREY': { label: 'Solicitada a MTY', bg: '#FEF3C7', color: '#D97706' },
                                             'RECIBIDA_DE_MONTERREY': { label: 'Recibida de MTY', bg: '#EFF6FF', color: '#2563EB' },
-                                            'ENVIADA_AL_CLIENTE': { label: 'Factura Entregada', bg: '#EEF2FF', color: '#4F46E5' },
+                                            'ENVIADA_AL_CLIENTE': { label: 'Factura Entregada', bg: '#ECFDF5', color: '#059669' },
                                         };
-                                        const badge = estadoLabels[pref.estado_factura] || { label: pref.estado_factura, bg: '#F1F5F9', color: '#475569' };
+                                        const badge = estadoLabels[pref.estado_factura] || { label: pref.estado_factura || 'Borrador', bg: '#F1F5F9', color: '#475569' };
 
                                         return (
                                             <tr key={pref.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
@@ -863,15 +943,17 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '16px 20px' }}>
+                                                <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-                                                        <button
-                                                            onClick={() => handleCargarPrefactura(pref)}
-                                                            title="Cargar datos en el formulario para editar"
-                                                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', background: '#EEF2FF', border: '1px solid #C7D2FE', color: '#4F46E5', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}
-                                                        >
-                                                            <FolderOpen size={14} /> Cargar / Editar
-                                                        </button>
+                                                        {pref.estado_factura === 'NO_SOLICITADA' && !pref.cotizacion_enviada && (
+                                                            <button
+                                                                onClick={() => handleCargarPrefactura(pref)}
+                                                                title="Cargar datos en el formulario para editar"
+                                                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', background: '#EEF2FF', border: '1px solid #C7D2FE', color: '#4F46E5', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}
+                                                            >
+                                                                <FolderOpen size={14} /> Cargar / Editar
+                                                            </button>
+                                                        )}
 
                                                         <button
                                                             onClick={() => handleDescargarExcel(pref.datos_formulario)}
@@ -890,6 +972,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                                         </button>
                                                     </div>
                                                 </td>
+
                                             </tr>
                                         );
                                     })}
@@ -909,116 +992,183 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             )}
 
             {/* ========================================================================= */}
-            {/* MODAL: REGISTRAR CLIENTE NUEVO O EXPRÉS (OPERACIÓN ÚNICA)                */}
+            {/* MODAL: REGISTRAR CLIENTE NUEVO                                           */}
             {/* ========================================================================= */}
             {showModalNuevoCliente && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-                    <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', width: '560px', maxWidth: '95%', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <div>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+                    <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', width: '740px', maxWidth: '100%', maxHeight: '92vh', overflowY: 'auto', padding: '32px 36px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out' }}>
+
+                        {/* Header Limpio */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5' }}>
+                                    <UserPlus size={20} />
+                                </div>
                                 <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1E1B4B', margin: 0 }}>
-                                    Registrar Cliente / Operación Única
+                                    Nuevo Cliente
                                 </h3>
-                                <p style={{ color: '#64748B', fontSize: '13px', margin: '4px 0 0 0' }}>
-                                    Ingresa los datos para asignar de inmediato este cliente a la prefactura.
-                                </p>
                             </div>
-                            <button onClick={() => setShowModalNuevoCliente(false)} style={{ background: '#F1F5F9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <X size={18} />
+                            <button
+                                onClick={() => setShowModalNuevoCliente(false)}
+                                style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', width: '36px', height: '36px', borderRadius: '50%', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                <X size={16} />
                             </button>
                         </div>
 
                         <form onSubmit={handleCrearCliente}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                            {/* Selector Compacto Tipo Píldora */}
+                            <div style={{ display: 'flex', gap: '10px', backgroundColor: '#F1F5F9', padding: '4px', borderRadius: '14px', marginBottom: '24px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setNuevoClienteData({ ...nuevoClienteData, tipo_registro: 'catalogo' })}
+                                    style={{
+                                        flex: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        padding: '10px 16px',
+                                        borderRadius: '10px',
+                                        border: 'none',
+                                        fontWeight: '700',
+                                        fontSize: '13px',
+                                        cursor: 'pointer',
+                                        backgroundColor: nuevoClienteData.tipo_registro === 'catalogo' ? '#FFFFFF' : 'transparent',
+                                        color: nuevoClienteData.tipo_registro === 'catalogo' ? '#4F46E5' : '#64748B',
+                                        boxShadow: nuevoClienteData.tipo_registro === 'catalogo' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Building2 size={16} /> Cliente Fijo (Catálogo)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setNuevoClienteData({ ...nuevoClienteData, tipo_registro: 'unica_operacion' })}
+                                    style={{
+                                        flex: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        padding: '10px 16px',
+                                        borderRadius: '10px',
+                                        border: 'none',
+                                        fontWeight: '700',
+                                        fontSize: '13px',
+                                        cursor: 'pointer',
+                                        backgroundColor: nuevoClienteData.tipo_registro === 'unica_operacion' ? '#FFFFFF' : 'transparent',
+                                        color: nuevoClienteData.tipo_registro === 'unica_operacion' ? '#4F46E5' : '#64748B',
+                                        boxShadow: nuevoClienteData.tipo_registro === 'unica_operacion' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Clock size={16} /> Operación Única
+                                </button>
+                            </div>
+
+                            {/* Campos Directos */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '18px', marginBottom: '28px' }}>
                                 <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={styles.label}>Nombre Comercial / Razón Social *</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                                        Razón Social / Empresa *
+                                    </label>
                                     <input
                                         type="text"
                                         required
                                         placeholder="Ej. Distribuidora del Norte S.A. de C.V."
                                         value={nuevoClienteData.empresa}
                                         onChange={e => setNuevoClienteData({ ...nuevoClienteData, empresa: e.target.value })}
-                                        style={styles.input}
+                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box' }}
                                     />
                                 </div>
 
                                 <div>
-                                    <label style={styles.label}>RFC (Opcional / Genérico)</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                                        RFC
+                                    </label>
                                     <input
                                         type="text"
                                         placeholder="Ej. XAXX010101000"
                                         value={nuevoClienteData.rfc}
                                         onChange={e => setNuevoClienteData({ ...nuevoClienteData, rfc: e.target.value.toUpperCase() })}
-                                        style={styles.input}
+                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box' }}
                                     />
                                 </div>
 
                                 <div>
-                                    <label style={styles.label}>Código Postal (CP)</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                                        Código Postal
+                                    </label>
                                     <input
                                         type="text"
                                         maxLength="5"
                                         placeholder="Ej. 64000"
                                         value={nuevoClienteData.codigo_postal}
                                         onChange={e => setNuevoClienteData({ ...nuevoClienteData, codigo_postal: e.target.value })}
-                                        style={styles.input}
+                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box' }}
                                     />
                                 </div>
 
                                 <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={styles.label}>Correo Electrónico Principal *</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                                        Correo Electrónico *
+                                    </label>
                                     <input
                                         type="email"
                                         required
                                         placeholder="contacto@cliente.com"
                                         value={nuevoClienteData.correo}
                                         onChange={e => setNuevoClienteData({ ...nuevoClienteData, correo: e.target.value })}
-                                        style={styles.input}
+                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box' }}
                                     />
                                 </div>
 
                                 <div>
-                                    <label style={styles.label}>Régimen Fiscal</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                                        Régimen Fiscal
+                                    </label>
                                     <select
                                         value={nuevoClienteData.regimen_fiscal}
                                         onChange={e => setNuevoClienteData({ ...nuevoClienteData, regimen_fiscal: e.target.value })}
-                                        style={styles.input}
+                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
                                     >
-                                        <option value="601 - General de Ley Personas Morales">601 - Personas Morales</option>
-                                        <option value="612 - Personas Físicas con Actividades Empresariales y Profesionales">612 - Personas Físicas con Act. Emp.</option>
-                                        <option value="626 - Régimen Simplificado de Confianza">626 - RESICO</option>
-                                        <option value="616 - Sin obligaciones fiscales">616 - Sin obligaciones fiscales</option>
+                                        {REGIMENES_FISCALES_CATALOGO.map(rf => (
+                                            <option key={rf} value={rf}>{rf}</option>
+                                        ))}
                                     </select>
                                 </div>
 
                                 <div>
-                                    <label style={styles.label}>Uso CFDI Preferido</label>
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
+                                        Uso de CFDI
+                                    </label>
                                     <select
                                         value={nuevoClienteData.uso_cfdi_preferido}
                                         onChange={e => setNuevoClienteData({ ...nuevoClienteData, uso_cfdi_preferido: e.target.value })}
-                                        style={styles.input}
+                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
                                     >
-                                        <option value="G03 - GASTOS EN GENERAL">G03 - Gastos en General</option>
-                                        <option value="G01 - ADQUISICIÓN DE MERCANCIAS">G01 - Adquisición de Mercancías</option>
-                                        <option value="S01 - Sin efectos fiscales">S01 - Sin efectos fiscales</option>
-                                        <option value="CP01 - Pagos">CP01 - Pagos</option>
+                                        {USOS_CFDI_CATALOGO.map(uc => (
+                                            <option key={uc} value={uc}>{uc}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+                            {/* Footer Limpio */}
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center', paddingTop: '20px', borderTop: '1px solid #F1F5F9' }}>
                                 <button
                                     type="button"
                                     onClick={() => setShowModalNuevoCliente(false)}
-                                    style={{ padding: '12px 20px', borderRadius: '10px', background: '#F1F5F9', border: 'none', color: '#64748B', fontWeight: '700', cursor: 'pointer' }}
+                                    style={{ height: '42px', padding: '0 20px', borderRadius: '10px', background: '#F1F5F9', border: 'none', color: '#475569', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    style={{ padding: '12px 24px', borderRadius: '10px', background: '#4F46E5', border: 'none', color: '#FFFFFF', fontWeight: '700', cursor: 'pointer' }}
+                                    style={{ height: '42px', padding: '0 24px', borderRadius: '10px', background: '#4F46E5', border: 'none', color: '#FFFFFF', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)' }}
                                 >
-                                    Guardar y Asignar Cliente
+                                    Guardar y Asignar
                                 </button>
                             </div>
                         </form>
@@ -1026,30 +1176,69 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 </div>
             )}
 
+
+
+
             {/* --- MODAL DE CONFIRMACIÓN DE SOLICITUD A MONTERREY --- */}
             {showConfirmModal && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-                    <div style={{ backgroundColor: '#FFFFFF', borderRadius: '32px', width: '600px', maxWidth: '90%', padding: '40px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#1E1B4B', margin: 0 }}>Confirmación de Datos</h3>
-                            <button onClick={() => setShowConfirmModal(false)} style={{ background: '#F1F5F9', border: 'none', width: '40px', height: '40px', borderRadius: '50%', color: '#64748B', cursor: 'pointer', fontWeight: 'bold' }}>X</button>
+                    <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', width: '560px', maxWidth: '90%', padding: '36px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1E1B4B', margin: 0 }}>
+                                Confirmación de Envío a Facturación
+                            </h3>
+                            <button onClick={() => setShowConfirmModal(false)} style={{ background: '#F1F5F9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <X size={18} />
+                            </button>
                         </div>
 
-                        <div style={{ whiteSpace: 'pre-line', color: '#475569', fontSize: '15px', lineHeight: '1.6', marginBottom: '32px' }}>
-                            {modalConfig.mensaje}
+                        <p style={{ color: '#64748B', fontSize: '14px', margin: '0 0 24px 0' }}>
+                            Verifica las direcciones de correo antes de enviar la prefactura.
+                        </p>
+
+                        {/* Tarjeta Remitente */}
+                        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '16px 20px', marginBottom: '14px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                                Remitente (Empresa Emisora)
+                            </div>
+                            <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Building2 size={16} color="#4F46E5" />
+                                {empresaSeleccionada?.nombre_empresa || 'No seleccionada'}
+                            </div>
+                            <div style={{ color: '#475569', fontSize: '13px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Mail size={14} color="#94A3B8" />
+                                {empresaSeleccionada?.correo_remitente || 'Sin correo configurado en SMTP'}
+                            </div>
                         </div>
 
+                        {/* Tarjeta Destinatario */}
+                        <div style={{ backgroundColor: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '16px', padding: '16px 20px', marginBottom: '28px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                                Destinatario (Oficina de Facturación)
+                            </div>
+                            <div style={{ fontWeight: '700', color: '#1E1B4B', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Building2 size={16} color="#4F46E5" />
+                                Oficina Monterrey
+                            </div>
+                            <div style={{ color: '#4338CA', fontSize: '13px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Mail size={14} color="#6366F1" />
+                                giovannicontre24@gmail.com
+                            </div>
+                        </div>
+
+                        {/* Botón de Envío */}
                         <button
-                            onClick={() => { setShowConfirmModal(false); if (modalConfig.onConfirm) modalConfig.onConfirm(); }}
-                            style={{ padding: '16px 24px', borderRadius: '16px', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '16px', transition: 'background 0.2s', width: '100%' }}
+                            onClick={() => { setShowConfirmModal(false); handleSolicitarMonterrey(); }}
+                            style={{ padding: '15px 24px', borderRadius: '14px', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '15px', transition: 'background 0.2s', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                             onMouseEnter={e => e.currentTarget.style.backgroundColor = '#4338CA'}
                             onMouseLeave={e => e.currentTarget.style.backgroundColor = '#4F46E5'}
                         >
-                            Confirmar Solicitud a Monterrey
+                            <Send size={18} /> Confirmar y Enviar a Monterrey
                         </button>
                     </div>
                 </div>
             )}
+
 
             {/* --- MODAL DE ÉXITO DE GUARDADO SILENCIOSO --- */}
             {showSuccessModal && (
@@ -1083,6 +1272,46 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                     to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
+        
+            <style>{`
+                @media (max-width: 768px) {
+                    .prefactura-partida-row-1 {
+                        grid-template-columns: 1fr 1fr !important;
+                        gap: 12px !important;
+                    }
+                    .prefactura-partida-row-2 {
+                        grid-template-columns: 1fr !important;
+                        gap: 14px !important;
+                    }
+                    .prefactura-sticky-bar {
+                        position: static !important;
+                        flex-direction: column !important;
+                        gap: 20px !important;
+                        align-items: stretch !important;
+                        padding: 20px 16px !important;
+                        border-radius: 16px !important;
+                        margin-top: 24px !important;
+                    }
+                    .prefactura-totales-block {
+                        display: flex !important;
+                        justify-content: space-between !important;
+                        width: 100% !important;
+                        gap: 8px !important;
+                    }
+                    .prefactura-actions-block {
+                        display: flex !important;
+                        flex-direction: column !important;
+                        width: 100% !important;
+                        gap: 10px !important;
+                    }
+                    .prefactura-actions-block button {
+                        width: 100% !important;
+                        justify-content: center !important;
+                        height: 46px !important;
+                    }
+                }
+            `}</style>
+
         </div>
     );
 }

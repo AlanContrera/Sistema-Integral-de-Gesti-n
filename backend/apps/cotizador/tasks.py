@@ -16,14 +16,15 @@ from .models import EmpresaEmisora, Cliente
 
 
 @shared_task
-def enviar_cotizacion_task(cliente_id, empresa_id, pdf_base64, folio="Oficial", subtotal=None, impuestos=None, total=None, es_excel=False, correo_destino=None, correos_cc_destino=None):
+def enviar_cotizacion_task(cliente_id, empresa_id, pdf_base64, folio="Oficial", subtotal=None, impuestos=None, total=None, es_excel=False, correo_destino=None, correos_cc_destino=None, cliente_nombre_fallback=""): 
     try:
-        cliente = Cliente.objects.get(id=cliente_id)
+        cliente = Cliente.objects.filter(id=cliente_id).first() if cliente_id else None
         empresa = EmpresaEmisora.objects.get(id=empresa_id)
+        cliente_nombre = cliente.empresa if cliente else (cliente_nombre_fallback or "Cliente")
         
         # Si se envían correos específicos (Monterrey), se usan; si no, se toma el correo del cliente
-        destinatario = correo_destino if correo_destino else cliente.correo
-        cc = correos_cc_destino if correos_cc_destino is not None else cliente.correos_cc
+        destinatario = correo_destino if correo_destino else (cliente.correo if cliente else "")
+        cc = correos_cc_destino if correos_cc_destino is not None else (cliente.correos_cc if cliente else "")
         
         # ESTRUCTURA ANTI-SPAM (Mixed y Headers)
         msg = MIMEMultipart('mixed')
@@ -44,7 +45,7 @@ def enviar_cotizacion_task(cliente_id, empresa_id, pdf_base64, folio="Oficial", 
         total_fmt = f"${total:,.2f} MXN" if total is not None else None
 
         contexto = {
-            'cliente_nombre': cliente.empresa, 
+            'cliente_nombre': cliente_nombre, 
             'empresa_nombre': empresa.nombre_empresa,
             'cuerpo_correo': empresa.cuerpo_cotizacion,
             'folio': folio,
@@ -197,6 +198,14 @@ def enviar_factura_oficial_task(operacion_id):
         cliente = operacion.cliente
         empresa = operacion.empresa_emisora
         
+        # Obtener nombre y correo de forma segura tanto para cliente de catálogo como de operación única
+        cliente_nombre = cliente.empresa if cliente else (operacion.datos_formulario.get('razon_social') or operacion.datos_formulario.get('cliente_nombre') or 'Cliente')
+        correo_cliente = cliente.correo if cliente else (operacion.datos_formulario.get('correo_receptor') or operacion.datos_formulario.get('correo') or '')
+        correos_cc = cliente.correos_cc if cliente else (operacion.datos_formulario.get('correos_cc') or '')
+
+        if not correo_cliente:
+            raise ValueError(f"No se encontró correo de destino para la operación {operacion.referencia_unica}")
+
         msg = MIMEMultipart('mixed')
 
         msg['Message-ID'] = email.utils.make_msgid(domain=empresa.correo_remitente.split('@')[-1])
@@ -204,14 +213,14 @@ def enviar_factura_oficial_task(operacion_id):
         msg['Reply-To'] = empresa.correo_remitente
         
         msg['From'] = empresa.correo_remitente
-        msg['To'] = cliente.correo
+        msg['To'] = correo_cliente
         msg['Subject'] = f"Factura Oficial - {empresa.nombre_empresa} - {operacion.referencia_unica}"
         
-        if cliente.correos_cc:
-            msg['Cc'] = cliente.correos_cc
+        if correos_cc:
+            msg['Cc'] = correos_cc
             
         contexto = {
-            'cliente_nombre': cliente.empresa,
+            'cliente_nombre': cliente_nombre,
             'empresa_nombre': empresa.nombre_empresa,
             'folio': operacion.referencia_unica
         }
@@ -246,9 +255,9 @@ def enviar_factura_oficial_task(operacion_id):
                 server.starttls()
                 
         server.login(empresa.correo_remitente, empresa.password)
-        to_addrs = [cliente.correo]
-        if cliente.correos_cc:
-            to_addrs.extend([c.strip() for c in cliente.correos_cc.split(',') if c.strip()])
+        to_addrs = [correo_cliente]
+        if correos_cc:
+            to_addrs.extend([c.strip() for c in correos_cc.split(',') if c.strip()])
             
         server.send_message(msg, to_addrs=to_addrs)
         server.quit()
@@ -258,10 +267,10 @@ def enviar_factura_oficial_task(operacion_id):
         return f"Error enviando factura oficial: {str(e)}"
 
 @shared_task
-def enviar_prefactura_monterrey_task(cliente_id, empresa_id, pdf_base64, folio, es_excel=False, correo_destino=None, correos_cc_destino=None):
+def enviar_prefactura_monterrey_task(cliente_id, empresa_id, pdf_base64, folio, es_excel=False, correo_destino=None, correos_cc_destino=None, cliente_nombre_fallback=""): 
     try:
-
-        cliente = Cliente.objects.get(id=cliente_id)
+        cliente = Cliente.objects.filter(id=cliente_id).first() if cliente_id else None
+        cliente_nombre = cliente.empresa if cliente else (cliente_nombre_fallback or "Operación Única")
         empresa = EmpresaEmisora.objects.get(id=empresa_id)
         
         destinatario = correo_destino
@@ -277,13 +286,13 @@ def enviar_prefactura_monterrey_task(cliente_id, empresa_id, pdf_base64, folio, 
         
         msg['From'] = empresa.correo_remitente
         msg['To'] = destinatario
-        msg['Subject'] = f"[REF: {folio}] Solicitud de Facturación - {cliente.empresa}"
+        msg['Subject'] = f"[REF: {folio}] Solicitud de Facturación - {cliente_nombre}"
     
         if cc:
             msg['Cc'] = cc
 
         contexto = {
-            'cliente_nombre': cliente.empresa, 
+            'cliente_nombre': cliente_nombre, 
             'empresa_nombre': empresa.nombre_empresa,
             'folio': folio,
             'es_excel': es_excel

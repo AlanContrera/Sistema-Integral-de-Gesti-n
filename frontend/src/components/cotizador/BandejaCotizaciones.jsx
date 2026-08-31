@@ -1,15 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Download, Send, RefreshCw, User, Calendar, FileText, Building, Clock, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Eye, Download, Send, RefreshCw, User, Calendar, FileText, Building, Clock, Search, CheckCircle2, ArrowRight } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 
 export default function BandejaCotizaciones() {
-    const [subTab, setSubTab] = useState('por_enviar'); // 'por_enviar' | 'enviadas'
+    const [subTab, setSubTab] = useState(() => {
+        return localStorage.getItem('bandeja_cotizaciones_subtab') || 'por_enviar';
+    });
+
+    const cambiarSubTab = (tab) => {
+        setSubTab(tab);
+        localStorage.setItem('bandeja_cotizaciones_subtab', tab);
+    }; // 'por_enviar' | 'enviadas'
     const [pendientes, setPendientes] = useState([]);
     const [enviadas, setEnviadas] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchData = async () => {
-        setLoading(true);
+    const [busquedaEnviadas, setBusquedaEnviadas] = useState('');
+
+    const enviadasFiltradas = enviadas.filter(cot => {
+        const termino = busquedaEnviadas.toLowerCase();
+        const folio = (cot.referencia_unica || '').toLowerCase();
+        const folioOrigen = (cot.folio_prefactura || '').toLowerCase();
+        const cliente = (cot.cliente || '').toLowerCase();
+        const empresa = (cot.empresa_emisora || '').toLowerCase();
+        const enviadoPor = (cot.enviado_por || '').toLowerCase();
+
+        return folio.includes(termino) ||
+            folioOrigen.includes(termino) ||
+            cliente.includes(termino) ||
+            empresa.includes(termino) ||
+            enviadoPor.includes(termino);
+    });
+
+
+    const fetchData = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             const [resPendientes, resEnviadas] = await Promise.all([
                 fetch(`http://${window.location.hostname}:8000/api/cotizador/listar-prefacturas/?estado=por_enviar`),
@@ -26,14 +51,18 @@ export default function BandejaCotizaciones() {
             setPendientes(dataPendientes);
             setEnviadas(dataEnviadas);
         } catch (error) {
-            toast.error(error.message);
+            if (!silent) toast.error(error.message);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     };
 
     useEffect(() => {
         fetchData();
+        const interval = setInterval(() => {
+            fetchData(true);
+        }, 10000);
+        return () => clearInterval(interval);
     }, []);
 
     const handleGenerarEnviar = async (prefacturaId) => {
@@ -105,7 +134,7 @@ export default function BandejaCotizaciones() {
     };
 
     return (
-        <div style={{ padding: '32px', backgroundColor: '#F8FAFC', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
+        <div className="bandeja-cotizaciones-container" style={{ backgroundColor: 'transparent', width: '100%', fontFamily: "'Inter', sans-serif" }}>
             <Toaster position="top-right" />
 
             {/* Cabecera Principal */}
@@ -126,81 +155,98 @@ export default function BandejaCotizaciones() {
                 </button>
             </div>
 
-            {/* Sub-pestañas: Por Enviar vs Enviadas */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', backgroundColor: '#F1F5F9', padding: '6px', borderRadius: '14px', width: 'fit-content' }}>
-                <button
-                    onClick={() => setSubTab('por_enviar')}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '10px 20px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontWeight: '700',
-                        fontSize: '14px',
-                        transition: 'all 0.2s',
-                        backgroundColor: subTab === 'por_enviar' ? '#4F46E5' : 'transparent',
-                        color: subTab === 'por_enviar' ? '#FFFFFF' : '#64748B',
-                        boxShadow: subTab === 'por_enviar' ? '0 4px 12px rgba(79, 70, 229, 0.2)' : 'none'
-                    }}
-                >
-                    <Clock size={16} />
-                    Por Enviar
-                    <span style={{
-                        backgroundColor: subTab === 'por_enviar' ? '#FFFFFF' : '#E2E8F0',
-                        color: subTab === 'por_enviar' ? '#4F46E5' : '#475569',
-                        padding: '2px 8px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '800'
-                    }}>
-                        {pendientes.length}
-                    </span>
-                </button>
+            {/* Sub-pestañas y Buscador */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ display: 'flex', gap: '8px', backgroundColor: '#F1F5F9', padding: '6px', borderRadius: '14px', width: 'fit-content' }}>
+                    <button
+                        onClick={() => cambiarSubTab('por_enviar')}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 20px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: '700',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            backgroundColor: subTab === 'por_enviar' ? '#4F46E5' : 'transparent',
+                            color: subTab === 'por_enviar' ? '#FFFFFF' : '#64748B',
+                            boxShadow: subTab === 'por_enviar' ? '0 4px 12px rgba(79, 70, 229, 0.2)' : 'none'
+                        }}
+                    >
+                        <Clock size={16} />
+                        Por Enviar
+                        <span style={{
+                            backgroundColor: subTab === 'por_enviar' ? '#FFFFFF' : '#E2E8F0',
+                            color: subTab === 'por_enviar' ? '#4F46E5' : '#475569',
+                            padding: '2px 8px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '800'
+                        }}>
+                            {pendientes.length}
+                        </span>
+                    </button>
 
-                <button
-                    onClick={() => setSubTab('enviadas')}
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '10px 20px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontWeight: '700',
-                        fontSize: '14px',
-                        transition: 'all 0.2s',
-                        backgroundColor: subTab === 'enviadas' ? '#4F46E5' : 'transparent',
-                        color: subTab === 'enviadas' ? '#FFFFFF' : '#64748B',
-                        boxShadow: subTab === 'enviadas' ? '0 4px 12px rgba(5, 150, 105, 0.2)' : 'none'
-                    }}
-                >
-                    <Send size={16} />
-                    Enviadas
-                    <span style={{
-                        backgroundColor: subTab === 'enviadas' ? '#FFFFFF' : '#E2E8F0',
-                        color: subTab === 'enviadas' ? '#4F46E5' : '#475569',
-                        padding: '2px 8px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '800'
-                    }}>
-                        {enviadas.length}
-                    </span>
-                </button>
+                    <button
+                        onClick={() => cambiarSubTab('enviadas')}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 20px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: '700',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            backgroundColor: subTab === 'enviadas' ? '#4F46E5' : 'transparent',
+                            color: subTab === 'enviadas' ? '#FFFFFF' : '#64748B',
+                            boxShadow: subTab === 'enviadas' ? '0 4px 12px rgba(79, 70, 229, 0.2)' : 'none'
+                        }}
+                    >
+                        <Send size={16} />
+                        Enviadas
+                        <span style={{
+                            backgroundColor: subTab === 'enviadas' ? '#FFFFFF' : '#E2E8F0',
+                            color: subTab === 'enviadas' ? '#4F46E5' : '#475569',
+                            padding: '2px 8px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '800'
+                        }}>
+                            {enviadas.length}
+                        </span>
+                    </button>
+                </div>
+
+                {/* Buscador interactivo solo en pestaña Enviadas */}
+                {subTab === 'enviadas' && (
+                    <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '12px', padding: '8px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <Search size={18} color="#64748B" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por folio, cliente, empresa o remitente..."
+                            value={busquedaEnviadas}
+                            onChange={(e) => setBusquedaEnviadas(e.target.value)}
+                            style={{ border: 'none', outline: 'none', marginLeft: '10px', fontSize: '13px', width: '320px', color: '#1E293B' }}
+                        />
+                    </div>
+                )}
             </div>
+
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '60px', color: '#64748B' }}>Cargando información...</div>
             ) : (
-                <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden', border: '1px solid #E2E8F0' }}>
+                <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid #E2E8F0' }}>
 
                     {/* VISTA 1: COTIZACIONES POR ENVIAR (PREFACTURAS PENDIENTES) */}
                     {subTab === 'por_enviar' && (
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                                 <tr>
                                     <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Folio Prefactura</th>
@@ -289,7 +335,7 @@ export default function BandejaCotizaciones() {
 
                     {/* VISTA 2: COTIZACIONES YA ENVIADAS */}
                     {subTab === 'enviadas' && (
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                                 <tr>
                                     <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Folio Oficial</th>
@@ -300,7 +346,7 @@ export default function BandejaCotizaciones() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {enviadas.map((cot) => {
+                                {enviadasFiltradas.map((cot) => {
                                     const fechaEnvioLocal = cot.fecha_envio
                                         ? new Date(cot.fecha_envio).toLocaleString('es-MX', {
                                             day: '2-digit', month: '2-digit', year: 'numeric',
@@ -364,19 +410,35 @@ export default function BandejaCotizaciones() {
                                     );
                                 })}
 
-                                {enviadas.length === 0 && (
+                                {enviadasFiltradas.length === 0 && (
                                     <tr>
                                         <td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
-                                            Aún no hay cotizaciones enviadas registradas.
+                                            {busquedaEnviadas ? 'No se encontraron cotizaciones con ese criterio de búsqueda.' : 'Aún no hay cotizaciones enviadas registradas.'}
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
                     )}
-
                 </div>
             )}
-        </div>
+        
+      <style>{`
+        @media (max-width: 768px) {
+          .bandeja-header-flex {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 14px !important;
+          }
+          .bandeja-search-box {
+            width: 100% !important;
+          }
+          .bandeja-search-box input {
+            width: 100% !important;
+          }
+        }
+      `}</style>
+
+</div>
     );
 }

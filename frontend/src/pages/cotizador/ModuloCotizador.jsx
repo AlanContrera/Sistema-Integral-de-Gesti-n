@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, UploadCloud, Archive, FileSpreadsheet, CheckCircle, Loader2, Calendar, LayoutTemplate, Building2, UserPlus, Send, FileText, PieChart, Users, Menu, AlertCircle, Eye } from 'lucide-react';
+import { ArrowLeft, UploadCloud, Archive, FileSpreadsheet, CheckCircle, Loader2, Calendar, LayoutTemplate, Building2, UserPlus, Send, FileText, PieChart, Users, Menu, AlertCircle, Eye, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import GestorMembretadas from '../../components/cotizador/GestorMembretadas';
 import FormularioPreFactura from '../../components/cotizador/FormularioPreFactura';
@@ -11,8 +11,17 @@ export default function ModuloCotizador() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [activeTab, setActiveTab] = useState('generar');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('cotizador_active_tab') || 'generar';
+  });
+
+  const cambiarTab = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem('cotizador_active_tab', tab);
+    setIsMobileMenuOpen(false);
+  };
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
@@ -268,9 +277,97 @@ export default function ModuloCotizador() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, fontFamily: "'Outfit', sans-serif", backgroundColor: '#F8FAFC', zIndex: 40 }}>
+    <div className="cotizador-app-container" style={{ display: 'flex', height: '100vh', width: '100vw', position: 'fixed', top: 0, left: 0, fontFamily: "'Outfit', sans-serif", backgroundColor: '#F8FAFC', zIndex: 40 }}>
 
-      <div className={!isSidebarOpen ? 'sidebar-collapsed' : ''} style={{ width: isSidebarOpen ? '280px' : '90px', backgroundColor: '#1E1B4B', color: '#FFFFFF', display: 'flex', flexDirection: 'column', padding: '24px 16px', boxShadow: '4px 0 24px rgba(0,0,0,0.1)', zIndex: 10, transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+      {/* --- CABECERA MÓVIL (VISIBLE SOLO EN PANTALLAS < 768px) --- */}
+      <div className="cotizador-mobile-header">
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          style={{ background: 'none', border: 'none', color: '#1E1B4B', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Menu size={24} />
+        </button>
+        <div style={{ fontWeight: '800', fontSize: '17px', color: '#1E1B4B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {activeTab === 'generar' ? 'Generador' : activeTab === 'llenado_web' ? 'Prefactura' : activeTab === 'bandeja_cotizaciones' ? 'Cotizaciones' : activeTab === 'bandeja_aprovación' ? 'Aprobación' : 'Membretadas'}
+        </div>
+        <button
+          onClick={() => navigate(-1)}
+          style={{ background: '#F1F5F9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <ArrowLeft size={18} />
+        </button>
+      </div>
+
+      {/* --- DRAWER MÓVIL DESLIZABLE --- */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width: '280px', maxWidth: '80%', height: '100%', backgroundColor: '#1E1B4B', color: '#FFFFFF', padding: '24px 18px', display: 'flex', flexDirection: 'column', boxShadow: '4px 0 24px rgba(0,0,0,0.2)', animation: 'slideInLeft 0.25s ease-out' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#FFFFFF' }}>Cotizador</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#818CF8' }}>Menú de Opciones</p>
+              </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', width: '34px', height: '34px', borderRadius: '50%', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+              <button
+                onClick={() => cambiarTab('generar')}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', backgroundColor: activeTab === 'generar' ? '#4F46E5' : 'transparent', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}
+              >
+                <FileText size={20} /> Generar Cotización
+              </button>
+              <button
+                onClick={() => cambiarTab('membretadas')}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', backgroundColor: activeTab === 'membretadas' ? '#4F46E5' : 'transparent', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}
+              >
+                <LayoutTemplate size={20} /> Hojas Membretadas
+              </button>
+              <button
+                onClick={() => cambiarTab('llenado_web')}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', backgroundColor: activeTab === 'llenado_web' ? '#4F46E5' : 'transparent', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}
+              >
+                <FileSpreadsheet size={20} /> Prefactura
+              </button>
+              <button
+                onClick={() => cambiarTab('bandeja_cotizaciones')}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_cotizaciones' ? '#4F46E5' : 'transparent', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}
+              >
+                <Archive size={20} /> Cotizaciones
+              </button>
+              <button
+                onClick={() => cambiarTab('bandeja_aprovación')}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_aprovación' ? '#4F46E5' : 'transparent', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px' }}
+              >
+                <CheckCircle size={20} /> Bandeja Aprobación
+              </button>
+            </nav>
+
+            <button
+              onClick={() => navigate(-1)}
+              style={{ background: '#312E81', border: '1px solid #4338CA', color: '#C7D2FE', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', padding: '14px', borderRadius: '12px', marginTop: 'auto' }}
+            >
+              <ArrowLeft size={18} /> Volver al Sistema
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- SIDEBAR DE ESCRITORIO (OCULTO EN MÓVIL) --- */}
+      <div className={`cotizador-desktop-sidebar ${!isSidebarOpen ? 'sidebar-collapsed' : ''}`} style={{ width: isSidebarOpen ? '280px' : '90px', backgroundColor: '#1E1B4B', color: '#FFFFFF', display: 'flex', flexDirection: 'column', padding: '24px 16px', boxShadow: '4px 0 24px rgba(0,0,0,0.1)', zIndex: 10, transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+
+
 
 
 
@@ -279,23 +376,23 @@ export default function ModuloCotizador() {
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
           {isSidebarOpen && <p style={{ color: '#6366F1', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', padding: '0 8px' }}>Menú Principal</p>}
-          <button className="sidebar-btn" data-tooltip="Generar Cotización" onClick={() => setActiveTab('generar')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'generar' ? '#4F46E5' : 'transparent', color: activeTab === 'generar' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'generar') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'generar') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+          <button className="sidebar-btn" data-tooltip="Generar Cotización" onClick={() => cambiarTab('generar')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'generar' ? '#4F46E5' : 'transparent', color: activeTab === 'generar' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'generar') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'generar') e.currentTarget.style.backgroundColor = 'transparent'; }}>
             <FileText size={20} style={{ minWidth: '20px' }} />
             {isSidebarOpen && <span>Generar Cotización</span>}
           </button>
-          <button className="sidebar-btn" data-tooltip="Hojas Membretadas" onClick={() => setActiveTab('membretadas')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'membretadas' ? '#4F46E5' : 'transparent', color: activeTab === 'membretadas' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'membretadas') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'membretadas') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+          <button className="sidebar-btn" data-tooltip="Hojas Membretadas" onClick={() => cambiarTab('membretadas')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'membretadas' ? '#4F46E5' : 'transparent', color: activeTab === 'membretadas' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'membretadas') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'membretadas') e.currentTarget.style.backgroundColor = 'transparent'; }}>
             <LayoutTemplate size={20} style={{ minWidth: '20px' }} />
             {isSidebarOpen && <span>Hojas Membretadas</span>}
           </button>
-          <button className="sidebar-btn" data-tooltip="Prefactura Web" onClick={() => setActiveTab('llenado_web')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'llenado_web' ? '#4F46E5' : 'transparent', color: activeTab === 'llenado_web' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'llenado_web') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'llenado_web') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+          <button className="sidebar-btn" data-tooltip="Prefactura Web" onClick={() => cambiarTab('llenado_web')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'llenado_web' ? '#4F46E5' : 'transparent', color: activeTab === 'llenado_web' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'llenado_web') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'llenado_web') e.currentTarget.style.backgroundColor = 'transparent'; }}>
             <FileSpreadsheet size={20} style={{ minWidth: '20px' }} />
             {isSidebarOpen && <span>Prefactura</span>}
           </button>
-          <button className="sidebar-btn" data-tooltip="Cotizaciones" onClick={() => setActiveTab('bandeja_cotizaciones')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_cotizaciones' ? '#4F46E5' : 'transparent', color: activeTab === 'bandeja_cotizaciones' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'bandeja_cotizaciones') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'bandeja_cotizaciones') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+          <button className="sidebar-btn" data-tooltip="Cotizaciones" onClick={() => cambiarTab('bandeja_cotizaciones')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_cotizaciones' ? '#4F46E5' : 'transparent', color: activeTab === 'bandeja_cotizaciones' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'bandeja_cotizaciones') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'bandeja_cotizaciones') e.currentTarget.style.backgroundColor = 'transparent'; }}>
             <Archive size={20} style={{ minWidth: '20px' }} />
             {isSidebarOpen && <span>Cotizaciones</span>}
           </button>
-          <button className="sidebar-btn" data-tooltip="Bandeja de Aprobación" onClick={() => setActiveTab('bandeja_aprovación')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_aprovación' ? '#4F46E5' : 'transparent', color: activeTab === 'bandeja_aprovación' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'bandeja_aprovación') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'bandeja_aprovación') e.currentTarget.style.backgroundColor = 'transparent'; }}>
+          <button className="sidebar-btn" data-tooltip="Bandeja de Aprobación" onClick={() => cambiarTab('bandeja_aprovación')} style={{ display: 'flex', alignItems: 'center', justifyContent: isSidebarOpen ? 'flex-start' : 'center', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: activeTab === 'bandeja_aprovación' ? '#4F46E5' : 'transparent', color: activeTab === 'bandeja_aprovación' ? '#FFFFFF' : '#A5B4FC', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '15px', transition: 'all 0.2s', whiteSpace: 'nowrap' }} onMouseEnter={(e) => { if (activeTab !== 'bandeja_aprovación') e.currentTarget.style.backgroundColor = '#312E81'; }} onMouseLeave={(e) => { if (activeTab !== 'bandeja_aprovación') e.currentTarget.style.backgroundColor = 'transparent'; }}>
             <CheckCircle size={20} style={{ minWidth: '20px' }} />
             {isSidebarOpen && <span>Bandeja de Aprobación</span>}
           </button>
@@ -307,10 +404,10 @@ export default function ModuloCotizador() {
         </button>
       </div>
 
-      <div style={{ flex: 1, padding: '48px 60px', overflowY: 'auto' }}>
+      <div className="cotizador-main-content" style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ marginBottom: '40px' }}>
           <h2 style={{ fontSize: '32px', color: '#1E1B4B', margin: '0 0 8px 0', fontWeight: '700', letterSpacing: '-0.5px' }}>
-            {activeTab === 'generar' ? 'Generador de Cotizaciones' : activeTab === 'llenado_web' ? 'Generador de Prefactura Web' : activeTab === 'bandeja_cotizaciones' ? 'Bandeja de Cotizaciones' : 'Configuración de Plantillas'}
+            {activeTab === 'generar' ? 'Generador de Cotizaciones' : activeTab === 'llenado_web' ? 'Generador de Prefactura' : activeTab === 'bandeja_cotizaciones' ? 'Bandeja de Cotizaciones' : 'Configuración de Plantillas'}
           </h2>
 
         </div>
@@ -532,6 +629,54 @@ export default function ModuloCotizador() {
           from { opacity: 0; transform: translateY(30px) scale(0.95); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
+        
+        @keyframes slideInLeft {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
+        }
+
+        .cotizador-mobile-header {
+          display: none;
+        }
+
+        .cotizador-main-content {
+          padding: 48px 60px;
+        }
+
+        @media (max-width: 768px) {
+          .cotizador-app-container {
+            flex-direction: column !important;
+          }
+
+          .cotizador-desktop-sidebar {
+            display: none !important;
+          }
+
+          .cotizador-mobile-header {
+            display: flex !important;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            padding: 0 16px;
+            background-color: #FFFFFF;
+            border-bottom: 1px solid #E2E8F0;
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          }
+
+          .cotizador-main-content {
+            padding: 16px 12px !important;
+            height: calc(100vh - 60px) !important;
+          }
+
+          .cotizador-header-title {
+            font-size: 22px !important;
+            margin-bottom: 16px !important;
+          }
+        }
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #C7D2FE; border-radius: 10px; }

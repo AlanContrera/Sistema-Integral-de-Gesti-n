@@ -1,3 +1,14 @@
+def safe_float(val, default=0.0):
+    if val is None:
+        return default
+    try:
+        val_str = str(val).replace('$', '').replace(',', '').strip()
+        if not val_str:
+            return default
+        return float(val_str)
+    except (ValueError, TypeError):
+        return default
+
 from reportlab.pdfgen import canvas
 from random import random
 import io
@@ -3364,16 +3375,18 @@ def solicitar_factura_monterrey_view(request):
         cliente_id = data.get('cliente_id')
         empresa_id = data.get('empresa_id')
         
-        if not cliente_id or not empresa_id:
-            return Response({"error": "Debe especificar la empresa emisora y el cliente destino"}, status=400)
+        if not empresa_id:
+            return Response({"error": "Debe especificar la empresa emisora"}, status=400)
 
-        cliente = Cliente.objects.get(id=cliente_id)
+        cliente = Cliente.objects.filter(id=cliente_id).first() if cliente_id else None
+        if not cliente and not data.get('rfc_receptor') and not data.get('razon_social') and not data.get('cliente_nombre'):
+            return Response({"error": "Debe especificar el cliente destino o los datos fiscales del receptor"}, status=400)
         empresa = EmpresaEmisora.objects.get(id=empresa_id)
         
-        # 1. Crear el registro en la BD
+        # 1. Crear el registro en la BD con casteo numérico seguro
         partidas = data.get('partidas', [])
-        subtotal = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0))) for p in partidas)
-        impuestos = sum((float(p.get('cantidad', 1)) * float(p.get('valor_unitario', 0)) * float(p.get('tasa_iva', 0.16))) for p in partidas)
+        subtotal = sum((safe_float(p.get('cantidad', 1), 1.0) * safe_float(p.get('valor_unitario', 0), 0.0)) for p in partidas)
+        impuestos = sum((safe_float(p.get('cantidad', 1), 1.0) * safe_float(p.get('valor_unitario', 0), 0.0) * safe_float(p.get('tasa_iva', 0.16), 0.16)) for p in partidas)
         
         # Buscamos si React ya nos había guardado esta prefactura antes para solo actualizarla
         prefactura_id = data.get('prefactura_id')
@@ -3415,14 +3428,16 @@ def solicitar_factura_monterrey_view(request):
             correo_monterrey = "giovannicontre24@gmail.com"
             cc_monterrey = ""
 
+            cliente_nombre_fallback = cliente.empresa if cliente else (data.get('razon_social') or data.get('cliente_nombre') or 'Operación Única')
             enviar_prefactura_monterrey_task.delay(
-                cliente_id=cliente_id,
+                cliente_id=cliente.id if cliente else None,
                 empresa_id=empresa_id,
                 pdf_base64=excel_b64,
                 folio=operacion.referencia_unica,
                 es_excel=True,
                 correo_destino=correo_monterrey,
-                correos_cc_destino=cc_monterrey
+                correos_cc_destino=cc_monterrey,
+                cliente_nombre_fallback=cliente_nombre_fallback
             )
             
             mensaje = "Prefactura guardada y solicitada a Monterrey exitosamente"
@@ -3435,7 +3450,8 @@ def solicitar_factura_monterrey_view(request):
             "prefactura_id": operacion.id
         })
     except Exception as e:
-        return Response({"error": f"Error al procesar Prefactura: {str(e)}"}, status=400)
+        import logging; logging.error(f"Error procesando prefactura: {str(e)}", exc_info=True)
+        return Response({"error": "No se pudo procesar la prefactura. Por favor verifica que los campos y valores de las partidas sean correctos."}, status=400)
 
 
 
@@ -3505,7 +3521,7 @@ def generar_cotizacion_view(request):
         pdf_b64 = base64.b64encode(pdf_response.content).decode('utf-8')
         
         # 5. Enviar por correo al cliente final
-        correo_cliente = prefactura.cliente.correo if prefactura.cliente else ""
+        correo_cliente = prefactura.cliente.correo if prefactura.cliente else (prefactura.datos_formulario.get('correo_receptor') or prefactura.datos_formulario.get('correo') or "")
         if not correo_cliente:
             return Response({"error": "El cliente no tiene un correo registrado."}, status=400)
             
@@ -3658,7 +3674,7 @@ def listar_prefacturas_view(request):
                     "id": c.id,
                     "referencia_unica": c.referencia_unica,
                     "folio_prefactura": folio_prefactura,
-                    "cliente": c.cliente.razon_social or c.cliente.empresa if c.cliente else "N/A",
+                    "cliente": (c.cliente.razon_social or c.cliente.empresa) if c.cliente else (c.datos_formulario.get('razon_social') or c.datos_formulario.get('cliente_nombre') or c.datos_formulario.get('empresa') or "Operación Única"),
                     "empresa_emisora": c.empresa_emisora.nombre_empresa if c.empresa_emisora else "N/A",
                     "total": c.total,
                     "estado_factura": c.estado_factura,
@@ -3671,11 +3687,14 @@ def listar_prefacturas_view(request):
             return Response(datos, status=200)
 
         elif estado == 'por_enviar':
-            # Solo prefacturas que NO han sido enviadas aun
+            # Solo prefacturas que YA fueron solicitadas a Monterrey (excluye borradores NO_SOLICITADA)
+            # y cuya cotizacion oficial al cliente aun no ha sido despachada
             prefacturas = OperacionFacturacion.objects.filter(
                 tipo_operacion='PREFACTURA',
                 cotizaciones_hijas__isnull=True,
                 cotizacion_enviada=False
+            ).exclude(
+                estado_factura='NO_SOLICITADA'
             ).select_related('cliente', 'empresa_emisora', 'creado_por').order_by('-fecha_creacion')
         else:
             # Comportamiento general / retrocompatible
@@ -3692,10 +3711,11 @@ def listar_prefacturas_view(request):
             datos.append({
                 "id": p.id,
                 "referencia_unica": p.referencia_unica,
-                "cliente": p.cliente.razon_social or p.cliente.empresa if p.cliente else "N/A",
+                "cliente": (p.cliente.razon_social or p.cliente.empresa) if p.cliente else (p.datos_formulario.get('razon_social') or p.datos_formulario.get('cliente_nombre') or p.datos_formulario.get('empresa') or "Operación Única"),
                 "empresa_emisora": p.empresa_emisora.nombre_empresa if p.empresa_emisora else "N/A",
                 "total": p.total,
                 "estado_factura": p.estado_factura,
+                "cotizacion_enviada": p.cotizacion_enviada,
                 "fecha_creacion": p.fecha_creacion.strftime("%Y-%m-%dT%H:%M:%SZ") if p.fecha_creacion else None,
                 "creado_por": creador,
                 "datos_formulario": p.datos_formulario

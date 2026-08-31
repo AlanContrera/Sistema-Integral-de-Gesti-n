@@ -1,3 +1,14 @@
+def safe_float(val, default=0.0):
+    if val is None:
+        return default
+    try:
+        val_str = str(val).replace('$', '').replace(',', '').strip()
+        if not val_str:
+            return default
+        return float(val_str)
+    except (ValueError, TypeError):
+        return default
+
 import io
 import os
 import copy
@@ -68,9 +79,9 @@ def generar_excel_prefactura(data):
 
     for idx, p in enumerate(partidas):
         row_idx = 20 + idx
-        cant = float(p.get('cantidad', 1) or 1)
-        val_unit = float(p.get('valor_unitario', 0) or 0)
-        tasa_iva = float(p.get('tasa_iva', 0.16) or 0.16)
+        cant = safe_float(p.get('cantidad', 1), 1.0)
+        val_unit = safe_float(p.get('valor_unitario', 0), 0.0)
+        tasa_iva = safe_float(p.get('tasa_iva', 0.16), 0.16)
         
         importe_partida = cant * val_unit
         impuesto_partida = importe_partida * tasa_iva
