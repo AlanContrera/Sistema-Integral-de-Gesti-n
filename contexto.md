@@ -190,8 +190,6 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 ## PRÓXIMA FASE: 
 
 1. **Continuar con la IA (Llama 3.1):** Validar en producción la generación de facturas y ajustar el prompt si es necesario.
-2. **Subir nuevos clientes:** Realizar la carga al sistema de los nuevos clientes pendientes.
-3. **Revisión de Base de Datos de Clientes:** Hacer una auditoría a los registros actuales para ver si falta información fiscal, domicilios, o si requieren actualización de datos.
 
 
 | 2026-08-26 | Cotizador: Mejoras Finales | Refinamiento de la UX con rediseño CSS Grid de partidas, estandarización de payloads de backend para inyección de datos del cliente, redondeo preciso a 2 decimales, folios secuenciales estables en BBDD, limpieza de Códigos Postales, e incorporación de plantilla HTML corporativa para facturación final a clientes. |
@@ -202,6 +200,8 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 | 2026-09-01 | Cotizador: Rediseño Premium (Light + Orquídea) y Fintech Badge | Refactorización visual completa de los componentes del cotizador, transicionando de la paleta índigo a un esquema Light limpio con acentos Orquídea (`#C084FC`) y Violeta Profundo (`#9333EA`). Implementación de un "Premium Fintech Badge" responsivo conectado al `AuthContext` para la gestión de perfil y sesión de usuario. Generación de documentación Walkthrough. |
 
 | 2026-09-03 | Inteligencia Artificial (Llama 3.1) | Implementación de hiper-personalización de conceptos de facturación mediante historial de clientes. Ingesta masiva de 2,162 conceptos desde Excel hacia la tabla ConceptoEstrategia. Rediseño de IA modal en React (IAEstrategiaModal.jsx) y sintonización de prompt estricto (Anti-trampas matemáticas) para forzar montos asimétricos exactos y prevenir descripciones vacías o duplicadas. |
+| 2026-09-04 | Carga de Clientes, Auditoría y Fallbacks de Descarga | Carga de 69 nuevos clientes desde Excel (clientes_2.xlsx). Auditoría de base de datos completa. Implementación de renderizado condicional en Bandeja de Cotizaciones para permitir 'Generar y Descargar' oficial (bypass de SMTP Celery) cuando el cliente o la empresa emisora carecen de correo, con blindaje transaccional en generar_cotizacion_view. |
+
 
 ## Arquitectura de Folios y Entregabilidad SMTP (Ago 2026)
 

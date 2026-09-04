@@ -88,6 +88,34 @@ export default function BandejaCotizaciones() {
         }
     };
 
+    const handleGenerarDescargar = async (prefacturaId) => {
+        const loadingToast = toast.loading('Generando Folio Oficial...');
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/generar-cotizacion/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ prefactura_id: prefacturaId, solo_descargar: true })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error al generar cotización');
+
+            toast.success(data.mensaje, { id: loadingToast });
+            fetchData(); // Refresca ambas listas
+
+            // Llamamos a tu función nativa de descarga con la info actualizada
+            handleDownload(data.datos_formulario, data.referencia_unica);
+
+        } catch (error) {
+            toast.error(error.message, { id: loadingToast });
+        }
+    };
+
+
     const handlePreview = async (datosFormulario) => {
         const nuevaPestana = window.open('', '_blank');
         if (!nuevaPestana) return toast.error('Desactiva el bloqueador de ventanas emergentes.');
@@ -309,13 +337,26 @@ export default function BandejaCotizaciones() {
                                                     >
                                                         <Download size={18} />
                                                     </button>
-                                                    <button
-                                                        onClick={() => handleGenerarEnviar(pref.id)}
-                                                        title="Generar Cotización Oficial (Heredar Folio) y Enviar"
-                                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#9333EA', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
-                                                    >
-                                                        <Send size={16} /> Generar y Enviar
-                                                    </button>
+
+                                                    {/* Evaluamos si tiene correo válido. Si tiene, mostramos Enviar. Si no, Descargar Oficial */}
+                                                    {pref.datos_formulario?.receptor_correo || pref.datos_formulario?.correo_receptor ? (
+                                                        <button
+                                                            onClick={() => handleGenerarEnviar(pref.id)}
+                                                            title="Generar Cotización Oficial (Heredar Folio) y Enviar"
+                                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#9333EA', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                                                        >
+                                                            <Send size={16} /> Generar y Enviar
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleGenerarDescargar(pref.id)}
+                                                            title="Generar Cotización Oficial y Descargar"
+                                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#64748B', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                                                        >
+                                                            <Download size={16} /> Generar y Descargar
+                                                        </button>
+                                                    )}
+
                                                 </div>
                                             </td>
                                         </tr>
@@ -422,8 +463,8 @@ export default function BandejaCotizaciones() {
                     )}
                 </div>
             )}
-        
-      <style>{`
+
+            <style>{`
         @media (max-width: 768px) {
           .bandeja-header-flex {
             flex-direction: column !important;
@@ -439,6 +480,6 @@ export default function BandejaCotizaciones() {
         }
       `}</style>
 
-</div>
+        </div>
     );
 }

@@ -3463,7 +3463,8 @@ def generar_cotizacion_view(request):
     try:
         data = request.data
         prefactura_id = data.get('prefactura_id')
-        
+        solo_descargar = data.get('solo_descargar', False)
+
         if not prefactura_id:
             return Response({"error": "No se proporciono el ID de la prefactura original."}, status=400)
             
@@ -3476,6 +3477,20 @@ def generar_cotizacion_view(request):
             prefactura_origen=prefactura
         ).first()
         
+        # --- NUEVA UBICACIÓN DEL ESCUDO DE VALIDACIÓN ---
+        if not solo_descargar:
+            # Validar cliente
+            correo_cliente = prefactura.cliente.correo if prefactura.cliente else (prefactura.datos_formulario.get('correo_receptor') or prefactura.datos_formulario.get('correo') or "")
+            if not correo_cliente:
+                return Response({"error": "El cliente receptor no tiene un correo registrado."}, status=400)
+            
+            # Validar empresa emisora
+            correo_empresa = prefactura.empresa_emisora.correo_remitente if prefactura.empresa_emisora else ""
+            if not correo_empresa:
+                return Response({
+                    "error": f"La empresa emisora '{prefactura.empresa_emisora.nombre_empresa}' no tiene configurado un correo SMTP para realizar envíos."
+                }, status=400) 
+
         # 3. Si no existe, la creamos clonando los datos de la prefactura
         if not cotizacion_hija:
             cotizacion_hija = OperacionFacturacion.objects.create(
@@ -3521,10 +3536,13 @@ def generar_cotizacion_view(request):
 
         pdf_b64 = base64.b64encode(pdf_response.content).decode('utf-8')
         
-        # 5. Enviar por correo al cliente final
-        correo_cliente = prefactura.cliente.correo if prefactura.cliente else (prefactura.datos_formulario.get('correo_receptor') or prefactura.datos_formulario.get('correo') or "")
-        if not correo_cliente:
-            return Response({"error": "El cliente no tiene un correo registrado."}, status=400)
+        if solo_descargar:
+            return Response({
+                "mensaje": "Cotización oficial generada y almacenada en el historial.",
+                "datos_formulario": cotizacion_hija.datos_formulario,
+                "referencia_unica": cotizacion_hija.referencia_unica
+            }, status=200)
+
             
         # Llamar a la tarea asincrona de Celery existente
         enviar_cotizacion_task.delay(
