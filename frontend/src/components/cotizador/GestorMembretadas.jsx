@@ -77,11 +77,11 @@ const GestorMembretadas = () => {
 
   return (
     <div style={{ fontFamily: "'Outfit', sans-serif" }}>
-      <h3 style={{ fontSize: '20px', color: '#1E1B4B', margin: '0 0 8px 0', fontWeight: '700' }}>Repositorio de Plantillas</h3>
-      <p style={{ color: '#6366F1', margin: '0 0 24px 0', fontSize: '15px' }}>Sube o elimina tus archivos PDF de diseño base.</p>
+      <h3 style={{ fontSize: '20px', color: '#1C1335', margin: '0 0 8px 0', fontWeight: '700' }}>Repositorio de Plantillas</h3>
+      <p style={{ color: '#C084FC', margin: '0 0 24px 0', fontSize: '15px' }}>Sube o elimina tus archivos PDF de diseño base.</p>
 
       {/* ZONA DE CARGA */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#F8FAFC', padding: '32px', borderRadius: '20px', border: '2px dashed #C7D2FE', marginBottom: '40px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#F8FAFC', padding: '32px', borderRadius: '20px', border: '2px dashed #DDD6FE', marginBottom: '40px' }}>
 
         <input
           type="file"
@@ -94,23 +94,23 @@ const GestorMembretadas = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
             onClick={() => fileInputRef.current.click()}
-            style={{ padding: '14px 24px', backgroundColor: '#EEF2FF', color: '#4F46E5', border: '2px solid #C7D2FE', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}
+            style={{ padding: '14px 24px', backgroundColor: '#F3E8FF', color: '#9333EA', border: '2px solid #DDD6FE', borderRadius: '12px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#E0E7FF'; e.currentTarget.style.borderColor = '#818CF8'; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#EEF2FF'; e.currentTarget.style.borderColor = '#C7D2FE'; }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#F3E8FF'; e.currentTarget.style.borderColor = '#DDD6FE'; }}
           >
             <UploadCloud size={20} /> Examinar Archivos...
           </button>
 
-          <span style={{ flex: 1, color: file ? '#4F46E5' : '#94A3B8', fontSize: '15px', fontWeight: '600' }}>
+          <span style={{ flex: 1, color: file ? '#9333EA' : '#94A3B8', fontSize: '15px', fontWeight: '600' }}>
             {file ? file.name : 'Ningún archivo PDF seleccionado'}
           </span>
 
           <button
             onClick={handleSubir}
             disabled={!file || loading}
-            style={{ padding: '14px 32px', backgroundColor: (!file || loading) ? '#E2E8F0' : '#4F46E5', color: (!file || loading) ? '#94A3B8' : '#FFFFFF', border: 'none', borderRadius: '12px', cursor: (!file || loading) ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', boxShadow: (!file || loading) ? 'none' : '0 10px 15px -3px rgba(79, 70, 229, 0.4)' }}
-            onMouseEnter={e => { if (file && !loading) e.currentTarget.style.backgroundColor = '#312E81'; }}
-            onMouseLeave={e => { if (file && !loading) e.currentTarget.style.backgroundColor = '#4F46E5'; }}
+            style={{ padding: '14px 32px', backgroundColor: (!file || loading) ? '#E2E8F0' : '#9333EA', color: (!file || loading) ? '#94A3B8' : '#FFFFFF', border: 'none', borderRadius: '12px', cursor: (!file || loading) ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', boxShadow: (!file || loading) ? 'none' : '0 10px 15px -3px rgba(147, 51, 234, 0.4)' }}
+            onMouseEnter={e => { if (file && !loading) e.currentTarget.style.backgroundColor = '#7C3AED'; }}
+            onMouseLeave={e => { if (file && !loading) e.currentTarget.style.backgroundColor = '#9333EA'; }}
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
             {loading ? 'Subiendo...' : 'Subir Plantilla'}
@@ -120,8 +120,8 @@ const GestorMembretadas = () => {
 
       {/* LISTA DE ARCHIVOS */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1E1B4B', margin: 0 }}>Archivos Disponibles en Servidor</h3>
-        <span style={{ backgroundColor: '#EEF2FF', color: '#4F46E5', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>{archivos.length} Plantillas</span>
+        <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1C1335', margin: 0 }}>Archivos Disponibles en Servidor</h3>
+        <span style={{ backgroundColor: '#F3E8FF', color: '#9333EA', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>{archivos.length} Plantillas</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -132,10 +132,10 @@ const GestorMembretadas = () => {
         )}
 
         {archivos.map((archivo, index) => (
-          <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', backgroundColor: '#FFFFFF', border: '1px solid #E0E7FF', borderRadius: '16px', transition: 'all 0.2s', boxShadow: '0 4px 6px -4px rgba(0,0,0,0.05)' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#C7D2FE'} onMouseLeave={e => e.currentTarget.style.borderColor = '#E0E7FF'}>
+          <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', backgroundColor: '#FFFFFF', border: '1px solid #E0E7FF', borderRadius: '16px', transition: 'all 0.2s', boxShadow: '0 4px 6px -4px rgba(0,0,0,0.05)' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#DDD6FE'} onMouseLeave={e => e.currentTarget.style.borderColor = '#E0E7FF'}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ backgroundColor: '#EEF2FF', padding: '12px', borderRadius: '12px', color: '#4F46E5' }}><FileText size={24} /></div>
-              <span style={{ fontSize: '15px', fontWeight: '600', color: '#312E81' }}>{archivo}</span>
+              <div style={{ backgroundColor: '#F3E8FF', padding: '12px', borderRadius: '12px', color: '#9333EA' }}><FileText size={24} /></div>
+              <span style={{ fontSize: '15px', fontWeight: '600', color: '#7C3AED' }}>{archivo}</span>
             </div>
             <button
               onClick={() => setFileToDelete(archivo)}
@@ -160,9 +160,9 @@ const GestorMembretadas = () => {
               </div>
             </div>
 
-            <h3 style={{ textAlign: 'center', fontSize: '22px', fontWeight: '700', color: '#1E1B4B', margin: '0 0 12px 0' }}>Confirmar Eliminación</h3>
+            <h3 style={{ textAlign: 'center', fontSize: '22px', fontWeight: '700', color: '#1C1335', margin: '0 0 12px 0' }}>Confirmar Eliminación</h3>
             <p style={{ textAlign: 'center', color: '#64748B', fontSize: '15px', margin: '0 0 32px 0', lineHeight: '1.5' }}>
-              ¿Estás seguro que deseas eliminar la plantilla <strong style={{ color: '#1E1B4B' }}>{fileToDelete}</strong>? Esta acción no se puede deshacer.
+              ¿Estás seguro que deseas eliminar la plantilla <strong style={{ color: '#1C1335' }}>{fileToDelete}</strong>? Esta acción no se puede deshacer.
             </p>
 
             <div style={{ display: 'flex', gap: '16px' }}>

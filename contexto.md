@@ -189,16 +189,19 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 
 ## PRÓXIMA FASE: 
 
+1. **Continuar con la IA (Llama 3.1):** Validar en producción la generación de facturas y ajustar el prompt si es necesario.
+2. **Subir nuevos clientes:** Realizar la carga al sistema de los nuevos clientes pendientes.
+3. **Revisión de Base de Datos de Clientes:** Hacer una auditoría a los registros actuales para ver si falta información fiscal, domicilios, o si requieren actualización de datos.
 
 
-
-- 
 | 2026-08-26 | Cotizador: Mejoras Finales | Refinamiento de la UX con rediseño CSS Grid de partidas, estandarización de payloads de backend para inyección de datos del cliente, redondeo preciso a 2 decimales, folios secuenciales estables en BBDD, limpieza de Códigos Postales, e incorporación de plantilla HTML corporativa para facturación final a clientes. |
 | 2026-08-27 | Arquitectura SaaS (Single-Tenant) | Análisis y adopción de modelo de distribución B2B (Servidores Dedicados). Transplante exitoso de la base de datos central embebida (SQLite) hacia PostgreSQL empresarial montado en Docker, incluyendo refactorización defensiva de Signals de Django e integración en el flujo de orquestación de Compose sin pérdida de datos. |
 | 2026-08-28 | Cotizador: Bandejas Divididas, Historial y Clientes Exprés | División de la Bandeja de Cotizaciones en sub-pestañas "Por Enviar" y "Enviadas" con trazabilidad de operadores (Creado Por vs Enviado Por). Resolución del motor de generación oficial de PDFs ReportLab en memoria y despacho Celery en generar_cotizacion_view. Incorporación de sub-pestaña de Historial de Prefacturas con función de carga y restauración en formulario, y desarrollo de modal in-app para registro y asignación instantánea de clientes nuevos o de operación única. |
 | 2026-08-31 | Cotizador: Catálogos SAT, Operación Única y Rediseño Responsivo Total | Modularización de Catálogos SAT 4.0 (`CatalogoSat.jsx`) con validación contra plantilla oficial de Excel. Implementación del flujo de 'Operación Única' (en memoria local sin persistir en la tabla Cliente de PostgreSQL) vs 'Cliente Fijo'. Corrección del ciclo de vida de prefacturas: los borradores (`NO_SOLICITADA`) se mantienen en historial sin saturar la Bandeja de Cotizaciones hasta ser formalmente enviadas a Monterrey. Blindaje contra conversiones numéricas vacías (`safe_float`) y resolución de fallos asíncronos en Celery (`enviar_factura_oficial_task`). Transformación total de la interfaz a diseño 100% responsivo para Smartphones, Tablets y Desktop (Mobile Header, Drawer deslizable, grids fluidas y tablas táctiles). |
 
 | 2026-09-01 | Cotizador: Rediseño Premium (Light + Orquídea) y Fintech Badge | Refactorización visual completa de los componentes del cotizador, transicionando de la paleta índigo a un esquema Light limpio con acentos Orquídea (`#C084FC`) y Violeta Profundo (`#9333EA`). Implementación de un "Premium Fintech Badge" responsivo conectado al `AuthContext` para la gestión de perfil y sesión de usuario. Generación de documentación Walkthrough. |
+
+| 2026-09-03 | Inteligencia Artificial (Llama 3.1) | Implementación de hiper-personalización de conceptos de facturación mediante historial de clientes. Ingesta masiva de 2,162 conceptos desde Excel hacia la tabla ConceptoEstrategia. Rediseño de IA modal en React (IAEstrategiaModal.jsx) y sintonización de prompt estricto (Anti-trampas matemáticas) para forzar montos asimétricos exactos y prevenir descripciones vacías o duplicadas. |
 
 ## Arquitectura de Folios y Entregabilidad SMTP (Ago 2026)
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Plus, Trash2, Download, Send, Calculator, FileSpreadsheet, Search,
     ChevronDown, ChevronUp, Building2, FileText, CheckCircle2, Eye,
-    UserPlus, FolderOpen, Clock, RefreshCw, User, Calendar, X, Mail
+    UserPlus, FolderOpen, Clock, RefreshCw, User, Calendar, X, Mail, Sparkles
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -12,6 +12,7 @@ import {
     MONEDAS_CATALOGO,
     REGIMENES_FISCALES_CATALOGO
 } from './CatalogoSat';
+import IAEstrategiaModal from './IAEstrategiaModal';
 
 
 
@@ -35,6 +36,9 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const [empresaId, setEmpresaId] = useState('');
     const [clienteId, setClienteId] = useState('');
     const [clienteTemporal, setClienteTemporal] = useState(null);
+
+    const [isIAModalOpen, setIsIAModalOpen] = useState(false);
+
 
     // Sincronizar clientes que vienen de props
     useEffect(() => {
@@ -171,7 +175,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
     const construirPayload = () => {
         const empresaSel = empresas.find(e => e.id.toString() === empresaId.toString());
-        
+
         // Sanitizar partidas para evitar errores de cadenas vacías
         const partidasSanitizadas = partidas.map(p => {
             const cant = parseFloat(p.cantidad) || 1;
@@ -479,21 +483,21 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         searchResults: { position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: '#FFFFFF', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', marginTop: '8px', zIndex: 50, border: '1px solid #E2E8F0', overflow: 'hidden' },
         resultItem: { padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.2s', display: 'flex', flexDirection: 'column' },
         clientCard: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '16px' },
-        clientCardTitle: { fontSize: '15px', fontWeight: '700', color: '#1E1B4B', margin: '0 0 4px 0' },
+        clientCardTitle: { fontSize: '15px', fontWeight: '700', color: '#1C1335', margin: '0 0 4px 0' },
         clientCardSub: { fontSize: '13px', color: '#64748B', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' },
         configHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '16px 24px', borderRadius: '16px', cursor: 'pointer', border: '1px solid #E2E8F0', marginBottom: mostrarConfigFiscal ? '16px' : '24px', transition: 'all 0.2s' },
         configBody: { backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0', marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' },
         partidasCard: { backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px -10px rgba(0,0,0,0.05)' },
         partidasHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E2E8F0' },
-        btnOutline: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '10px', border: '1px solid #C7D2FE', backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: '600', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' },
+        btnOutline: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '10px', border: '1px solid #DDD6FE', backgroundColor: '#F3E8FF', color: '#9333EA', fontWeight: '600', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' },
         bigInput: { width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '15px', color: '#0F172A', outline: 'none' },
-        importeText: { fontSize: '20px', fontWeight: '700', color: '#1E1B4B', margin: '12px 0 0 0' },
+        importeText: { fontSize: '20px', fontWeight: '700', color: '#1C1335', margin: '12px 0 0 0' },
         stickyBar: { position: 'absolute', bottom: '0', left: '0', right: '0', backgroundColor: '#FFFFFF', padding: '20px 32px', borderTop: '1px solid #E2E8F0', borderRadius: '0 0 24px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 -10px 40px -10px rgba(0,0,0,0.08)' },
         totalesBlock: { display: 'flex', gap: '32px', alignItems: 'center' },
         totalItem: { display: 'flex', flexDirection: 'column' },
         totalLabel: { fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' },
         totalValue: { fontSize: '18px', fontWeight: '600', color: '#1E293B', marginTop: '4px' },
-        totalFinalValue: { fontSize: '22px', fontWeight: '800', color: '#4F46E5', marginTop: '4px' }
+        totalFinalValue: { fontSize: '22px', fontWeight: '800', color: '#9333EA', marginTop: '4px' }
     };
 
     return (
@@ -515,9 +519,9 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                         fontWeight: '700',
                         fontSize: '14px',
                         transition: 'all 0.2s',
-                        backgroundColor: subTab === 'formulario' ? '#4F46E5' : 'transparent',
+                        backgroundColor: subTab === 'formulario' ? '#9333EA' : 'transparent',
                         color: subTab === 'formulario' ? '#FFFFFF' : '#64748B',
-                        boxShadow: subTab === 'formulario' ? '0 4px 12px rgba(79, 70, 229, 0.2)' : 'none'
+                        boxShadow: subTab === 'formulario' ? '0 4px 12px rgba(147, 51, 234, 0.2)' : 'none'
                     }}
                 >
                     <FileSpreadsheet size={16} />
@@ -537,16 +541,16 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                         fontWeight: '700',
                         fontSize: '14px',
                         transition: 'all 0.2s',
-                        backgroundColor: subTab === 'historial' ? '#4F46E5' : 'transparent',
+                        backgroundColor: subTab === 'historial' ? '#9333EA' : 'transparent',
                         color: subTab === 'historial' ? '#FFFFFF' : '#64748B',
-                        boxShadow: subTab === 'historial' ? '0 4px 12px rgba(79, 70, 229, 0.2)' : 'none'
+                        boxShadow: subTab === 'historial' ? '0 4px 12px rgba(147, 51, 234, 0.2)' : 'none'
                     }}
                 >
                     <Clock size={16} />
                     Historial de Prefacturas
                     <span style={{
                         backgroundColor: subTab === 'historial' ? '#FFFFFF' : '#E2E8F0',
-                        color: subTab === 'historial' ? '#4F46E5' : '#475569',
+                        color: subTab === 'historial' ? '#9333EA' : '#475569',
                         padding: '2px 8px',
                         borderRadius: '20px',
                         fontSize: '12px',
@@ -597,15 +601,15 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         setNuevoClienteData(prev => ({ ...prev, empresa: busquedaCliente }));
                                         setShowModalNuevoCliente(true);
                                     }}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#4F46E5', fontSize: '12px', fontWeight: '700', cursor: 'pointer', padding: '2px 6px' }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#9333EA', fontSize: '12px', fontWeight: '700', cursor: 'pointer', padding: '2px 6px' }}
                                 >
                                     Cliente Nuevo / Única Operación
                                 </button>
                             </div>
 
                             {!clienteId ? (
-                                <div style={{ ...styles.searchInputContainer, borderColor: mostrarResultados ? '#4F46E5' : '#E2E8F0' }}>
-                                    <Search size={18} color={mostrarResultados ? '#4F46E5' : '#94A3B8'} />
+                                <div style={{ ...styles.searchInputContainer, borderColor: mostrarResultados ? '#9333EA' : '#E2E8F0' }}>
+                                    <Search size={18} color={mostrarResultados ? '#9333EA' : '#94A3B8'} />
                                     <input
                                         type="text"
                                         placeholder="Buscar por Nombre o RFC..."
@@ -621,7 +625,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         <h4 style={styles.clientCardTitle}>{clienteSeleccionado?.empresa}</h4>
                                         <p style={styles.clientCardSub}><FileText size={14} /> RFC: {clienteSeleccionado?.rfc || 'No registrado'}</p>
                                     </div>
-                                    <button onClick={() => { setClienteId(''); setBusquedaCliente(''); setEmpresaId(''); setClienteTemporal(null); }} style={{ background: 'none', border: 'none', color: '#4F46E5', fontSize: '13px', fontWeight: '600', cursor: 'pointer', padding: '4px' }}>
+                                    <button onClick={() => { setClienteId(''); setBusquedaCliente(''); setEmpresaId(''); setClienteTemporal(null); }} style={{ background: 'none', border: 'none', color: '#9333EA', fontSize: '13px', fontWeight: '600', cursor: 'pointer', padding: '4px' }}>
                                         Cambiar
                                     </button>
                                 </div>
@@ -632,7 +636,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                     {clientesFiltrados.length > 0 ? (
                                         clientesFiltrados.map(c => (
                                             <div key={c.id} style={styles.resultItem} onClick={() => { setClienteId(c.id); setMostrarResultados(false); }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}>
-                                                <span style={{ fontSize: '14px', fontWeight: '600', color: '#1E1B4B' }}>{c.empresa}</span>
+                                                <span style={{ fontSize: '14px', fontWeight: '600', color: '#1C1335' }}>{c.empresa}</span>
                                                 <span style={{ fontSize: '12px', color: '#64748B' }}>RFC: {c.rfc || 'S/N'}</span>
                                             </div>
                                         ))
@@ -674,7 +678,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                         onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <Calculator size={20} color="#4F46E5" />
+                            <Calculator size={20} color="#9333EA" />
                             <span style={{ fontSize: '15px', fontWeight: '600', color: '#1E293B' }}>Configuración Fiscal (Opcional)</span>
                             <span style={{ fontSize: '13px', color: '#64748B', backgroundColor: '#F1F5F9', padding: '2px 8px', borderRadius: '12px' }}>Pre-llenado</span>
                         </div>
@@ -730,10 +734,23 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                     {/* --- SECCIÓN 3: PARTIDAS DINÁMICAS --- */}
                     <div style={styles.partidasCard}>
                         <div style={styles.partidasHeader}>
-                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1E1B4B' }}>Conceptos a Facturar</h3>
-                            <button onClick={agregarPartida} style={styles.btnOutline} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E0E7FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#EEF2FF'}>
-                                <Plus size={16} /> Agregar Nueva Fila
-                            </button>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1C1335' }}>Conceptos a Facturar</h3>
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                {/* TU BOTÓN ORIGINAL */}
+                                <button onClick={agregarPartida} style={styles.btnOutline} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E0E7FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F3E8FF'}>
+                                    <Plus size={16} /> Agregar Nueva Fila
+                                </button>
+
+                                {/* NUEVO BOTÓN DE IA */}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsIAModalOpen(true)}
+                                    style={{ background: 'linear-gradient(135deg, #9333EA 0%, #4F46E5 100%)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                >
+                                    <Sparkles size={16} /> Auto-Generar con IA
+                                </button>
+                            </div>
                         </div>
 
                         <div>
@@ -780,7 +797,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         </div>
                                         <div>
                                             <label style={styles.label}>Impuesto</label>
-                                            <div style={{ ...styles.input, backgroundColor: '#F1F5F9', color: '#4F46E5', fontWeight: '700', textAlign: 'center', border: '1px solid #E2E8F0', cursor: 'not-allowed' }}>
+                                            <div style={{ ...styles.input, backgroundColor: '#F1F5F9', color: '#9333EA', fontWeight: '700', textAlign: 'center', border: '1px solid #E2E8F0', cursor: 'not-allowed' }}>
                                                 16% IVA
                                             </div>
                                         </div>
@@ -826,10 +843,10 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                 <FileSpreadsheet size={16} /> Descargar Excel
                             </button>
                             <button onClick={handleGuardarPrefactura} style={{ padding: '12px 20px', borderRadius: '10px', background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}>
-                                Guardar Borrador
+                                Guardar
                             </button>
-                            <button onClick={triggerSolicitarMonterrey} style={{ padding: '12px 24px', borderRadius: '10px', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#4338CA'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#4F46E5'}>
-                                <Send size={18} /> Solicitar Factura a Monterrey
+                            <button onClick={triggerSolicitarMonterrey} style={{ padding: '12px 24px', borderRadius: '10px', background: '#9333EA', color: '#FFFFFF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#7C3AED'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#9333EA'}>
+                                <Send size={18} /> Solicitar Factura
                             </button>
                         </div>
                     </div>
@@ -843,7 +860,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
                         <div>
-                            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#1E1B4B', margin: '0 0 4px 0' }}>
+                            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#1C1335', margin: '0 0 4px 0' }}>
                                 Historial de Prefacturas Guardadas
                             </h3>
                             <p style={{ color: '#64748B', fontSize: '14px', margin: 0 }}>
@@ -924,7 +941,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '16px 20px', fontWeight: '700', color: '#1E1B4B', fontSize: '14px' }}>
+                                                <td style={{ padding: '16px 20px', fontWeight: '700', color: '#1C1335', fontSize: '14px' }}>
                                                     ${parseFloat(pref.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </td>
 
@@ -936,7 +953,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
                                                 <td style={{ padding: '16px 20px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', fontWeight: '600' }}>
-                                                        <User size={13} color="#4F46E5" /> {pref.creado_por}
+                                                        <User size={13} color="#9333EA" /> {pref.creado_por}
                                                     </div>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B', fontSize: '12px', marginTop: '2px' }}>
                                                         <Calendar size={13} color="#94A3B8" /> {fechaLocal}
@@ -949,7 +966,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                                             <button
                                                                 onClick={() => handleCargarPrefactura(pref)}
                                                                 title="Cargar datos en el formulario para editar"
-                                                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', background: '#EEF2FF', border: '1px solid #C7D2FE', color: '#4F46E5', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}
+                                                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', background: '#F3E8FF', border: '1px solid #DDD6FE', color: '#9333EA', fontWeight: '600', fontSize: '12px', cursor: 'pointer' }}
                                                             >
                                                                 <FolderOpen size={14} /> Cargar / Editar
                                                             </button>
@@ -1001,10 +1018,10 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                         {/* Header Limpio */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4F46E5' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9333EA' }}>
                                     <UserPlus size={20} />
                                 </div>
-                                <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1E1B4B', margin: 0 }}>
+                                <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1C1335', margin: 0 }}>
                                     Nuevo Cliente
                                 </h3>
                             </div>
@@ -1035,7 +1052,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         fontSize: '13px',
                                         cursor: 'pointer',
                                         backgroundColor: nuevoClienteData.tipo_registro === 'catalogo' ? '#FFFFFF' : 'transparent',
-                                        color: nuevoClienteData.tipo_registro === 'catalogo' ? '#4F46E5' : '#64748B',
+                                        color: nuevoClienteData.tipo_registro === 'catalogo' ? '#9333EA' : '#64748B',
                                         boxShadow: nuevoClienteData.tipo_registro === 'catalogo' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
                                         transition: 'all 0.2s'
                                     }}
@@ -1058,7 +1075,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         fontSize: '13px',
                                         cursor: 'pointer',
                                         backgroundColor: nuevoClienteData.tipo_registro === 'unica_operacion' ? '#FFFFFF' : 'transparent',
-                                        color: nuevoClienteData.tipo_registro === 'unica_operacion' ? '#4F46E5' : '#64748B',
+                                        color: nuevoClienteData.tipo_registro === 'unica_operacion' ? '#9333EA' : '#64748B',
                                         boxShadow: nuevoClienteData.tipo_registro === 'unica_operacion' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
                                         transition: 'all 0.2s'
                                     }}
@@ -1166,7 +1183,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    style={{ height: '42px', padding: '0 24px', borderRadius: '10px', background: '#4F46E5', border: 'none', color: '#FFFFFF', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)' }}
+                                    style={{ height: '42px', padding: '0 24px', borderRadius: '10px', background: '#9333EA', border: 'none', color: '#FFFFFF', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(147, 51, 234, 0.25)' }}
                                 >
                                     Guardar y Asignar
                                 </button>
@@ -1184,7 +1201,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
                     <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', width: '560px', maxWidth: '90%', padding: '36px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1E1B4B', margin: 0 }}>
+                            <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1C1335', margin: 0 }}>
                                 Confirmación de Envío a Facturación
                             </h3>
                             <button onClick={() => setShowConfirmModal(false)} style={{ background: '#F1F5F9', border: 'none', width: '36px', height: '36px', borderRadius: '50%', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1202,7 +1219,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                 Remitente (Empresa Emisora)
                             </div>
                             <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Building2 size={16} color="#4F46E5" />
+                                <Building2 size={16} color="#9333EA" />
                                 {empresaSeleccionada?.nombre_empresa || 'No seleccionada'}
                             </div>
                             <div style={{ color: '#475569', fontSize: '13px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1212,16 +1229,16 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                         </div>
 
                         {/* Tarjeta Destinatario */}
-                        <div style={{ backgroundColor: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '16px', padding: '16px 20px', marginBottom: '28px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                        <div style={{ backgroundColor: '#F3E8FF', border: '1px solid #DDD6FE', borderRadius: '16px', padding: '16px 20px', marginBottom: '28px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#9333EA', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
                                 Destinatario (Oficina de Facturación)
                             </div>
-                            <div style={{ fontWeight: '700', color: '#1E1B4B', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Building2 size={16} color="#4F46E5" />
+                            <div style={{ fontWeight: '700', color: '#1C1335', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Building2 size={16} color="#9333EA" />
                                 Oficina Monterrey
                             </div>
-                            <div style={{ color: '#4338CA', fontSize: '13px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Mail size={14} color="#6366F1" />
+                            <div style={{ color: '#7C3AED', fontSize: '13px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Mail size={14} color="#C084FC" />
                                 giovannicontre24@gmail.com
                             </div>
                         </div>
@@ -1229,9 +1246,9 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                         {/* Botón de Envío */}
                         <button
                             onClick={() => { setShowConfirmModal(false); handleSolicitarMonterrey(); }}
-                            style={{ padding: '15px 24px', borderRadius: '14px', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '15px', transition: 'background 0.2s', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#4338CA'}
-                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#4F46E5'}
+                            style={{ padding: '15px 24px', borderRadius: '14px', background: '#9333EA', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '15px', transition: 'background 0.2s', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#7C3AED'}
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#9333EA'}
                         >
                             <Send size={18} /> Confirmar y Enviar a Monterrey
                         </button>
@@ -1248,17 +1265,17 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                             <CheckCircle2 size={36} />
                         </div>
 
-                        <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1E1B4B', margin: '0 0 16px 0' }}>La prefactura se guardó correctamente.</h3>
+                        <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#1C1335', margin: '0 0 16px 0' }}>La prefactura se guardó correctamente.</h3>
 
-                        <p style={{ fontSize: '22px', fontWeight: '800', color: '#4F46E5', margin: '0 0 32px 0' }}>
+                        <p style={{ fontSize: '22px', fontWeight: '800', color: '#9333EA', margin: '0 0 32px 0' }}>
                             {folioGuardado}
                         </p>
 
                         <button
                             onClick={() => { setShowSuccessModal(false); setFolioGuardado(null); }}
-                            style={{ width: '100%', padding: '16px', borderRadius: '16px', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '16px', transition: 'background 0.2s' }}
-                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#4338CA'}
-                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#4F46E5'}
+                            style={{ width: '100%', padding: '16px', borderRadius: '16px', background: '#9333EA', color: '#FFFFFF', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '16px', transition: 'background 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#7C3AED'}
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#9333EA'}
                         >
                             Entendido
                         </button>
@@ -1266,13 +1283,29 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 </div>
             )}
 
+            {/* --- MODAL DE INTELIGENCIA ARTIFICIAL --- */}
+            <IAEstrategiaModal
+                isOpen={isIAModalOpen}
+                onClose={() => setIsIAModalOpen(false)}
+                empresaId={empresaId}
+                clienteId={clienteId}
+
+
+                onSelectEstrategia={(nuevasPartidas) => {
+                    setPartidas(nuevasPartidas);
+                    toast.success("Estrategia generada aplicada con éxito");
+                }}
+            />
+
+
+
             <style>{`
                 @keyframes slideUp {
                     from { opacity: 0; transform: translateY(20px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
-        
+
             <style>{`
                 @media (max-width: 768px) {
                     .prefactura-partida-row-1 {

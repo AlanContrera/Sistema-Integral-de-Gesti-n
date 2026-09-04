@@ -34,11 +34,12 @@ from rest_framework import viewsets
 from .models import EmpresaEmisora, Cliente, OperacionFacturacion
 from .serializers import EmpresaEmisoraSerializer, ClienteSerializer
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from .excel_generator import generar_excel_prefactura
 import base64
 from django.test import RequestFactory
 from django.core.files.uploadedfile import SimpleUploadedFile
+from .ai_services import generar_estrategias_prefactura_ai
 # pyrefly: ignore [missing-import]
 from rest_framework.response import Response
 from .tasks import enviar_cotizacion_task, enviar_prefactura_monterrey_task
@@ -3724,3 +3725,30 @@ def listar_prefacturas_view(request):
         return Response(datos, status=200)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generar_estrategia_ia_view(request):
+    try:
+        empresa_id = request.data.get('empresa_emisora_id')
+        cliente_id = request.data.get('cliente_id')
+        monto_objetivo = request.data.get('monto_objetivo')
+        num_partidas = request.data.get('num_partidas_deseadas')
+
+        if not empresa_id or not monto_objetivo:
+            return Response({"error": "empresa_emisora_id y monto_objetivo son obligatorios"}, status=400)
+
+        # Llama al servicio de IA pasándole el cliente para la Hiper-Personalización
+        resultado = generar_estrategias_prefactura_ai(
+            empresa_emisora_id=empresa_id,
+            monto_objetivo=monto_objetivo,
+            num_partidas_deseadas=num_partidas,
+            cliente_id=cliente_id
+        )
+
+        if resultado.get("success"):
+            return Response(resultado["data"], status=200)
+        else:
+            return Response({"error": resultado.get("error")}, status=resultado.get("status", 500))
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

@@ -5,6 +5,7 @@ import imaplib
 import email
 from email.header import decode_header
 import re
+import os
 import email.utils
 from django.core.files.base import ContentFile
 from django.template.loader import render_to_string
@@ -239,12 +240,16 @@ def enviar_factura_oficial_task(operacion_id):
         
         if operacion.pdf_factura:
             pdf_adjunto = MIMEApplication(operacion.pdf_factura.read(), _subtype="pdf")
-            pdf_adjunto.add_header('Content-Disposition', 'attachment', filename=f"{operacion.referencia_unica}.pdf")
+            # Extraemos el nombre original del archivo tal como se guardó
+            pdf_filename = os.path.basename(operacion.pdf_factura.name)
+            pdf_adjunto.add_header('Content-Disposition', 'attachment', filename=pdf_filename)
             msg.attach(pdf_adjunto)
             
         if operacion.xml_factura:
             xml_adjunto = MIMEApplication(operacion.xml_factura.read(), _subtype="xml")
-            xml_adjunto.add_header('Content-Disposition', 'attachment', filename=f"{operacion.referencia_unica}.xml")
+            # Extraemos el nombre original del archivo XML
+            xml_filename = os.path.basename(operacion.xml_factura.name)
+            xml_adjunto.add_header('Content-Disposition', 'attachment', filename=xml_filename)
             msg.attach(xml_adjunto)
             
         if empresa.usar_ssl:

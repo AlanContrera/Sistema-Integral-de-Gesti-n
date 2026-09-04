@@ -30,6 +30,20 @@ class EmpresaEmisora(models.Model):
     host_imap = models.CharField(max_length=150, default='mail.tudominio.com', help_text='Servidor IMAP para leer correos')
     puerto_imap = models.IntegerField(default=993, help_text='Generalmente 993 (SSL)')
 
+        # Campos para Inteligencia Artificial y Estrategias
+    giro_comercial = models.CharField(
+        max_length=255, 
+        blank=True, 
+        null=True, 
+        help_text='Giro o actividad económica de esta empresa emisora (ej. Logística, Construcción)'
+    )
+    notas_estrategia = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text='Criterios de IA para esta empresa (ej. "Válido repetir conceptos", "Prefiere servicios en 2 fases")'
+    )
+
+
     def __str__(self):
         return self.nombre_empresa
 
@@ -129,10 +143,24 @@ class OperacionFacturacion(models.Model):
                 
         super().save(*args, **kwargs)
 
-
     def __str__(self):
         return f"{self.referencia_unica} - {self.cliente}"
 
     class Meta:
         verbose_name = 'Operación Comercial'
         verbose_name_plural = 'Operaciones Comerciales'
+
+class ConceptoEstrategia(models.Model):
+    empresa_emisora = models.ForeignKey(EmpresaEmisora, on_delete=models.CASCADE, related_name='conceptos_estrategia')
+    cliente_receptor = models.CharField(max_length=255, blank=True, null=True, help_text='Nombre del cliente del histórico (Excel)')
+    clave_sat = models.CharField(max_length=20, default='80141600', help_text='Clave SAT por defecto o importada')
+    descripcion = models.TextField(help_text='Texto exacto del concepto facturado históricamente')
+    frecuencia = models.IntegerField(default=1, help_text='Número de veces que se ha repetido este concepto en el Excel')
+    origen = models.CharField(max_length=50, default='Excel 2026', help_text='Para saber de dónde salió este dato')
+
+    def __str__(self):
+        return f"[{self.empresa_emisora}] Para: {self.cliente_receptor} - {self.descripcion[:50]}..."
+
+    class Meta:
+        verbose_name = 'Concepto Histórico'
+        verbose_name_plural = 'Catálogo de Conceptos Históricos'

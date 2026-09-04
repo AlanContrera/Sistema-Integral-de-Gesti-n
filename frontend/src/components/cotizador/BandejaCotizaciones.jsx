@@ -171,16 +171,16 @@ export default function BandejaCotizaciones() {
                             fontWeight: '700',
                             fontSize: '14px',
                             transition: 'all 0.2s',
-                            backgroundColor: subTab === 'por_enviar' ? '#4F46E5' : 'transparent',
+                            backgroundColor: subTab === 'por_enviar' ? '#9333EA' : 'transparent',
                             color: subTab === 'por_enviar' ? '#FFFFFF' : '#64748B',
-                            boxShadow: subTab === 'por_enviar' ? '0 4px 12px rgba(79, 70, 229, 0.2)' : 'none'
+                            boxShadow: subTab === 'por_enviar' ? '0 4px 12px rgba(147, 51, 234, 0.2)' : 'none'
                         }}
                     >
                         <Clock size={16} />
                         Por Enviar
                         <span style={{
                             backgroundColor: subTab === 'por_enviar' ? '#FFFFFF' : '#E2E8F0',
-                            color: subTab === 'por_enviar' ? '#4F46E5' : '#475569',
+                            color: subTab === 'por_enviar' ? '#9333EA' : '#475569',
                             padding: '2px 8px',
                             borderRadius: '20px',
                             fontSize: '12px',
@@ -203,16 +203,16 @@ export default function BandejaCotizaciones() {
                             fontWeight: '700',
                             fontSize: '14px',
                             transition: 'all 0.2s',
-                            backgroundColor: subTab === 'enviadas' ? '#4F46E5' : 'transparent',
+                            backgroundColor: subTab === 'enviadas' ? '#9333EA' : 'transparent',
                             color: subTab === 'enviadas' ? '#FFFFFF' : '#64748B',
-                            boxShadow: subTab === 'enviadas' ? '0 4px 12px rgba(79, 70, 229, 0.2)' : 'none'
+                            boxShadow: subTab === 'enviadas' ? '0 4px 12px rgba(147, 51, 234, 0.2)' : 'none'
                         }}
                     >
                         <Send size={16} />
                         Enviadas
                         <span style={{
                             backgroundColor: subTab === 'enviadas' ? '#FFFFFF' : '#E2E8F0',
-                            color: subTab === 'enviadas' ? '#4F46E5' : '#475569',
+                            color: subTab === 'enviadas' ? '#9333EA' : '#475569',
                             padding: '2px 8px',
                             borderRadius: '20px',
                             fontSize: '12px',
@@ -286,7 +286,7 @@ export default function BandejaCotizaciones() {
 
                                             <td style={{ padding: '20px 24px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', marginBottom: '6px', fontWeight: '600' }}>
-                                                    <User size={14} color="#4F46E5" /> {pref.creado_por}
+                                                    <User size={14} color="#9333EA" /> {pref.creado_por}
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B', fontSize: '13px' }}>
                                                     <Calendar size={14} color="#94A3B8" /> {fechaLocal}
@@ -312,7 +312,7 @@ export default function BandejaCotizaciones() {
                                                     <button
                                                         onClick={() => handleGenerarEnviar(pref.id)}
                                                         title="Generar Cotización Oficial (Heredar Folio) y Enviar"
-                                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#4F46E5', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#9333EA', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
                                                     >
                                                         <Send size={16} /> Generar y Enviar
                                                     </button>
@@ -357,7 +357,7 @@ export default function BandejaCotizaciones() {
                                     return (
                                         <tr key={cot.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                                             <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#ECFDF5', color: "#4F46E5", borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#ECFDF5', color: "#9333EA", borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
                                                     <CheckCircle2 size={14} />
                                                     {cot.referencia_unica}
                                                 </div>
@@ -381,7 +381,7 @@ export default function BandejaCotizaciones() {
                                             {/* Columna Quien la Envio */}
                                             <td style={{ padding: '20px 24px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', marginBottom: '6px', fontWeight: '600' }}>
-                                                    <User size={14} color="#4F46E5" /> {cot.enviado_por}
+                                                    <User size={14} color="#9333EA" /> {cot.enviado_por}
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B', fontSize: '13px' }}>
                                                     <Calendar size={14} color="#94A3B8" /> {fechaEnvioLocal}

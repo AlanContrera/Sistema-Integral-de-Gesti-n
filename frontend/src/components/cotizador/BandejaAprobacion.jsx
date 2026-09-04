@@ -33,7 +33,7 @@ export default function BandejaAprobacion() {
                 method: 'POST',
             });
             if (!response.ok) throw new Error('Error al aprobar');
-            toast.success(`¡Factura enviada al cliente exitosamente!`, { id: loadingToast });
+            toast.success('Factura enviada al cliente exitosamente!', { id: loadingToast });
             fetchOperaciones(); // Recargar lista
         } catch (error) {
             console.error(error);
@@ -46,7 +46,7 @@ export default function BandejaAprobacion() {
     if (loading) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F8FAFC' }}>
-                <Loader2 size={40} className="animate-spin" color="#4F46E5" />
+                <Loader2 size={40} className="animate-spin" color="#9333EA" />
             </div>
         );
     }
@@ -56,7 +56,7 @@ export default function BandejaAprobacion() {
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
                 <div style={{ marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#1E1B4B', margin: '0 0 8px 0' }}>Bandeja de Aprobación</h1>
+                    <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#1C1335', margin: '0 0 8px 0' }}>Bandeja de Aprobación</h1>
                     <p style={{ color: '#64748B', fontSize: '16px', margin: 0 }}>Facturas oficiales recibidas de Monterrey, listas para revisión y envío al cliente final.</p>
                 </div>
 
@@ -72,8 +72,8 @@ export default function BandejaAprobacion() {
                             <div key={op.id} style={{ background: '#FFFFFF', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', transition: 'transform 0.2s', border: '1px solid #E2E8F0' }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                    <span style={{ background: '#EEF2FF', color: '#4F46E5', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', letterSpacing: '0.5px' }}>{op.referencia}</span>
-                                    <span style={{ color: '#94A3B8', fontSize: '13px', fontWeight: '500' }}>{op.fecha}</span>
+                                    <span style={{ background: '#F3E8FF', color: '#9333EA', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', letterSpacing: '0.5px' }}>{op.referencia}</span>
+
                                 </div>
 
                                 <div style={{ marginBottom: '24px' }}>
@@ -104,9 +104,9 @@ export default function BandejaAprobacion() {
                                 <button
                                     onClick={() => handleAprobar(op.id, op.referencia)}
                                     disabled={procesandoId === op.id}
-                                    style={{ width: '100%', padding: '16px', borderRadius: '12px', background: '#4F46E5', color: '#FFFFFF', border: 'none', cursor: procesandoId === op.id ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
-                                    onMouseEnter={e => { if (procesandoId !== op.id) e.currentTarget.style.background = '#4338CA' }}
-                                    onMouseLeave={e => { if (procesandoId !== op.id) e.currentTarget.style.background = '#4F46E5' }}
+                                    style={{ width: '100%', padding: '16px', borderRadius: '12px', background: '#9333EA', color: '#FFFFFF', border: 'none', cursor: procesandoId === op.id ? 'not-allowed' : 'pointer', fontWeight: '700', fontSize: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'background 0.2s' }}
+                                    onMouseEnter={e => { if (procesandoId !== op.id) e.currentTarget.style.background = '#7C3AED' }}
+                                    onMouseLeave={e => { if (procesandoId !== op.id) e.currentTarget.style.background = '#9333EA' }}
                                 >
                                     {procesandoId === op.id ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
                                     {procesandoId === op.id ? 'Enviando...' : 'Aprobar y Enviar al Cliente'}
