@@ -143,9 +143,9 @@ IMAP_FOLDER = config('IMAP_FOLDER', default='INBOX')
 
 
 CELERY_BEAT_SCHEDULE = {
-    'revisar-bandeja-cada-2-minutos': {
+    'revisar-bandeja-cada-minuto': {
         'task': 'apps.cotizador.tasks.robot_lector_imap_task',
-        'schedule': crontab(minute='*/2'),
+        'schedule': crontab(minute='*/1'),
     },
 }
 

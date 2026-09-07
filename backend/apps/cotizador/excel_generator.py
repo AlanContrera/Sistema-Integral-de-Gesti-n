@@ -58,7 +58,15 @@ def generar_excel_prefactura(data):
     num_partidas = len(partidas)
     
     if num_partidas > 1:
-        ws.insert_rows(21, amount=num_partidas - 1)
+        amount = num_partidas - 1
+        
+        # openpyxl bug: it doesn't shift merged_cells when inserting rows
+        # We manually shift any merge that starts at or after row 21
+        for m in list(ws.merged_cells.ranges):
+            if m.min_row >= 21:
+                m.shift(0, amount)
+                
+        ws.insert_rows(21, amount=amount)
         for r in range(21, 20 + num_partidas):
             for c in range(2, 12):
                 source_cell = ws.cell(row=20, column=c)

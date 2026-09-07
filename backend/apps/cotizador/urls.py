@@ -15,7 +15,6 @@ from .views import (
     operaciones_pendientes_view,
     aprobar_operacion_view,
     listar_prefacturas_view,
-    generar_estrategia_ia_view
 )
 
 router = DefaultRouter()
@@ -36,6 +35,5 @@ urlpatterns = [
     path('operaciones-pendientes/', operaciones_pendientes_view),
     path('listar-prefacturas/', listar_prefacturas_view),
     path('aprobar-operacion/<int:operacion_id>/', aprobar_operacion_view), 
-    path('generar-estrategia-ia/', generar_estrategia_ia_view),
                   
 ]

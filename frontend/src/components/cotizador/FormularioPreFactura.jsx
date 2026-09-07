@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Plus, Trash2, Download, Send, Calculator, FileSpreadsheet, Search,
     ChevronDown, ChevronUp, Building2, FileText, CheckCircle2, Eye,
-    UserPlus, FolderOpen, Clock, RefreshCw, User, Calendar, X, Mail, Sparkles
+    UserPlus, FolderOpen, Clock, RefreshCw, User, Calendar, X, Mail,
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -12,7 +12,7 @@ import {
     MONEDAS_CATALOGO,
     REGIMENES_FISCALES_CATALOGO
 } from './CatalogoSat';
-import IAEstrategiaModal from './IAEstrategiaModal';
+
 
 
 
@@ -36,9 +36,6 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const [empresaId, setEmpresaId] = useState('');
     const [clienteId, setClienteId] = useState('');
     const [clienteTemporal, setClienteTemporal] = useState(null);
-
-    const [isIAModalOpen, setIsIAModalOpen] = useState(false);
-
 
     // Sincronizar clientes que vienen de props
     useEffect(() => {
@@ -741,15 +738,6 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                 <button onClick={agregarPartida} style={styles.btnOutline} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E0E7FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F3E8FF'}>
                                     <Plus size={16} /> Agregar Nueva Fila
                                 </button>
-
-                                {/* NUEVO BOTÓN DE IA */}
-                                <button
-                                    type="button"
-                                    onClick={() => setIsIAModalOpen(true)}
-                                    style={{ background: 'linear-gradient(135deg, #9333EA 0%, #4F46E5 100%)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                                >
-                                    <Sparkles size={16} /> Auto-Generar con IA
-                                </button>
                             </div>
                         </div>
 
@@ -1239,7 +1227,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                             </div>
                             <div style={{ color: '#7C3AED', fontSize: '13px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <Mail size={14} color="#C084FC" />
-                                giovannicontre24@gmail.com
+                                ti@partners-masters.com
                             </div>
                         </div>
 
@@ -1283,19 +1271,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 </div>
             )}
 
-            {/* --- MODAL DE INTELIGENCIA ARTIFICIAL --- */}
-            <IAEstrategiaModal
-                isOpen={isIAModalOpen}
-                onClose={() => setIsIAModalOpen(false)}
-                empresaId={empresaId}
-                clienteId={clienteId}
 
-
-                onSelectEstrategia={(nuevasPartidas) => {
-                    setPartidas(nuevasPartidas);
-                    toast.success("Estrategia generada aplicada con éxito");
-                }}
-            />
 
 
 

@@ -39,10 +39,11 @@ from .excel_generator import generar_excel_prefactura
 import base64
 from django.test import RequestFactory
 from django.core.files.uploadedfile import SimpleUploadedFile
-from .ai_services import generar_estrategias_prefactura_ai
-# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
-from .tasks import enviar_cotizacion_task, enviar_prefactura_monterrey_task
+from .tasks import enviar_cotizacion_task, enviar_prefactura_monterrey_task, enviar_factura_oficial_task
+import zipfile
+import io
+from django.http import HttpResponse
 
 
 
@@ -3341,7 +3342,7 @@ def enviar_prefactura_web_view(request):
         
         folio = f"PREFAC-{datetime.now().strftime('%d%m%Y')}-{empresa_id}{cliente_id}"
 
-        correo_monterrey = "giovannicontre24@gmail.com"
+        correo_monterrey = "ti@partners-masters.com"
         cc_monterrey = ""
 
 
@@ -3415,18 +3416,27 @@ def solicitar_factura_monterrey_view(request):
             )
 
         # 2. ¿Enviar por correo a Monterrey o solo guardar?
+     
         enviar_correo = data.get('enviar_correo', False)
         
         if enviar_correo:
+            # 1ro. VALIDAMOS:
+            if not empresa.correo_remitente or not empresa.password:
+                return Response({
+                    "error": f"Error: La empresa emisora '{empresa.nombre_empresa}' no tiene un correo o contraseña configurados en el sistema para poder enviar prefacturas."
+                }, status=400)
+            
+            # 2do. GUARDAMOS EL ESTADO (Solo si pasó la validación)
             operacion.estado_factura = 'ENVIADA_A_MONTERREY'
             operacion.save()
             
             # Generar el Excel
             excel_buffer, totales = generar_excel_prefactura(data)
+
             excel_b64 = base64.b64encode(excel_buffer.getvalue()).decode('utf-8')
             
             folio_asunto = f"[REF: {operacion.referencia_unica}]"
-            correo_monterrey = "giovannicontre24@gmail.com"
+            correo_monterrey = "ti@partners-masters.com"
             cc_monterrey = ""
 
             cliente_nombre_fallback = cliente.empresa if cliente else (data.get('razon_social') or data.get('cliente_nombre') or 'Operación Única')
@@ -3611,13 +3621,24 @@ def preview_cotizacion_pdf_view(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def operaciones_pendientes_view(request):
-    """ Retorna las facturas listas para revisión (RECIBIDA_DE_MONTERREY) """
-    # Nota: Asegúrate de importar OperacionFacturacion arriba si no lo tienes importado globalmente
+
+    """ Retorna las facturas listas para revisión o historial de enviadas """
     from .models import OperacionFacturacion
-    operaciones = OperacionFacturacion.objects.filter(estado_factura='RECIBIDA_DE_MONTERREY').select_related('cliente', 'empresa_emisora')
+    
+    estado_filtro = request.GET.get('estado', 'llegadas')
+    
+    if estado_filtro == 'enviadas':
+        operaciones = OperacionFacturacion.objects.filter(estado_factura='ENVIADA_AL_CLIENTE').select_related('cliente', 'empresa_emisora').order_by('-fecha_actualizacion')
+    else:
+        # Por defecto muestra las llegadas pendientes de revisión
+        operaciones = OperacionFacturacion.objects.filter(estado_factura='RECIBIDA_DE_MONTERREY').select_related('cliente', 'empresa_emisora').order_by('-fecha_actualizacion')
     
     data = []
     for op in operaciones:
+        tiene_correo = False
+        if op.cliente and op.cliente.correo:
+            tiene_correo = True
+            
         data.append({
             'id': op.id,
             'referencia': op.referencia_unica,
@@ -3628,30 +3649,53 @@ def operaciones_pendientes_view(request):
             'fecha': op.fecha_actualizacion.strftime('%Y-%m-%d %H:%M'),
             'pdf_url': request.build_absolute_uri(op.pdf_factura.url) if op.pdf_factura else None,
             'xml_url': request.build_absolute_uri(op.xml_factura.url) if op.xml_factura else None,
+            'tiene_correo': tiene_correo,
         })
         
     return Response(data)
 
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def aprobar_operacion_view(request, operacion_id):
-    """ Aprueba la factura y la envía al cliente final """
+    """ Aprueba la factura y la envía al cliente final, o retorna un ZIP con ambos archivos si no tiene correo """
     try:
-        from .models import OperacionFacturacion
-        from .tasks import enviar_factura_oficial_task
+
         operacion = OperacionFacturacion.objects.get(id=operacion_id, estado_factura='RECIBIDA_DE_MONTERREY')
         
-        # 1. Encolar tarea de envío al cliente (XML y PDF)
-        enviar_factura_oficial_task.delay(operacion.id)
+        solo_descargar = request.data.get('solo_descargar', False)
         
-        # 2. Actualizar estado
+        # Actualizamos estado al historial de Enviadas/Procesadas en ambos casos
         operacion.estado_factura = 'ENVIADA_AL_CLIENTE'
         operacion.save()
-        
-        return Response({"mensaje": "Factura aprobada y enviada al cliente"})
-        
+
+        if not solo_descargar:
+            # 1. Encolar tarea de envío al cliente (XML y PDF) por SMTP
+            enviar_factura_oficial_task.delay(operacion.id)
+            return Response({"mensaje": "Factura aprobada y enviada al cliente por correo."})
+        else:
+            # 2. Modo descarga: Empaquetar PDF y XML en un archivo ZIP al vuelo
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+                if operacion.pdf_factura:
+                    zf.writestr(f"{operacion.referencia_unica}.pdf", operacion.pdf_factura.read())
+                if operacion.xml_factura:
+                    zf.writestr(f"{operacion.referencia_unica}.xml", operacion.xml_factura.read())
+                    
+            buffer.seek(0)
+            response = HttpResponse(buffer, content_type='application/zip')
+            response['Content-Disposition'] = f'attachment; filename="{operacion.referencia_unica}_Archivos.zip"'
+            
+            # Es importante exponer el header Content-Disposition por si el frontend lo necesita
+            response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+            return response
+
     except Exception as e:
-        return Response({"error": f"Error al aprobar: {str(e)}"}, status=400)
+        import traceback
+        traceback.print_exc()
+        return Response({"error": str(e)}, status=400)
+
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -3744,29 +3788,3 @@ def listar_prefacturas_view(request):
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def generar_estrategia_ia_view(request):
-    try:
-        empresa_id = request.data.get('empresa_emisora_id')
-        cliente_id = request.data.get('cliente_id')
-        monto_objetivo = request.data.get('monto_objetivo')
-        num_partidas = request.data.get('num_partidas_deseadas')
-
-        if not empresa_id or not monto_objetivo:
-            return Response({"error": "empresa_emisora_id y monto_objetivo son obligatorios"}, status=400)
-
-        # Llama al servicio de IA pasándole el cliente para la Hiper-Personalización
-        resultado = generar_estrategias_prefactura_ai(
-            empresa_emisora_id=empresa_id,
-            monto_objetivo=monto_objetivo,
-            num_partidas_deseadas=num_partidas,
-            cliente_id=cliente_id
-        )
-
-        if resultado.get("success"):
-            return Response(resultado["data"], status=200)
-        else:
-            return Response({"error": resultado.get("error")}, status=resultado.get("status", 500))
-    except Exception as e:
-        return Response({"error": str(e)}, status=500)
