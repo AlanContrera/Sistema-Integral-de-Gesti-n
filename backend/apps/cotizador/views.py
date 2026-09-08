@@ -31,7 +31,7 @@ import random
 import string
 from datetime import datetime
 from rest_framework import viewsets
-from .models import EmpresaEmisora, Cliente, OperacionFacturacion
+from .models import EmpresaEmisora, Cliente, OperacionFacturacion, ConceptoCliente
 from .serializers import EmpresaEmisoraSerializer, ClienteSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -3788,3 +3788,21 @@ def listar_prefacturas_view(request):
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def listar_conceptos_cliente_view(request):
+    cliente_id = request.query_params.get('cliente_id')
+    empresa_id = request.query_params.get('empresa_id')
+
+    if not cliente_id or not empresa_id:
+        return Response({"conceptos": []}, status=200)
+
+    try:
+        conceptos = ConceptoCliente.objects.filter(
+            cliente_id=cliente_id,
+            empresa_emisora_id=empresa_id
+        ).values('id', 'descripcion', 'clave_sat', 'unidad_sat')
+
+        return Response({"conceptos": list(conceptos)}, status=200)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)

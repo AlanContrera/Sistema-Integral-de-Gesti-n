@@ -150,17 +150,17 @@ class OperacionFacturacion(models.Model):
         verbose_name = 'Operación Comercial'
         verbose_name_plural = 'Operaciones Comerciales'
 
-class ConceptoEstrategia(models.Model):
-    empresa_emisora = models.ForeignKey(EmpresaEmisora, on_delete=models.CASCADE, related_name='conceptos_estrategia')
-    cliente_receptor = models.CharField(max_length=255, blank=True, null=True, help_text='Nombre del cliente del histórico (Excel)')
-    clave_sat = models.CharField(max_length=20, default='80141600', help_text='Clave SAT por defecto o importada')
-    descripcion = models.TextField(help_text='Texto exacto del concepto facturado históricamente')
-    frecuencia = models.IntegerField(default=1, help_text='Número de veces que se ha repetido este concepto en el Excel')
-    origen = models.CharField(max_length=50, default='Excel 2026', help_text='Para saber de dónde salió este dato')
+class ConceptoCliente(models.Model):
+    empresa_emisora = models.ForeignKey(EmpresaEmisora, on_delete=models.CASCADE, related_name='conceptos_cliente')
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='conceptos_autorizados')
+    descripcion = models.TextField(help_text='Texto o descripción del concepto de facturación')
+    clave_sat = models.CharField(max_length=20, default='80141600', blank=True, help_text='Clave de producto o servicio del SAT')
+    unidad_sat = models.CharField(max_length=10, default='E48', blank=True, help_text='Clave de unidad del SAT (por defecto E48 Unidad de Servicio)')
 
     def __str__(self):
-        return f"[{self.empresa_emisora}] Para: {self.cliente_receptor} - {self.descripcion[:50]}..."
+        return f"[{self.empresa_emisora.nombre_empresa}] {self.cliente.razon_social} - {self.descripcion[:40]}..."
 
     class Meta:
-        verbose_name = 'Concepto Histórico'
-        verbose_name_plural = 'Catálogo de Conceptos Históricos'
+        verbose_name = 'Concepto por Cliente y Empresa'
+        verbose_name_plural = 'Conceptos por Cliente y Empresa'
+

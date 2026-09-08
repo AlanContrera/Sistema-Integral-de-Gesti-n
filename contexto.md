@@ -189,7 +189,7 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 
 ## PRÓXIMA FASE: 
 
-1. **Nueva Base de Datos Relacional de Conceptos:** Diseñar e implementar desde cero el modelado para vincular Empresa Emisora y Cliente con conceptos limpios, validados y sus Claves SAT y unidades oficiales correspondientes, eliminando el histórico desestructurado.
+1. **Expansión del Catálogo Relacional:** Continuar con la carga de conceptos oficiales validados para el resto de clientes y empresas emisoras, y evaluar la integración de un panel administrativo para gestión de conceptos desde la interfaz.
 
 
 | 2026-08-26 | Cotizador: Mejoras Finales | Refinamiento de la UX con rediseño CSS Grid de partidas, estandarización de payloads de backend para inyección de datos del cliente, redondeo preciso a 2 decimales, folios secuenciales estables en BBDD, limpieza de Códigos Postales, e incorporación de plantilla HTML corporativa para facturación final a clientes. |
@@ -201,6 +201,7 @@ El script detecta automáticamente la nueva IP de WSL y reconfigura todo.
 
 | 2026-09-07 | Bandeja de Aprobación: Rediseño Tabular y Descarga Directa | Transformación de la Bandeja de Aprobación de formato de tarjetas a diseño de tabla Fintech con sub-pestañas ('Llegadas' vs 'Enviadas'). Incorporación de detección de correo en cliente para permitir aprobación y descarga directa sin despacho SMTP. Corrección de celdas fusionadas en exportación Excel. |
 | 2026-09-07 | Depuración de IA y Preparación de Catálogo Relacional | Desacoplamiento total del motor experimental de IA/estrategias en el módulo Cotizador. Eliminación de endpoints, modales, vistas y del modelo transitorio `ConceptoEstrategia` (revirtiendo migración 0012). Se define la creación de una base de datos relacional limpia desde cero para vincular Emisora, Cliente, Concepto y Claves SAT. |
+| 2026-09-07 | Catálogo Relacional de Conceptos y Modal de Lectura Completa | Creación del modelo `ConceptoCliente` para vincular Cliente, Empresa Emisora, Concepto, Clave SAT y Clave Unidad. Endpoint `/api/cotizador/conceptos-cliente/`. Ingesta inicial de conceptos desde Excel (LEXIC, BERZAN, FICSAR). En frontend, desarrollo de `CatalogoConceptosModal.jsx` con visualización de texto íntegro en tarjetas interactivas e inyección atómica de partidas en `FormularioPreFactura.jsx`. |
 | 2026-09-04 | Carga de Clientes, Auditoría y Fallbacks de Descarga | Carga de 69 nuevos clientes desde Excel (clientes_2.xlsx). Auditoría de base de datos completa. Implementación de renderizado condicional en Bandeja de Cotizaciones para permitir 'Generar y Descargar' oficial (bypass de SMTP Celery) cuando el cliente o la empresa emisora carecen de correo, con blindaje transaccional en generar_cotizacion_view. |
 
 

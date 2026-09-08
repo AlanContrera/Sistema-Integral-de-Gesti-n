@@ -13,6 +13,7 @@ import {
     REGIMENES_FISCALES_CATALOGO
 } from './CatalogoSat';
 
+import CatalogoConceptosModal from './CatalogoConceptosModal';
 
 
 
@@ -36,6 +37,34 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     const [empresaId, setEmpresaId] = useState('');
     const [clienteId, setClienteId] = useState('');
     const [clienteTemporal, setClienteTemporal] = useState(null);
+
+    const [partidaSeleccionadaParaCatalogo, setPartidaSeleccionadaParaCatalogo] = useState(null);
+
+    const [conceptosSugeridos, setConceptosSugeridos] = useState([]);
+
+    // Cargar conceptos filtrados por Cliente y Empresa Emisora
+    useEffect(() => {
+        const fetchConceptos = async () => {
+            if (!clienteId || !empresaId) {
+                setConceptosSugeridos([]);
+                return;
+            }
+            try {
+                const res = await fetch(`http://${window.location.hostname}:8000/api/cotizador/conceptos-cliente/?cliente_id=${clienteId}&empresa_id=${empresaId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setConceptosSugeridos(data.conceptos || []);
+                } else {
+                    setConceptosSugeridos([]);
+                }
+            } catch (err) {
+                console.error("Error al cargar conceptos sugeridos:", err);
+                setConceptosSugeridos([]);
+            }
+        };
+        fetchConceptos();
+    }, [clienteId, empresaId]);
+
 
     // Sincronizar clientes que vienen de props
     useEffect(() => {
@@ -162,7 +191,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
     };
 
     const actualizarPartida = (id, campo, valor) => {
-        setPartidas(partidas.map(p => p.id === id ? { ...p, [campo]: valor } : p));
+        setPartidas(prev => prev.map(p => p.id === id ? { ...p, [campo]: valor } : p));
     };
 
     // Reemplazar líneas 143-144:
@@ -765,9 +794,37 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
                                     <div className="prefactura-partida-row-2" style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 2fr) 1fr 140px 140px 40px', gap: '20px', alignItems: 'flex-start' }}>
                                         <div>
-                                            <label style={styles.label}>Descripción</label>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                <label style={styles.label}>Descripción</label>
+                                                {conceptosSugeridos.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPartidaSeleccionadaParaCatalogo(p.id)}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            fontSize: '12px',
+                                                            padding: '4px 10px',
+                                                            borderRadius: '8px',
+                                                            border: '1px solid #C084FC',
+                                                            background: '#FAF5FF',
+                                                            color: '#9333EA',
+                                                            fontWeight: '700',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3E8FF'}
+                                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FAF5FF'}
+                                                    >
+                                                        <FolderOpen size={14} /> Ver Catálogo ({conceptosSugeridos.length})
+                                                    </button>
+                                                )}
+                                            </div>
                                             <textarea rows="2" placeholder="Descripción del producto o servicio..." value={p.descripcion || ''} onChange={(e) => actualizarPartida(p.id, 'descripcion', e.target.value)} style={{ ...styles.bigInput, resize: 'vertical' }} />
                                         </div>
+
+
                                         <div>
                                             <label style={styles.label}>Precio Unitario</label>
                                             <div style={{ position: 'relative' }}>
@@ -1271,6 +1328,31 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 </div>
             )}
 
+            {/* --- MODAL DE CATÁLOGO DE CONCEPTOS --- */}
+            <CatalogoConceptosModal
+                isOpen={!!partidaSeleccionadaParaCatalogo}
+                onClose={() => setPartidaSeleccionadaParaCatalogo(null)}
+                conceptos={conceptosSugeridos}
+                empresaNombre={empresas?.find(e => e.id === parseInt(empresaId))?.nombre_empresa}
+                clienteNombre={clientes?.find(c => c.id === parseInt(clienteId))?.razon_social}
+                onSelectConcepto={(concepto) => {
+                    if (partidaSeleccionadaParaCatalogo) {
+                        setPartidas(prev => prev.map(p => {
+                            if (p.id === partidaSeleccionadaParaCatalogo) {
+                                return {
+                                    ...p,
+                                    descripcion: concepto.descripcion,
+                                    clave_prod: concepto.clave_sat || p.clave_prod,
+                                    clave_unidad: concepto.unidad_sat || p.clave_unidad
+                                };
+                            }
+                            return p;
+                        }));
+                        toast.success("Concepto aplicado a la partida");
+                    }
+                    setPartidaSeleccionadaParaCatalogo(null);
+                }}
+            />
 
 
 
