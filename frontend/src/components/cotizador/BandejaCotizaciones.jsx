@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Download, Send, RefreshCw, User, Calendar, FileText, Building, Clock, Search, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Eye, Download, UploadCloud, Send, RefreshCw, User, Calendar, FileText, Building, Clock, Search, CheckCircle2, ArrowRight } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
+import GenerarCotizacionExcelModal from './GenerarCotizacionExcelModal';
+
 
 export default function BandejaCotizaciones() {
     const [subTab, setSubTab] = useState(() => {
@@ -16,6 +18,8 @@ export default function BandejaCotizaciones() {
     const [loading, setLoading] = useState(true);
 
     const [busquedaEnviadas, setBusquedaEnviadas] = useState('');
+
+    const [showModalExcel, setShowModalExcel] = useState(false);
 
     const enviadasFiltradas = enviadas.filter(cot => {
         const termino = busquedaEnviadas.toLowerCase();
@@ -161,6 +165,38 @@ export default function BandejaCotizaciones() {
         }
     };
 
+    const handleReenviar = async (cotizacion) => {
+        const correoActual = cotizacion.datos_formulario?.correo_receptor || cotizacion.datos_formulario?.receptor_correo || '';
+        const nuevoCorreo = window.prompt(`Reenviar cotización ${cotizacion.referencia_unica} a:`, correoActual);
+
+        if (!nuevoCorreo || !nuevoCorreo.trim()) return;
+
+        const loadingToast = toast.loading(`Reenviando cotización a ${nuevoCorreo.trim()}...`);
+        try {
+            const token = localStorage.getItem('access_token');
+            const res = await fetch(`http://${window.location.hostname}:8000/api/cotizador/reenviar-cotizacion/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    operacion_id: cotizacion.id,
+                    correo: nuevoCorreo.trim()
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al reenviar la cotización');
+
+            toast.success(data.mensaje || 'Cotización encolada para envío', { id: loadingToast });
+            fetchData();
+        } catch (error) {
+            toast.error(error.message, { id: loadingToast });
+        }
+    };
+
+
     return (
         <div className="bandeja-cotizaciones-container" style={{ backgroundColor: 'transparent', width: '100%', fontFamily: "'Inter', sans-serif" }}>
             <Toaster position="top-right" />
@@ -168,19 +204,45 @@ export default function BandejaCotizaciones() {
             {/* Cabecera Principal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0F172A', margin: 0 }}>Bandeja de Cotizaciones</h1>
+                    <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0F172A', margin: 0 }}></h1>
                     <p style={{ color: '#64748B', margin: '8px 0 0 0', fontSize: '15px' }}>
-                        Gestiona las prefacturas pendientes y consulta el histórico de cotizaciones enviadas a clientes.
+
                     </p>
                 </div>
-                <button
-                    onClick={fetchData}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', color: '#475569', fontWeight: '600', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'background-color 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}
-                >
-                    <RefreshCw size={18} /> Actualizar
-                </button>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                        onClick={fetchData}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', color: '#475569', fontWeight: '600', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.05)', transition: 'background-color 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                    >
+                        <RefreshCw size={18} /> Actualizar
+                    </button>
+
+                    <button
+                        onClick={() => setShowModalExcel(true)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 20px',
+                            backgroundColor: '#9333EA',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '10px',
+                            fontWeight: '700',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(147, 51, 234, 0.25)',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#7E22CE'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#9333EA'}
+                    >
+                        <UploadCloud size={18} /> Generar desde Excel
+                    </button>
+                </div>
+
             </div>
 
             {/* Sub-pestañas y Buscador */}
@@ -267,202 +329,213 @@ export default function BandejaCotizaciones() {
             </div>
 
 
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '60px', color: '#64748B' }}>Cargando información...</div>
-            ) : (
-                <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid #E2E8F0' }}>
+            {
+                loading ? (
+                    <div style={{ textAlign: 'center', padding: '60px', color: '#64748B' }}>Cargando información...</div>
+                ) : (
+                    <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid #E2E8F0' }}>
 
-                    {/* VISTA 1: COTIZACIONES POR ENVIAR (PREFACTURAS PENDIENTES) */}
-                    {subTab === 'por_enviar' && (
-                        <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                                <tr>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Folio Prefactura</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Cliente</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Empresa Emisora</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Registro</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {pendientes.map((pref) => {
-                                    const fechaLocal = pref.fecha_creacion
-                                        ? new Date(pref.fecha_creacion).toLocaleString('es-MX', {
-                                            day: '2-digit', month: '2-digit', year: 'numeric',
-                                            hour: '2-digit', minute: '2-digit', hour12: true
-                                        })
-                                        : 'Sin fecha';
-
-                                    return (
-                                        <tr key={pref.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#EFF6FF', color: '#2563EB', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-                                                    <FileText size={14} />
-                                                    {pref.referencia_unica}
-                                                </div>
-                                            </td>
-
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>{pref.cliente}</div>
-                                            </td>
-
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '14px' }}>
-                                                    <Building size={14} color="#94A3B8" /> {pref.empresa_emisora}
-                                                </div>
-                                            </td>
-
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', marginBottom: '6px', fontWeight: '600' }}>
-                                                    <User size={14} color="#9333EA" /> {pref.creado_por}
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B', fontSize: '13px' }}>
-                                                    <Calendar size={14} color="#94A3B8" /> {fechaLocal}
-                                                </div>
-                                            </td>
-
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                                    <button
-                                                        onClick={() => handlePreview(pref.datos_formulario)}
-                                                        title="Vista Previa PDF"
-                                                        style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                                    >
-                                                        <Eye size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDownload(pref.datos_formulario, pref.referencia_unica)}
-                                                        title="Descargar Borrador PDF"
-                                                        style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                                    >
-                                                        <Download size={18} />
-                                                    </button>
-
-                                                    {/* Evaluamos si tiene correo válido. Si tiene, mostramos Enviar. Si no, Descargar Oficial */}
-                                                    {pref.datos_formulario?.receptor_correo || pref.datos_formulario?.correo_receptor ? (
-                                                        <button
-                                                            onClick={() => handleGenerarEnviar(pref.id)}
-                                                            title="Generar Cotización Oficial (Heredar Folio) y Enviar"
-                                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#9333EA', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
-                                                        >
-                                                            <Send size={16} /> Generar y Enviar
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleGenerarDescargar(pref.id)}
-                                                            title="Generar Cotización Oficial y Descargar"
-                                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#64748B', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
-                                                        >
-                                                            <Download size={16} /> Generar y Descargar
-                                                        </button>
-                                                    )}
-
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-
-                                {pendientes.length === 0 && (
+                        {/* VISTA 1: COTIZACIONES POR ENVIAR (PREFACTURAS PENDIENTES) */}
+                        {subTab === 'por_enviar' && (
+                            <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                                     <tr>
-                                        <td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
-                                            No hay cotizaciones pendientes por enviar.
-                                        </td>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Folio Prefactura</th>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Cliente</th>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Empresa Emisora</th>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Registro</th>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    )}
+                                </thead>
+                                <tbody>
+                                    {pendientes.map((pref) => {
+                                        const fechaLocal = pref.fecha_creacion
+                                            ? new Date(pref.fecha_creacion).toLocaleString('es-MX', {
+                                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                                hour: '2-digit', minute: '2-digit', hour12: true
+                                            })
+                                            : 'Sin fecha';
 
-                    {/* VISTA 2: COTIZACIONES YA ENVIADAS */}
-                    {subTab === 'enviadas' && (
-                        <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                                <tr>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Folio Oficial</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Cliente</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Empresa Emisora</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Enviado Por</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {enviadasFiltradas.map((cot) => {
-                                    const fechaEnvioLocal = cot.fecha_envio
-                                        ? new Date(cot.fecha_envio).toLocaleString('es-MX', {
-                                            day: '2-digit', month: '2-digit', year: 'numeric',
-                                            hour: '2-digit', minute: '2-digit', hour12: true
-                                        })
-                                        : 'Sin fecha';
-
-                                    return (
-                                        <tr key={cot.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#ECFDF5', color: "#9333EA", borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-                                                    <CheckCircle2 size={14} />
-                                                    {cot.referencia_unica}
-                                                </div>
-                                                {cot.folio_prefactura && cot.folio_prefactura !== 'N/A' && (
-                                                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-                                                        Origen: <span style={{ fontWeight: '600' }}>{cot.folio_prefactura}</span>
+                                        return (
+                                            <tr key={pref.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#EFF6FF', color: '#2563EB', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
+                                                        <FileText size={14} />
+                                                        {pref.referencia_unica}
                                                     </div>
-                                                )}
-                                            </td>
+                                                </td>
 
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>{cot.cliente}</div>
-                                            </td>
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>{pref.cliente}</div>
+                                                </td>
 
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '14px' }}>
-                                                    <Building size={14} color="#94A3B8" /> {cot.empresa_emisora}
-                                                </div>
-                                            </td>
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '14px' }}>
+                                                        <Building size={14} color="#94A3B8" /> {pref.empresa_emisora}
+                                                    </div>
+                                                </td>
 
-                                            {/* Columna Quien la Envio */}
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', marginBottom: '6px', fontWeight: '600' }}>
-                                                    <User size={14} color="#9333EA" /> {cot.enviado_por}
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B', fontSize: '13px' }}>
-                                                    <Calendar size={14} color="#94A3B8" /> {fechaEnvioLocal}
-                                                </div>
-                                            </td>
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', marginBottom: '6px', fontWeight: '600' }}>
+                                                        <User size={14} color="#9333EA" /> {pref.creado_por}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B', fontSize: '13px' }}>
+                                                        <Calendar size={14} color="#94A3B8" /> {fechaLocal}
+                                                    </div>
+                                                </td>
 
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                                    <button
-                                                        onClick={() => handlePreview(cot.datos_formulario)}
-                                                        title="Vista Previa PDF Oficial"
-                                                        style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                                    >
-                                                        <Eye size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDownload(cot.datos_formulario, cot.referencia_unica)}
-                                                        title="Descargar PDF Oficial"
-                                                        style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                                    >
-                                                        <Download size={18} />
-                                                    </button>
-                                                </div>
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                        <button
+                                                            onClick={() => handlePreview(pref.datos_formulario)}
+                                                            title="Vista Previa PDF"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                        >
+                                                            <Eye size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDownload(pref.datos_formulario, pref.referencia_unica)}
+                                                            title="Descargar Borrador PDF"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                        >
+                                                            <Download size={18} />
+                                                        </button>
+
+                                                        {/* Evaluamos si tiene correo válido. Si tiene, mostramos Enviar. Si no, Descargar Oficial */}
+                                                        {pref.datos_formulario?.receptor_correo || pref.datos_formulario?.correo_receptor ? (
+                                                            <button
+                                                                onClick={() => handleGenerarEnviar(pref.id)}
+                                                                title="Generar Cotización Oficial (Heredar Folio) y Enviar"
+                                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#9333EA', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                                                            >
+                                                                <Send size={16} /> Enviar
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleGenerarDescargar(pref.id)}
+                                                                title="Generar Cotización Oficial y Descargar"
+                                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#64748B', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                                                            >
+                                                                <Download size={16} /> Descargar
+                                                            </button>
+                                                        )}
+
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+
+                                    {pendientes.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
+                                                No hay cotizaciones pendientes por enviar.
                                             </td>
                                         </tr>
-                                    );
-                                })}
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
 
-                                {enviadasFiltradas.length === 0 && (
+                        {/* VISTA 2: COTIZACIONES YA ENVIADAS */}
+                        {subTab === 'enviadas' && (
+                            <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
                                     <tr>
-                                        <td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
-                                            {busquedaEnviadas ? 'No se encontraron cotizaciones con ese criterio de búsqueda.' : 'Aún no hay cotizaciones enviadas registradas.'}
-                                        </td>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Folio Oficial</th>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Cliente</th>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Empresa Emisora</th>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>Enviado Por</th>
+                                        <th style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', textAlign: 'right' }}>Acciones</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
-            )}
+                                </thead>
+                                <tbody>
+                                    {enviadasFiltradas.map((cot) => {
+                                        const fechaEnvioLocal = cot.fecha_envio
+                                            ? new Date(cot.fecha_envio).toLocaleString('es-MX', {
+                                                day: '2-digit', month: '2-digit', year: 'numeric',
+                                                hour: '2-digit', minute: '2-digit', hour12: true
+                                            })
+                                            : 'Sin fecha';
+
+                                        return (
+                                            <tr key={cot.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#ECFDF5', color: "#9333EA", borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
+                                                        <CheckCircle2 size={14} />
+                                                        {cot.referencia_unica}
+                                                    </div>
+                                                    {cot.folio_prefactura && cot.folio_prefactura !== 'N/A' && (
+                                                        <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                                                            Origen: <span style={{ fontWeight: '600' }}>{cot.folio_prefactura}</span>
+                                                        </div>
+                                                    )}
+                                                </td>
+
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>{cot.cliente}</div>
+                                                </td>
+
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '14px' }}>
+                                                        <Building size={14} color="#94A3B8" /> {cot.empresa_emisora}
+                                                    </div>
+                                                </td>
+
+                                                {/* Columna Quien la Envio */}
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', marginBottom: '6px', fontWeight: '600' }}>
+                                                        <User size={14} color="#9333EA" /> {cot.enviado_por}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B', fontSize: '13px' }}>
+                                                        <Calendar size={14} color="#94A3B8" /> {fechaEnvioLocal}
+                                                    </div>
+                                                </td>
+
+                                                <td style={{ padding: '20px 24px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                        <button
+                                                            onClick={() => handlePreview(cot.datos_formulario)}
+                                                            title="Vista Previa PDF Oficial"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                        >
+                                                            <Eye size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDownload(cot.datos_formulario, cot.referencia_unica)}
+                                                            title="Descargar PDF Oficial"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                        >
+                                                            <Download size={18} />
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => handleReenviar(cot)}
+                                                            title="Reenviar por Correo"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FAF5FF', border: '1px solid #DDD6FE', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                        >
+                                                            <Send size={16} />
+                                                        </button>
+
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+
+                                    {enviadasFiltradas.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
+                                                {busquedaEnviadas ? 'No se encontraron cotizaciones con ese criterio de búsqueda.' : 'Aún no hay cotizaciones enviadas registradas.'}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                )
+            }
 
             <style>{`
         @media (max-width: 768px) {
@@ -480,6 +553,14 @@ export default function BandejaCotizaciones() {
         }
       `}</style>
 
-        </div>
+            <GenerarCotizacionExcelModal
+                isOpen={showModalExcel}
+                onClose={() => setShowModalExcel(false)}
+                onSuccess={() => {
+                    fetchData();
+                    cambiarSubTab('enviadas');
+                }}
+            />
+        </div >
     );
 }

@@ -16,6 +16,8 @@ from .views import (
     aprobar_operacion_view,
     listar_prefacturas_view,
     listar_conceptos_cliente_view,
+    generar_cotizacion_desde_excel_view,
+    reenviar_cotizacion_view,
 
 )
 
@@ -38,6 +40,8 @@ urlpatterns = [
     path('listar-prefacturas/', listar_prefacturas_view),
     path('aprobar-operacion/<int:operacion_id>/', aprobar_operacion_view), 
     path('conceptos-cliente/', listar_conceptos_cliente_view),
+    path('generar-desde-excel/', generar_cotizacion_desde_excel_view),
+ path('reenviar-cotizacion/', reenviar_cotizacion_view, name='reenviar-cotizacion'),
+]
 
                   
-]

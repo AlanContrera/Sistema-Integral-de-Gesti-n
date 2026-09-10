@@ -1,14 +1,3 @@
-def safe_float(val, default=0.0):
-    if val is None:
-        return default
-    try:
-        val_str = str(val).replace('$', '').replace(',', '').strip()
-        if not val_str:
-            return default
-        return float(val_str)
-    except (ValueError, TypeError):
-        return default
-
 from reportlab.pdfgen import canvas
 from random import random
 import io
@@ -43,7 +32,9 @@ from rest_framework.response import Response
 from .tasks import enviar_cotizacion_task, enviar_prefactura_monterrey_task, enviar_factura_oficial_task
 import zipfile
 import io
+import re
 from django.http import HttpResponse
+from django.core.files.base import ContentFile
 
 
 
@@ -76,6 +67,17 @@ def dibujar_tarjeta(can, x, y, ancho, alto, color_borde, color_fondo=None, groso
         can.roundRect(x, y, ancho, alto, radio_esquinas, fill=1, stroke=1)
     else:
         can.roundRect(x, y, ancho, alto, radio_esquinas, fill=0, stroke=1)
+
+def safe_float(val, default=0.0):
+    if val is None:
+        return default
+    try:
+        val_str = str(val).replace('$', '').replace(',', '').strip()
+        if not val_str:
+            return default
+        return float(val_str)
+    except (ValueError, TypeError):
+        return default
 
 class GenerarCotizacionView(APIView):
     parser_classes = [MultiPartParser]
@@ -3195,20 +3197,14 @@ class AnalizarExcelView(APIView):
             return Response({"error": "El archivo debe ser Excel (.xlsx, .xls)"}, status=400)
 
         try:
-            # Leer el Excel
             df = pd.read_excel(archivo, sheet_name='4.0')
             
-            # Función segura para extraer valores sin causar IndexError si el Excel es muy pequeño
             def safe_iloc(row, col):
                 if row < df.shape[0] and col < df.shape[1]:
                     val = df.iloc[row, col]
                     return str(val).strip() if pd.notna(val) else ""
                 return ""
 
-            # Buscar Empresa Emisora en D3
-            empresa_factura_excel = safe_iloc(0, 3)
-            
-            # Buscar Cliente Receptor iterando
             def buscar_valor_derecha(etiqueta, filas_max=17):
                 etiqueta = etiqueta.upper()
                 for r in range(min(filas_max, df.shape[0])):
@@ -3224,11 +3220,17 @@ class AnalizarExcelView(APIView):
                             return ""
                 return ""
 
+            empresa_factura_excel = safe_iloc(0, 3)
             cliente_receptor_excel = buscar_valor_derecha("RAZON SOCIAL") or safe_iloc(6, 3)
-            
-            import re
+            rfc_excel = buscar_valor_derecha("RFC") or safe_iloc(4, 3)
+            calle_numero_excel = buscar_valor_derecha("CALLE Y NUMERO") or safe_iloc(7, 3)
+            colonia_excel = buscar_valor_derecha("COLONIA") or safe_iloc(8, 3)
+            ciudad_excel = buscar_valor_derecha("CIUDAD") or safe_iloc(9, 3)
+            estado_excel = buscar_valor_derecha("ESTADO") or safe_iloc(10, 3)
+            codigo_postal_excel = buscar_valor_derecha("CODIGO POSTAL") or safe_iloc(11, 3)
+            regimen_fiscal_excel = buscar_valor_derecha("RÉGIMEN FISCAL") or buscar_valor_derecha("REGIMEN FISCAL") or safe_iloc(12, 4)
+            uso_cfdi_excel = buscar_valor_derecha("USO CFDI") or safe_iloc(11, 7)
 
-            # Función para normalizar nombres y quitar regímenes societarios
             def limpiar_razon_social(texto):
                 if not texto:
                     return ""
@@ -3259,14 +3261,12 @@ class AnalizarExcelView(APIView):
                 if not limpio_buscado:
                     return None
                 
-                # 1. Coincidencia directa o contenida
                 for obj in lista_objetos:
                     nombre_db = getattr(obj, campo_nombre, "")
                     limpio_db = limpiar_razon_social(nombre_db)
                     if limpio_db and (limpio_db == limpio_buscado or limpio_db in limpio_buscado or limpio_buscado in limpio_db):
                         return obj
                 
-                # 2. Coincidencia por conjunto de palabras (tokens)
                 tokens_buscado = set(limpio_buscado.split())
                 for obj in lista_objetos:
                     nombre_db = getattr(obj, campo_nombre, "")
@@ -3275,34 +3275,76 @@ class AnalizarExcelView(APIView):
                         return obj
                 return None
 
-            # Limpiar saltos de línea
             empresa_factura_excel = empresa_factura_excel.replace('\n', ' ').replace('\r', '').strip()
             cliente_receptor_excel = cliente_receptor_excel.replace('\n', ' ').replace('\r', '').strip()
 
-            # Búsqueda inteligente
             empresa_db = buscar_coincidencia(empresa_factura_excel, list(EmpresaEmisora.objects.all()), 'nombre_empresa')
             cliente_db = buscar_coincidencia(cliente_receptor_excel, list(Cliente.objects.all()), 'empresa')
 
+            # --- VALIDACIONES DE EMPRESA EMISORA (MEMBRETADA Y CORREO) ---
+            nombre_para_plantilla = (empresa_db.nombre_empresa if empresa_db else empresa_factura_excel).upper()
+            config_plantilla = None
+            for key, val in MAPA_PLANTILLAS.items():
+                if key.upper() in nombre_para_plantilla or nombre_para_plantilla in key.upper():
+                    config_plantilla = val
+                    break
 
-            
+            tiene_membretada = False
+            alerta_membretada = ""
+            if not config_plantilla:
+                alerta_membretada = f"La empresa '{empresa_factura_excel}' no tiene una plantilla membretada configurada en el sistema."
+            else:
+                ruta_pdf = os.path.join(settings.MEDIA_ROOT, 'membretadas', config_plantilla['pdf'])
+                if not os.path.exists(ruta_pdf):
+                    alerta_membretada = f"No se encontró el archivo de hoja membretada ({config_plantilla['pdf']}) en el servidor."
+                else:
+                    tiene_membretada = True
+
+            tiene_correo = bool(empresa_db and empresa_db.correo_remitente and empresa_db.password)
+            alerta_correo = ""
+            if not tiene_correo:
+                if not empresa_db:
+                    alerta_correo = f"La empresa '{empresa_factura_excel}' no está registrada en el catálogo de empresas."
+                elif not empresa_db.correo_remitente:
+                    alerta_correo = f"La empresa '{empresa_db.nombre_empresa}' no tiene correo electrónico configurado."
+                elif not empresa_db.password:
+                    alerta_correo = f"La empresa '{empresa_db.nombre_empresa}' no tiene contraseña de aplicación (SMTP) configurada."
+
             return Response({
                 "empresa_emisora": {
                     "id": empresa_db.id if empresa_db else None,
                     "nombre": empresa_db.nombre_empresa if empresa_db else (empresa_factura_excel or "Desconocida"),
                     "correo": empresa_db.correo_remitente if empresa_db else "",
-                    "match": bool(empresa_db)
+                    "match": bool(empresa_db),
+                    "tiene_membretada": tiene_membretada,
+                    "alerta_membretada": alerta_membretada,
+                    "tiene_correo": tiene_correo,
+                    "alerta_correo": alerta_correo
                 },
                 "cliente": {
                     "id": cliente_db.id if cliente_db else None,
                     "nombre": cliente_db.empresa if cliente_db else (cliente_receptor_excel or "Desconocido"),
                     "correo": cliente_db.correo if cliente_db else "",
-                    "match": bool(cliente_db)
+                    "match": bool(cliente_db),
+                    "datos_excel": {
+                        "empresa": cliente_receptor_excel,
+                        "razon_social": cliente_receptor_excel,
+                        "rfc": rfc_excel,
+                        "calle_numero": calle_numero_excel,
+                        "colonia": colonia_excel,
+                        "ciudad": ciudad_excel,
+                        "estado": estado_excel,
+                        "codigo_postal": codigo_postal_excel,
+                        "regimen_fiscal": regimen_fiscal_excel,
+                        "uso_cfdi": uso_cfdi_excel,
+                    }
                 }
             })
             
         except Exception as e:
-            # Si algo falla (ej. la hoja '4.0' no existe), lo atrapamos y devolvemos un JSON de error
             return Response({"error": f"El documento no tiene el formato esperado: {str(e)}"}, status=400)
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def descargar_excel_prefactura_view(request):
@@ -3806,3 +3848,239 @@ def listar_conceptos_cliente_view(request):
         return Response({"conceptos": list(conceptos)}, status=200)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def generar_cotizacion_desde_excel_view(request):
+    """
+    Genera cotización oficial directamente desde Excel:
+    - Si el cliente no existe y se eligió 'catalogo', lo registra con los datos del Excel.
+    - Si se eligió 'unica_operacion', se asocia en memoria sin persistir en la tabla Cliente.
+    - Si hay correo, despacha asíncronamente con Celery.
+    - Si no hay correo, retorna el binario en base64 para descarga directa.
+    """
+    try:
+        archivo = request.FILES.get('file')
+        if not archivo:
+            return Response({"error": "No se subió ningún archivo Excel"}, status=400)
+
+        empresa_id = request.data.get('empresa_id')
+        fecha_operacion = request.data.get('fecha')
+        tipo_cliente = request.data.get('tipo_cliente', 'catalogo')
+        cliente_id = request.data.get('cliente_id')
+        correo_cliente = request.data.get('correo_cliente', '').strip()
+
+        if not empresa_id:
+            return Response({"error": "Debes especificar la empresa emisora"}, status=400)
+
+        empresa = EmpresaEmisora.objects.get(id=empresa_id)
+
+        cliente = None
+        if cliente_id:
+            try:
+                cliente = Cliente.objects.get(id=cliente_id)
+                if correo_cliente and cliente.correo != correo_cliente:
+                    cliente.correo = correo_cliente
+                    cliente.save()
+            except Cliente.DoesNotExist:
+                pass
+
+        datos_cliente_raw = request.data.get('cliente_data')
+        cliente_info = {}
+        if datos_cliente_raw:
+            import json
+            try:
+                cliente_info = json.loads(datos_cliente_raw) if isinstance(datos_cliente_raw, str) else datos_cliente_raw
+            except Exception:
+                cliente_info = {}
+
+        if not cliente and tipo_cliente == 'catalogo' and cliente_info.get('razon_social'):
+            nombre_cliente = cliente_info.get('razon_social', '').strip()
+            cliente = Cliente.objects.create(
+                empresa=nombre_cliente,
+                razon_social=nombre_cliente,
+                rfc=cliente_info.get('rfc', '').strip().upper(),
+                correo=correo_cliente,
+                calle_numero=cliente_info.get('calle_numero', ''),
+                colonia=cliente_info.get('colonia', ''),
+                ciudad=cliente_info.get('ciudad', ''),
+                estado=cliente_info.get('estado', ''),
+                codigo_postal=cliente_info.get('codigo_postal', ''),
+                regimen_fiscal=cliente_info.get('regimen_fiscal', ''),
+                uso_cfdi_preferido=cliente_info.get('uso_cfdi', '')
+            )
+            cliente.empresas_emisoras.add(empresa)
+
+        # Generar PDF oficial
+        archivo.seek(0)
+        archivo_bytes = archivo.read()
+        archivo_fake = SimpleUploadedFile(
+            archivo.name,
+            archivo_bytes,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        factory = RequestFactory()
+        mock_request = factory.post('/api/cotizador/generar/', {
+            'file': archivo_fake,
+            'fecha': fecha_operacion or datetime.now().strftime("%Y-%m-%d"),
+            'empresa_id': empresa.id,
+        })
+        view = GenerarCotizacionView.as_view()
+        pdf_response = view(mock_request)
+
+        if pdf_response.status_code != 200:
+            error_text = "Error al generar PDF"
+            try:
+                error_text = pdf_response.data.get('error', error_text)
+            except Exception:
+                pass
+            return Response({"error": error_text}, status=pdf_response.status_code)
+
+        folio = pdf_response.headers.get('X-Folio-Generado', 'COTIZACION')
+        pdf_content = pdf_response.content
+
+        # Extracción rápida de montos del Excel
+        archivo.seek(0)
+        df = pd.read_excel(archivo, sheet_name='4.0')
+        subtotal_calc = 0.0
+        total_calc = 0.0
+        for r in range(min(df.shape[0], 40)):
+            for c in range(df.shape[1]):
+                val = str(df.iloc[r, c]).strip().upper()
+                if "SUBTOTAL" in val:
+                    for nc in range(c + 1, min(c + 4, df.shape[1])):
+                        v = df.iloc[r, nc]
+                        if pd.notna(v) and str(v).replace('.', '', 1).replace(',', '').isdigit():
+                            subtotal_calc = float(str(v).replace(',', ''))
+                            break
+                elif "TOTAL" in val and "SUBTOTAL" not in val:
+                    for nc in range(c + 1, min(c + 4, df.shape[1])):
+                        v = df.iloc[r, nc]
+                        if pd.notna(v) and str(v).replace('.', '', 1).replace(',', '').isdigit():
+                            total_calc = float(str(v).replace(',', ''))
+                            break
+
+        if total_calc == 0 and subtotal_calc > 0:
+            total_calc = subtotal_calc * 1.16
+
+        impuestos_calc = total_calc - subtotal_calc
+
+        datos_form = {
+            "cliente_nombre": cliente.empresa if cliente else cliente_info.get('razon_social', 'Operación Única'),
+            "razon_social": cliente.razon_social if cliente else cliente_info.get('razon_social', 'Operación Única'),
+            "rfc_receptor": cliente.rfc if cliente else cliente_info.get('rfc', ''),
+            "correo_receptor": correo_cliente or (cliente.correo if cliente else ""),
+            "empresa_nombre": empresa.nombre_empresa,
+            "fecha_emision": fecha_operacion or datetime.now().strftime("%Y-%m-%d"),
+            "subtotal": subtotal_calc,
+            "impuestos": impuestos_calc,
+            "total": total_calc,
+            "origen": "EXCEL_DIRECTO"
+        }
+
+        # Registrar en historial de Enviadas y guardar el PDF físico
+        operacion = OperacionFacturacion.objects.create(
+            tipo_operacion='COTIZACION',
+            referencia_unica=folio,
+            cliente=cliente,
+            empresa_emisora=empresa,
+            subtotal=subtotal_calc,
+            impuestos=impuestos_calc,
+            total=total_calc,
+            datos_formulario=datos_form,
+            cotizacion_enviada=True,
+            creado_por=request.user if request.user.is_authenticated else None,
+            pdf_factura=ContentFile(pdf_content, name=f"{folio}.pdf") 
+        )
+
+        destinatario = correo_cliente or (cliente.correo if cliente else "")
+        puede_enviar = bool(destinatario and empresa.correo_remitente and empresa.password)
+
+        pdf_b64 = base64.b64encode(pdf_content).decode('utf-8')
+
+        if puede_enviar:
+            enviar_cotizacion_task.delay(
+                cliente.id if cliente else None,
+                empresa.id,
+                pdf_b64,
+                folio,
+                subtotal=subtotal_calc,
+                impuestos=impuestos_calc,
+                total=total_calc,
+                correo_destino=destinatario,
+                cliente_nombre_fallback=datos_form["cliente_nombre"]
+            )
+            return Response({
+                "success": True,
+                "accion": "enviado",
+                "folio": folio,
+                "mensaje": f"Cotización {folio} generada y enviada a {destinatario}"
+            }, status=200)
+        else:
+            return Response({
+                "success": True,
+                "accion": "descargado",
+                "folio": folio,
+                "pdf_base64": pdf_b64,
+                "mensaje": f"Cotización {folio} generada exitosamente para descarga directa."
+            }, status=200)
+
+    except Exception as e:
+        return Response({"error": f"Error al generar cotización: {str(e)}"}, status=500)
+
+@api_view(['POST'])
+def reenviar_cotizacion_view(request):
+    """
+    Reenvía una cotización oficial ya generada a un correo corregido.
+    """
+    operacion_id = request.data.get('operacion_id')
+    nuevo_correo = request.data.get('correo', '').strip()
+
+    if not operacion_id:
+        return Response({"error": "ID de operación requerido"}, status=400)
+    if not nuevo_correo:
+        return Response({"error": "Debes indicar un correo de destino válido"}, status=400)
+
+    try:
+        operacion = OperacionFacturacion.objects.get(id=operacion_id)
+    except OperacionFacturacion.DoesNotExist:
+        return Response({"error": "Operación no encontrada"}, status=404)
+
+    empresa = operacion.empresa_emisora
+    if not empresa or not empresa.correo_remitente or not empresa.password:
+        return Response({"error": "La empresa emisora no tiene credenciales SMTP configuradas"}, status=400)
+
+    if not operacion.pdf_factura:
+        return Response({"error": "Esta cotización no tiene el archivo PDF almacenado en el servidor. Vuelve a procesar el Excel para generarla."}, status=400)
+
+    try:
+        operacion.pdf_factura.seek(0)
+        pdf_b64 = base64.b64encode(operacion.pdf_factura.read()).decode('utf-8')
+    except Exception as e:
+        return Response({"error": f"Error al leer el archivo PDF: {str(e)}"}, status=500)
+
+    # Actualizar correo en datos_formulario
+    if operacion.datos_formulario:
+        operacion.datos_formulario['correo_receptor'] = nuevo_correo
+        operacion.save(update_fields=['datos_formulario'])
+
+    # Encolar reenvío en Celery
+    cliente_nombre = operacion.cliente.empresa if operacion.cliente else (operacion.datos_formulario.get('cliente_nombre') if operacion.datos_formulario else "Cliente")
+    enviar_cotizacion_task.delay(
+        operacion.cliente.id if operacion.cliente else None,
+        empresa.id,
+        pdf_b64,
+        operacion.referencia_unica,
+        subtotal=float(operacion.subtotal or 0),
+        impuestos=float(operacion.impuestos or 0),
+        total=float(operacion.total or 0),
+        correo_destino=nuevo_correo,
+        cliente_nombre_fallback=cliente_nombre
+    )
+
+    return Response({
+        "success": True,
+        "mensaje": f"Cotización {operacion.referencia_unica} encolada para envío a {nuevo_correo}"
+    })

@@ -124,8 +124,8 @@ export default function BandejaAprobacion() {
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
                 <div style={{ marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#1C1335', margin: '0 0 8px 0' }}>Bandeja de Aprobación</h1>
-                    <p style={{ color: '#64748B', fontSize: '16px', margin: 0 }}>Facturas oficiales recibidas de Monterrey, listas para revisión y envío al cliente final.</p>
+                    <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#1C1335', margin: '0 0 8px 0' }}></h1>
+                    <p style={{ color: '#64748B', fontSize: '16px', margin: 0 }}></p>
                 </div>
 
                 {/* Sub-Tabs y Buscador */}
