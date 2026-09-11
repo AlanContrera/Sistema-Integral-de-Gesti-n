@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Plus, Trash2, Download, Send, Calculator, FileSpreadsheet, Search,
     ChevronDown, ChevronUp, Building2, FileText, CheckCircle2, Eye,
-    UserPlus, FolderOpen, Clock, RefreshCw, User, Calendar, X, Mail,
+    UserPlus, FolderOpen, Clock, RefreshCw, User, Calendar, X, Mail, MapPin
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -243,9 +243,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         if (!nuevoClienteData.empresa.trim()) {
             return toast.error('La razón social o empresa es obligatoria');
         }
-        if (!nuevoClienteData.correo.trim()) {
-            return toast.error('El correo electrónico es obligatorio');
-        }
+
 
         // CASO 1: OPERACIÓN ÚNICA (NO SE GUARDA EN LA BASE DE DATOS)
         if (nuevoClienteData.tipo_registro === 'unica_operacion') {
@@ -256,7 +254,11 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 razon_social: nuevoClienteData.empresa.trim(),
                 rfc: nuevoClienteData.rfc ? nuevoClienteData.rfc.trim().toUpperCase() : '',
                 correo: nuevoClienteData.correo.trim(),
-                correos_cc: nuevoClienteData.correos_cc || '',
+                correos_cc: nuevoClienteData.correos_cc ? nuevoClienteData.correos_cc.trim() : '',
+                calle_numero: nuevoClienteData.calle_numero ? nuevoClienteData.calle_numero.trim() : '',
+                colonia: nuevoClienteData.colonia ? nuevoClienteData.colonia.trim() : '',
+                ciudad: nuevoClienteData.ciudad ? nuevoClienteData.ciudad.trim() : '',
+                estado: nuevoClienteData.estado ? nuevoClienteData.estado.trim() : '',
                 codigo_postal: nuevoClienteData.codigo_postal ? nuevoClienteData.codigo_postal.trim() : '',
                 regimen_fiscal: nuevoClienteData.regimen_fiscal,
                 uso_cfdi_preferido: nuevoClienteData.uso_cfdi_preferido,
@@ -287,9 +289,18 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                 body: JSON.stringify({
                     ...nuevoClienteData,
                     empresa: nuevoClienteData.empresa.trim(),
-                    razon_social: nuevoClienteData.empresa.trim()
+                    razon_social: nuevoClienteData.empresa.trim(),
+                    rfc: nuevoClienteData.rfc ? nuevoClienteData.rfc.trim().toUpperCase() : '',
+                    correo: nuevoClienteData.correo.trim(),
+                    correos_cc: nuevoClienteData.correos_cc ? nuevoClienteData.correos_cc.trim() : '',
+                    calle_numero: nuevoClienteData.calle_numero ? nuevoClienteData.calle_numero.trim() : '',
+                    colonia: nuevoClienteData.colonia ? nuevoClienteData.colonia.trim() : '',
+                    ciudad: nuevoClienteData.ciudad ? nuevoClienteData.ciudad.trim() : '',
+                    estado: nuevoClienteData.estado ? nuevoClienteData.estado.trim() : '',
+                    codigo_postal: nuevoClienteData.codigo_postal ? nuevoClienteData.codigo_postal.trim() : ''
                 })
             });
+
 
             if (!response.ok) {
                 const errData = await response.json();
@@ -1129,93 +1140,199 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                 </button>
                             </div>
 
-                            {/* Campos Directos */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16px', rowGap: '18px', marginBottom: '28px' }}>
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
-                                        Razón Social / Empresa *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="Ej. Distribuidora del Norte S.A. de C.V."
-                                        value={nuevoClienteData.empresa}
-                                        onChange={e => setNuevoClienteData({ ...nuevoClienteData, empresa: e.target.value })}
-                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box' }}
-                                    />
+                            {/* Campos Directos Estructurados */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
+
+                                {/* SECCIÓN 1: DATOS FISCALES */}
+                                <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                                        <Building2 size={16} color="#9333EA" />
+                                        <span style={{ fontSize: '12px', fontWeight: '800', color: '#6B21A8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                                            Identificación y Datos Fiscales
+                                        </span>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+                                        <div style={{ gridColumn: 'span 2' }}>
+                                            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                Razón Social / Empresa <span style={{ color: '#EF4444' }}>*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="Ej. Distribuidora del Norte S.A. de C.V."
+                                                value={nuevoClienteData.empresa}
+                                                onChange={e => setNuevoClienteData({ ...nuevoClienteData, empresa: e.target.value })}
+                                                style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                RFC <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '500' }}>(Opcional)</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Ej. XAXX010101000"
+                                                value={nuevoClienteData.rfc}
+                                                onChange={e => setNuevoClienteData({ ...nuevoClienteData, rfc: e.target.value.toUpperCase() })}
+                                                style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                Código Postal <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '500' }}>(Opcional)</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                maxLength="5"
+                                                placeholder="Ej. 64000"
+                                                value={nuevoClienteData.codigo_postal}
+                                                onChange={e => setNuevoClienteData({ ...nuevoClienteData, codigo_postal: e.target.value })}
+                                                style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                Régimen Fiscal
+                                            </label>
+                                            <select
+                                                value={nuevoClienteData.regimen_fiscal}
+                                                onChange={e => setNuevoClienteData({ ...nuevoClienteData, regimen_fiscal: e.target.value })}
+                                                style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
+                                            >
+                                                {REGIMENES_FISCALES_CATALOGO.map(rf => (
+                                                    <option key={rf} value={rf}>{rf}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                Uso de CFDI
+                                            </label>
+                                            <select
+                                                value={nuevoClienteData.uso_cfdi_preferido}
+                                                onChange={e => setNuevoClienteData({ ...nuevoClienteData, uso_cfdi_preferido: e.target.value })}
+                                                style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
+                                            >
+                                                {USOS_CFDI_CATALOGO.map(uc => (
+                                                    <option key={uc} value={uc}>{uc}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
-                                        RFC
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ej. XAXX010101000"
-                                        value={nuevoClienteData.rfc}
-                                        onChange={e => setNuevoClienteData({ ...nuevoClienteData, rfc: e.target.value.toUpperCase() })}
-                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box' }}
-                                    />
+                                {/* SECCIÓN 2: DOMICILIO FISCAL */}
+                                <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                                        <MapPin size={16} color="#9333EA" />
+                                        <span style={{ fontSize: '12px', fontWeight: '800', color: '#6B21A8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                                            Domicilio Fiscal
+                                        </span>
+                                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '500', marginLeft: 'auto' }}>Opcional</span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                Calle y Número
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Ej. Av. Hidalgo #1234 Int. 5"
+                                                value={nuevoClienteData.calle_numero}
+                                                onChange={e => setNuevoClienteData({ ...nuevoClienteData, calle_numero: e.target.value })}
+                                                style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                    Colonia
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Ej. Centro"
+                                                    value={nuevoClienteData.colonia}
+                                                    onChange={e => setNuevoClienteData({ ...nuevoClienteData, colonia: e.target.value })}
+                                                    style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                    Municipio / Ciudad
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Ej. Monterrey"
+                                                    value={nuevoClienteData.ciudad}
+                                                    onChange={e => setNuevoClienteData({ ...nuevoClienteData, ciudad: e.target.value })}
+                                                    style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                    Estado
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Ej. Nuevo León"
+                                                    value={nuevoClienteData.estado}
+                                                    onChange={e => setNuevoClienteData({ ...nuevoClienteData, estado: e.target.value })}
+                                                    style={{ width: '100%', height: '40px', padding: '0 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
-                                        Código Postal
-                                    </label>
-                                    <input
-                                        type="text"
-                                        maxLength="5"
-                                        placeholder="Ej. 64000"
-                                        value={nuevoClienteData.codigo_postal}
-                                        onChange={e => setNuevoClienteData({ ...nuevoClienteData, codigo_postal: e.target.value })}
-                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box' }}
-                                    />
-                                </div>
+                                {/* SECCIÓN 3: CONTACTO Y ENVÍOS */}
+                                <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '16px 20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                                        <Mail size={16} color="#9333EA" />
+                                        <span style={{ fontSize: '12px', fontWeight: '800', color: '#6B21A8', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                                            Contacto y Notificaciones
+                                        </span>
+                                        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '500', marginLeft: 'auto' }}>Opcional</span>
+                                    </div>
 
-                                <div style={{ gridColumn: 'span 2' }}>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
-                                        Correo Electrónico *
-                                    </label>
-                                    <input
-                                        type="email"
-                                        required
-                                        placeholder="contacto@cliente.com"
-                                        value={nuevoClienteData.correo}
-                                        onChange={e => setNuevoClienteData({ ...nuevoClienteData, correo: e.target.value })}
-                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box' }}
-                                    />
-                                </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                Correo Principal
+                                            </label>
+                                            <input
+                                                type="email"
+                                                placeholder="contacto@cliente.com"
+                                                value={nuevoClienteData.correo}
+                                                onChange={e => setNuevoClienteData({ ...nuevoClienteData, correo: e.target.value })}
+                                                style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
 
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
-                                        Régimen Fiscal
-                                    </label>
-                                    <select
-                                        value={nuevoClienteData.regimen_fiscal}
-                                        onChange={e => setNuevoClienteData({ ...nuevoClienteData, regimen_fiscal: e.target.value })}
-                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
-                                    >
-                                        {REGIMENES_FISCALES_CATALOGO.map(rf => (
-                                            <option key={rf} value={rf}>{rf}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '6px' }}>
-                                        Uso de CFDI
-                                    </label>
-                                    <select
-                                        value={nuevoClienteData.uso_cfdi_preferido}
-                                        onChange={e => setNuevoClienteData({ ...nuevoClienteData, uso_cfdi_preferido: e.target.value })}
-                                        style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#F8FAFC', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
-                                    >
-                                        {USOS_CFDI_CATALOGO.map(uc => (
-                                            <option key={uc} value={uc}>{uc}</option>
-                                        ))}
-                                    </select>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '700', color: '#334155', marginBottom: '5px' }}>
+                                                Correos en Copia (CC)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="ej: pagos@c.com, cont@c.com"
+                                                value={nuevoClienteData.correos_cc}
+                                                onChange={e => setNuevoClienteData({ ...nuevoClienteData, correos_cc: e.target.value })}
+                                                style={{ width: '100%', height: '40px', padding: '0 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13.5px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
 
                             {/* Footer Limpio */}
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center', paddingTop: '20px', borderTop: '1px solid #F1F5F9' }}>

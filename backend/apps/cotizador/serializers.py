@@ -11,3 +11,7 @@ class ClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cliente
         fields = '__all__'
+        extra_kwargs = {
+            'correo': {'required': False, 'allow_blank': True, 'allow_null': True}
+        }
+

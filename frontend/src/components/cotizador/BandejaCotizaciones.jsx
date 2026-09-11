@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Download, UploadCloud, Send, RefreshCw, User, Calendar, FileText, Building, Clock, Search, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Eye, Download, UploadCloud, Send, RefreshCw, User, Calendar, FileText, Building, Clock, Search, CheckCircle2, ArrowRight, Mail, X, Loader2 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import GenerarCotizacionExcelModal from './GenerarCotizacionExcelModal';
 
@@ -20,6 +20,13 @@ export default function BandejaCotizaciones() {
     const [busquedaEnviadas, setBusquedaEnviadas] = useState('');
 
     const [showModalExcel, setShowModalExcel] = useState(false);
+
+    const [modalReenvio, setModalReenvio] = useState({
+        isOpen: false,
+        cotizacion: null,
+        correo: '',
+        enviando: false
+    });
 
     const enviadasFiltradas = enviadas.filter(cot => {
         const termino = busquedaEnviadas.toLowerCase();
@@ -165,13 +172,24 @@ export default function BandejaCotizaciones() {
         }
     };
 
-    const handleReenviar = async (cotizacion) => {
+    const abrirModalReenvio = (cotizacion) => {
         const correoActual = cotizacion.datos_formulario?.correo_receptor || cotizacion.datos_formulario?.receptor_correo || '';
-        const nuevoCorreo = window.prompt(`Reenviar cotización ${cotizacion.referencia_unica} a:`, correoActual);
+        setModalReenvio({
+            isOpen: true,
+            cotizacion,
+            correo: correoActual,
+            enviando: false
+        });
+    };
 
-        if (!nuevoCorreo || !nuevoCorreo.trim()) return;
+    const handleConfirmarReenvio = async (e) => {
+        if (e) e.preventDefault();
+        if (!modalReenvio.correo || !modalReenvio.correo.trim()) {
+            return toast.error('Ingresa un correo electrónico válido');
+        }
 
-        const loadingToast = toast.loading(`Reenviando cotización a ${nuevoCorreo.trim()}...`);
+        setModalReenvio(prev => ({ ...prev, enviando: true }));
+        const loadingToast = toast.loading(`Reenviando cotización a ${modalReenvio.correo.trim()}...`);
         try {
             const token = localStorage.getItem('access_token');
             const res = await fetch(`http://${window.location.hostname}:8000/api/cotizador/reenviar-cotizacion/`, {
@@ -181,18 +199,20 @@ export default function BandejaCotizaciones() {
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify({
-                    operacion_id: cotizacion.id,
-                    correo: nuevoCorreo.trim()
+                    operacion_id: modalReenvio.cotizacion.id,
+                    correo: modalReenvio.correo.trim()
                 })
             });
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Error al reenviar la cotización');
 
-            toast.success(data.mensaje || 'Cotización encolada para envío', { id: loadingToast });
-            fetchData();
+            toast.success(data.mensaje || 'Cotización encolada para reenvío correctamente', { id: loadingToast });
+            setModalReenvio({ isOpen: false, cotizacion: null, correo: '', enviando: false });
+            fetchData(true);
         } catch (error) {
             toast.error(error.message, { id: loadingToast });
+            setModalReenvio(prev => ({ ...prev, enviando: false }));
         }
     };
 
@@ -510,12 +530,13 @@ export default function BandejaCotizaciones() {
                                                         </button>
 
                                                         <button
-                                                            onClick={() => handleReenviar(cot)}
+                                                            onClick={() => abrirModalReenvio(cot)}
                                                             title="Reenviar por Correo"
                                                             style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FAF5FF', border: '1px solid #DDD6FE', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                         >
                                                             <Send size={16} />
                                                         </button>
+
 
                                                     </div>
                                                 </td>
@@ -552,6 +573,101 @@ export default function BandejaCotizaciones() {
           }
         }
       `}</style>
+
+            {/* Modal Personalizado: Reenviar Cotización */}
+            {modalReenvio.isOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+                    <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', width: '480px', maxWidth: '100%', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'slideUp 0.3s ease-out' }}>
+
+                        {/* Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '42px', height: '42px', borderRadius: '12px', backgroundColor: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9333EA' }}>
+                                    <Send size={20} />
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#1C1335', margin: 0 }}>
+                                        Reenviar Cotización
+                                    </h3>
+                                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#9333EA' }}>
+                                        {modalReenvio.cotizacion?.referencia_unica}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setModalReenvio({ isOpen: false, cotizacion: null, correo: '', enviando: false })}
+                                style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', width: '34px', height: '34px', borderRadius: '50%', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleConfirmarReenvio}>
+                            {/* Resumen del Cliente */}
+                            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '12px 16px', marginBottom: '20px' }}>
+                                <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                                    Destinatario Original
+                                </div>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#1E293B' }}>
+                                    {modalReenvio.cotizacion?.cliente || 'Cliente sin nombre'}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                                    Empresa Emisora: {modalReenvio.cotizacion?.empresa_emisora || 'N/A'}
+                                </div>
+                            </div>
+
+                            {/* Campo de Correo */}
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#334155', marginBottom: '8px' }}>
+                                    Correo Electrónico de Destino
+                                </label>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <Mail size={18} color="#94A3B8" style={{ position: 'absolute', left: '14px' }} />
+                                    <input
+                                        type="email"
+                                        required
+                                        autoFocus
+                                        placeholder="cliente@ejemplo.com"
+                                        value={modalReenvio.correo}
+                                        onChange={e => setModalReenvio({ ...modalReenvio, correo: e.target.value })}
+                                        style={{ width: '100%', height: '44px', paddingLeft: '42px', paddingRight: '14px', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '14px', color: '#0F172A', backgroundColor: '#FFFFFF', outline: 'none', boxSizing: 'border-box' }}
+                                    />
+                                </div>
+                                <p style={{ fontSize: '11.5px', color: '#64748B', margin: '6px 0 0 0' }}>
+                                    Puedes especificar un correo nuevo o secundario para enviar la cotización.
+                                </p>
+                            </div>
+
+                            {/* Botones de Acción */}
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid #F1F5F9' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalReenvio({ isOpen: false, cotizacion: null, correo: '', enviando: false })}
+                                    style={{ height: '40px', padding: '0 18px', borderRadius: '10px', background: '#F1F5F9', border: 'none', color: '#475569', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={modalReenvio.enviando}
+                                    style={{ height: '40px', padding: '0 20px', borderRadius: '10px', background: 'linear-gradient(135deg, #9333EA 0%, #7E22CE 100%)', border: 'none', color: '#FFFFFF', fontWeight: '700', fontSize: '13px', cursor: modalReenvio.enviando ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(147, 51, 234, 0.25)', opacity: modalReenvio.enviando ? 0.7 : 1 }}
+                                >
+                                    {modalReenvio.enviando ? (
+                                        <>
+                                            <Loader2 size={16} className="animate-spin" /> Reenviando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send size={15} /> Confirmar y Reenviar
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
 
             <GenerarCotizacionExcelModal
                 isOpen={showModalExcel}

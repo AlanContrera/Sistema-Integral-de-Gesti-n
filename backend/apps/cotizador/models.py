@@ -64,7 +64,7 @@ class Cliente(models.Model):
     regimen_fiscal = models.CharField(max_length=255, blank=True, null=True, default='601 - General de Ley Personas Morales', help_text='Régimen fiscal receptor')
     uso_cfdi_preferido = models.CharField(max_length=150, blank=True, null=True, default='G03 - GASTOS EN GENERAL')
 
-    correo = models.EmailField(help_text='Correo principal donde se enviará la cotización')
+    correo = models.EmailField(blank=True, null=True, help_text='Correo principal donde se enviará la cotización')
     correos_cc = models.CharField(max_length=500, blank=True, null=True, help_text='Correos secundarios separados por coma')
     fecha_registro = models.DateTimeField(auto_now_add=True)
 

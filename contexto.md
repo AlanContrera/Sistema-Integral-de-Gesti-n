@@ -1,8 +1,8 @@
 # CONTEXTO MAESTRO - Sistema Integral (App_Facturacion)
 
-> **Última actualización:** 2026-08-20
-> **Estado general del proyecto:** 🟢 En construcción — Setup de rastreo de creadores completado. En pausa por migración de equipo. Preparando inicio del Módulo de Administración de Usuarios.
-> **Sesión actual enfocada en:** Definición de la arquitectura para el Módulo TI y jerarquía de Roles.
+> **Última actualización:** 2026-09-11
+> **Estado general del proyecto:** 🟢 Módulo de Cotizador y Facturación Empresarial completado y estabilizado. Saneamiento integral de la base de datos de clientes (162 clientes), erradicación de correos sintéticos, sincronización de directorio oficial con soporte CC y flexibilización del esquema en Django Admin.
+> **Sesión actual enfocada en:** Consolidación de documentación, saneamiento de clientes en base de datos y auditoría de integración fiscal SAT CFDI 4.0.
 
 ## Objetivo General
 
@@ -56,13 +56,19 @@ Construir un Sistema Integral (Sistema Englobado) para automatizar el procesamie
 - Renderizado limpio de cuerpo de correos (eliminación de basura y metadatos de Outlook).
 - Interfaz de "Modo Edición" para validación humana de errores del OCR.
 
-### ✅ Módulo 5: Generador de Cotizaciones PDF y Correos
-- Procesamiento en backend de archivos Excel (Django + Pandas).
-- Generación de PDF dinámicos y membretados mediante motor Platypus (ReportLab).
-- Interfaz web dedicada en React (Drag & Drop) para generación y descarga interactiva.
-- **Flujo de Envío 1-Click:** Integración con Celery y Redis para envío de correos asíncronos en segundo plano sin congelar UI.
-- **Plantillas Dinámicas:** Inyección de textos y asuntos dinámicos desde Base de Datos según Empresa Emisora.
-- **Folio y Diseño Premium:** Extracción oculta del folio generado en PDF para nombrar el archivo adjunto y maquetación de correo con tablas HTML premium.
+### ✅ Módulo 5: Cotizador y Facturación Empresarial (Actualización Septiembre 2026)
+Suite completa de cotización y facturación empresarial conectada a PostgreSQL y Celery/Redis:
+- **Catálogos Oficiales SAT 4.0:** Integración modular (`CatalogoSat.jsx`) de Uso CFDI, Régimen Fiscal y Formas de Pago.
+- **Catálogo Relacional de Conceptos Autorizados:** Gestión por dupla Cliente-Empresa Emisora con explorador modal de lectura íntegra en tarjetas interactivas (`CatalogoConceptosModal.jsx`).
+- **Generador de Cotizaciones desde Excel en Bandeja:** Modal espacioso (`GenerarCotizacionExcelModal.jsx`) para parseo directo de matrices Excel, validación en caliente de membretadas y despacho inmediato.
+- **Persistencia Física de PDFs y Reenvío en 1-Clic:** Almacenamiento físico de archivos de cotización (`pdf_factura`) en el servidor y reenvío instantáneo con modal de confirmación en la pestaña de Enviadas.
+- **Saneamiento y Sincronización del Catálogo de Clientes:**
+  - Diagnóstico forense de correos comodín (`contacto@...`) originados en la migración de agosto por restricción `NOT NULL`.
+  - Sincronización con el directorio oficial `directorio_clientesP&M  PENDIENTES 6.xlsx`: 21 clientes actualizados con correos reales y soporte multi-correo (`correos_cc`).
+  - Eliminación del 100% de correos sintéticos ficticios (0 restantes; 97 reales y 65 en blanco legítimo).
+  - Respeto estricto del catálogo: sin altas no deseadas (162 clientes exactos).
+- **Flexibilización del Modelo `Cliente`:** Campo `correo` como opcional (`blank=True, null=True`), permitiendo edición fluida y guardado de clientes pendientes en el Django Admin y en la API REST.
+- **Cumplimiento Normativo SAT CFDI 4.0:** Razón social almacenada conforme al Anexo 20 del SAT (sin tipo societario "S.A. de C.V.").
 
 ### Módulo 6: Reclutamiento y Selección
 Este módulo representa la digitalización completa y avanzada de las herramientas de perfilamiento y seguimiento que previamente se manejaban en Excel, transformándolas en un sistema de grado empresarial con estética 'Corporate Premium'.

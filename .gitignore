@@ -34,3 +34,7 @@ htmlcov/
 ~\$*
 *:Zone.Identifier
 *.Zone.Identifier
+
+*.sql
+backend/celerybeat-schedule
+backend/debug_log.txt

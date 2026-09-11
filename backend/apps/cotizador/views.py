@@ -3586,7 +3586,13 @@ def generar_cotizacion_view(request):
         if pdf_response.status_code != 200:
             return Response({"error": "Error interno al generar el PDF de la cotizacion."}, status=500)
 
+        # Guardar el archivo físico en el modelo para futuras descargas y reenvíos
+        if not cotizacion_hija.pdf_factura:
+            cotizacion_hija.pdf_factura.save(f"{cotizacion_hija.referencia_unica}.pdf", ContentFile(pdf_response.content))
+            cotizacion_hija.save(update_fields=['pdf_factura'])
+
         pdf_b64 = base64.b64encode(pdf_response.content).decode('utf-8')
+
         
         if solo_descargar:
             return Response({
@@ -4052,14 +4058,43 @@ def reenviar_cotizacion_view(request):
     if not empresa or not empresa.correo_remitente or not empresa.password:
         return Response({"error": "La empresa emisora no tiene credenciales SMTP configuradas"}, status=400)
 
-    if not operacion.pdf_factura:
-        return Response({"error": "Esta cotización no tiene el archivo PDF almacenado en el servidor. Vuelve a procesar el Excel para generarla."}, status=400)
+    pdf_b64 = None
+    if operacion.pdf_factura:
+        try:
+            operacion.pdf_factura.seek(0)
+            pdf_b64 = base64.b64encode(operacion.pdf_factura.read()).decode('utf-8')
+        except Exception:
+            pdf_b64 = None
 
-    try:
-        operacion.pdf_factura.seek(0)
-        pdf_b64 = base64.b64encode(operacion.pdf_factura.read()).decode('utf-8')
-    except Exception as e:
-        return Response({"error": f"Error al leer el archivo PDF: {str(e)}"}, status=500)
+    # Si fue creada desde la prefactura web y no tenía PDF en disco, se regenera al vuelo
+    if not pdf_b64 and operacion.datos_formulario:
+        try:
+            excel_buffer, _ = generar_excel_prefactura(operacion.datos_formulario)
+            factory = RequestFactory()
+            excel_buffer.seek(0)
+            archivo_fake = SimpleUploadedFile(
+                'cotizacion_en_memoria.xlsx',
+                excel_buffer.read(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            mock_request = factory.post('/api/cotizador/generar/', {
+                'file': archivo_fake,
+                'fecha': operacion.datos_formulario.get('fecha_emision', '') or operacion.datos_formulario.get('fecha_pago', ''),
+                'empresa_id': operacion.empresa_emisora.id if operacion.empresa_emisora else '',
+                'folio_oficial': operacion.referencia_unica
+            })
+            view = GenerarCotizacionView.as_view()
+            pdf_response = view(mock_request)
+            if pdf_response.status_code == 200:
+                operacion.pdf_factura.save(f"{operacion.referencia_unica}.pdf", ContentFile(pdf_response.content))
+                operacion.save(update_fields=['pdf_factura'])
+                pdf_b64 = base64.b64encode(pdf_response.content).decode('utf-8')
+        except Exception as e:
+            pass
+
+    if not pdf_b64:
+        return Response({"error": "No fue posible recuperar o regenerar el archivo PDF de esta cotización."}, status=400)
+
 
     # Actualizar correo en datos_formulario
     if operacion.datos_formulario:

@@ -11,6 +11,7 @@
   2) La ubicación exacta donde pegarlo o qué reemplazar. 
   3) Una explicación detallada de cómo funciona la solución propuesta.
 - **INSTRUCCIONES CLARAS E IMPORTS**: Cuando proporciones código, DEBES incluir explícitamente **todas las importaciones necesarias**. Nunca asumas que el usuario las agregará por intuición.
+- **PROHIBIDO ENTREGAR ARCHIVOS COMPLETOS PARA CAMBIOS PUNTUALES**: Si la modificación solicitada es de pocas líneas, un ajuste específico, un arreglo puntual o una corrección menor, está **estrictamente prohibido** entregar el archivo de código completo. Debes proporcionar únicamente fragmentos de código quirúrgicos con las líneas de contexto necesarias (o indicar el número de línea exacto y el bloque exacto a reemplazar) para evitar la pérdida accidental de funcionalidades (como estilos, tooltips, estados previos) y evitar sobrecargar al usuario con copiar/pegar innecesario. La entrega de un archivo completo solo se permite cuando el usuario lo solicite expresamente con frases como "dame el archivo completo" o cuando se trate de un archivo completamente nuevo.
 - **PROHIBIDO REFERENCIAR CÓDIGO PASADO**: NUNCA le digas al usuario "ya te lo había pasado" ni lo mandes a buscar fragmentos en mensajes anteriores. Si se necesita un código previo, vuélvelo a entregar completo, sin quejas ni referencias al pasado.
 
 ## 3. Estándares de Calidad y UI

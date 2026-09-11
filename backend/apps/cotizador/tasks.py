@@ -98,6 +98,17 @@ def enviar_cotizacion_task(cliente_id, empresa_id, pdf_base64, folio="Oficial", 
         return f"Mensaje enviado exitosamente a {destinatario}"
         
     except Exception as e:
+        try:
+            from core.telegram import notificar_error_correo
+            notificar_error_correo(
+                tipo_documento="Cotización",
+                destinatario=destinatario if 'destinatario' in locals() and destinatario else "No especificado",
+                error=str(e),
+                cliente=cliente_nombre if 'cliente_nombre' in locals() else "Cliente",
+                folio=folio
+            )
+        except Exception:
+            pass
         return f"Error al enviar correo: {str(e)}"
 
 @shared_task
@@ -269,6 +280,17 @@ def enviar_factura_oficial_task(operacion_id):
         
         return "Factura oficial enviada al cliente"
     except Exception as e:
+        try:
+            from core.telegram import notificar_error_correo
+            notificar_error_correo(
+                tipo_documento="Factura Oficial",
+                destinatario=correo_cliente if 'correo_cliente' in locals() and correo_cliente else "No especificado",
+                error=str(e),
+                cliente=cliente_nombre if 'cliente_nombre' in locals() else "Cliente",
+                folio=operacion.referencia_unica if 'operacion' in locals() and operacion else "N/A"
+            )
+        except Exception:
+            pass
         return f"Error enviando factura oficial: {str(e)}"
 
 @shared_task
@@ -346,4 +368,15 @@ def enviar_prefactura_monterrey_task(cliente_id, empresa_id, pdf_base64, folio, 
         return f"Prefactura enviada exitosamente a {destinatario}"
         
     except Exception as e:
+        try:
+            from core.telegram import notificar_error_correo
+            notificar_error_correo(
+                tipo_documento="Prefactura Monterrey",
+                destinatario=destinatario if 'destinatario' in locals() and destinatario else "No especificado",
+                error=str(e),
+                cliente=cliente_nombre_fallback if 'cliente_nombre_fallback' in locals() else "Cliente",
+                folio=folio
+            )
+        except Exception:
+            pass
         return f"Error al enviar prefactura a Monterrey: {str(e)}"
