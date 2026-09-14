@@ -117,21 +117,21 @@ export default function BandejaCotizaciones() {
 
             toast.success(data.mensaje, { id: loadingToast });
             fetchData(); // Refresca ambas listas
-
-            // Llamamos a tu función nativa de descarga con la info actualizada
-            handleDownload(data.datos_formulario, data.referencia_unica);
-
+            // Llamamos a la descarga directa con la URL generada
+            handleDownload(data.datos_formulario, data.referencia_unica, data.pdf_url);
         } catch (error) {
             toast.error(error.message, { id: loadingToast });
         }
     };
-
-
-    const handlePreview = async (datosFormulario) => {
+    const handlePreview = async (datosFormulario, pdfUrl = null) => {
+        // Si ya existe el PDF físico generado en el servidor, abrirlo directamente
+        if (pdfUrl) {
+            window.open(pdfUrl, '_blank');
+            return;
+        }
         const nuevaPestana = window.open('', '_blank');
         if (!nuevaPestana) return toast.error('Desactiva el bloqueador de ventanas emergentes.');
         nuevaPestana.document.write('<html><body style="font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f1f5f9; color: #475569;"><h2>Generando vista previa...</h2></body></html>');
-
         try {
             const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
                 method: 'POST',
@@ -147,21 +147,30 @@ export default function BandejaCotizaciones() {
             toast.error('Error al generar vista previa');
         }
     };
-
-    const handleDownload = async (datosFormulario, referencia) => {
+    const handleDownload = async (datosFormulario, referencia, pdfUrl = null) => {
         const loadingToast = toast.loading('Descargando PDF...');
         try {
-            const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datosFormulario)
-            });
-            if (!response.ok) throw new Error('Error en la petición');
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
+            let blobUrl = pdfUrl;
+            // Si no tenemos la URL física del archivo, lo generamos dinámicamente
+            if (!blobUrl) {
+                const response = await fetch(`http://${window.location.hostname}:8000/api/cotizador/preview-cotizacion-pdf/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datosFormulario)
+                });
+                if (!response.ok) throw new Error('Error en la petición');
+                const blob = await response.blob();
+                blobUrl = window.URL.createObjectURL(blob);
+            } else {
+                // Descargar el binario del PDF existente
+                const response = await fetch(pdfUrl);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    blobUrl = window.URL.createObjectURL(blob);
+                }
+            }
             const link = document.createElement('a');
-            link.href = url;
+            link.href = blobUrl;
             link.setAttribute('download', `Cotizacion_${referencia}.pdf`);
             document.body.appendChild(link);
             link.click();
@@ -407,14 +416,14 @@ export default function BandejaCotizaciones() {
                                                 <td style={{ padding: '20px 24px' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                                         <button
-                                                            onClick={() => handlePreview(pref.datos_formulario)}
+                                                            onClick={() => handlePreview(pref.datos_formulario, pref.pdf_url)}
                                                             title="Vista Previa PDF"
                                                             style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                         >
                                                             <Eye size={18} />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDownload(pref.datos_formulario, pref.referencia_unica)}
+                                                            onClick={() => handleDownload(pref.datos_formulario, pref.referencia_unica, pref.pdf_url)}
                                                             title="Descargar Borrador PDF"
                                                             style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                         >
@@ -515,14 +524,14 @@ export default function BandejaCotizaciones() {
                                                 <td style={{ padding: '20px 24px' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                                         <button
-                                                            onClick={() => handlePreview(cot.datos_formulario)}
+                                                            onClick={() => handlePreview(cot.datos_formulario, cot.pdf_url)}
                                                             title="Vista Previa PDF Oficial"
                                                             style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                         >
                                                             <Eye size={18} />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDownload(cot.datos_formulario, cot.referencia_unica)}
+                                                            onClick={() => handleDownload(cot.datos_formulario, cot.referencia_unica, cot.pdf_url)}
                                                             title="Descargar PDF Oficial"
                                                             style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                         >

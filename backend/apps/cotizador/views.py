@@ -3593,13 +3593,14 @@ def generar_cotizacion_view(request):
 
         pdf_b64 = base64.b64encode(pdf_response.content).decode('utf-8')
 
-        
         if solo_descargar:
             return Response({
                 "mensaje": "Cotización oficial generada y almacenada en el historial.",
                 "datos_formulario": cotizacion_hija.datos_formulario,
-                "referencia_unica": cotizacion_hija.referencia_unica
+                "referencia_unica": cotizacion_hija.referencia_unica,
+                "pdf_url": request.build_absolute_uri(cotizacion_hija.pdf_factura.url) if cotizacion_hija.pdf_factura else None
             }, status=200)
+
 
             
         # Llamar a la tarea asincrona de Celery existente
@@ -3781,6 +3782,7 @@ def listar_prefacturas_view(request):
 
                 folio_prefactura = c.prefactura_origen.referencia_unica if c.prefactura_origen else "N/A"
 
+                # Ubicación: backend/apps/cotizador/views.py (dentro del for c in cotizaciones:)
                 datos.append({
                     "id": c.id,
                     "referencia_unica": c.referencia_unica,
@@ -3792,6 +3794,7 @@ def listar_prefacturas_view(request):
                     "fecha_envio": c.fecha_creacion.strftime("%Y-%m-%dT%H:%M:%SZ") if c.fecha_creacion else None,
                     "enviado_por": enviado_por,
                     "creado_por_prefactura": creador_prefactura,
+                    "pdf_url": request.build_absolute_uri(c.pdf_factura.url) if c.pdf_factura else None,
                     "datos_formulario": c.datos_formulario
                 })
 
@@ -3819,6 +3822,7 @@ def listar_prefacturas_view(request):
             if p.creado_por:
                 creador = f"{p.creado_por.first_name} {p.creado_por.last_name}".strip() or p.creado_por.username
 
+            # Ubicación: backend/apps/cotizador/views.py (dentro del for p in prefacturas:)
             datos.append({
                 "id": p.id,
                 "referencia_unica": p.referencia_unica,
@@ -3829,8 +3833,10 @@ def listar_prefacturas_view(request):
                 "cotizacion_enviada": p.cotizacion_enviada,
                 "fecha_creacion": p.fecha_creacion.strftime("%Y-%m-%dT%H:%M:%SZ") if p.fecha_creacion else None,
                 "creado_por": creador,
+                "pdf_url": request.build_absolute_uri(p.pdf_factura.url) if p.pdf_factura else None,
                 "datos_formulario": p.datos_formulario
             })
+
 
         return Response(datos, status=200)
     except Exception as e:
