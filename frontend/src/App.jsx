@@ -2,7 +2,6 @@ import React, { useState, useEffect, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import {
   Calculator,
-  Landmark,
   Users,
   Briefcase,
   Settings,
@@ -13,7 +12,6 @@ import {
   User
 } from 'lucide-react';
 import { AuthContext, AuthProvider } from './context/AuthContext';
-import ModuloPagos from './pages/pagos/ModuloPagos';
 import ModuloCotizador from './pages/cotizador/ModuloCotizador';
 import ModuloReclutamiento from './pages/reclutamiento/ModuloReclutamiento';
 import ModuloComercial from './pages/comercial/ModuloComercial';
@@ -47,18 +45,6 @@ function MenuPrincipal() {
     });
   }
 
-  // MÓDULO 2: Gestión de Pagos (Índigo Eléctrico #818CF8)
-  if (esAdmin || usuario?.acceso_pagos) {
-    modulos.push({
-      ruta: '/pagos',
-      titulo: 'Gestión de Pagos',
-      icon: <Landmark size={22} color="#818CF8" />,
-      iconBg: 'rgba(129, 140, 248, 0.14)',
-      borderGlow: 'rgba(129, 140, 248, 0.5)',
-      glow: 'radial-gradient(circle at 30% 50%, rgba(129, 140, 248, 0.22) 0%, transparent 65%)',
-      accentColor: '#818CF8'
-    });
-  }
 
   // MÓDULO 3: Reclutamiento y ATS (Dusty Rose #F472B6)
   if (esAdmin || usuario?.acceso_reclutamiento) {
@@ -488,8 +474,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<RutaProtegida><MenuPrincipal /></RutaProtegida>} />
 
-            <Route path="/pagos/*" element={<RutaProtegida moduloRequerido="acceso_pagos"><ModuloPagos /></RutaProtegida>} />
-            <Route path="/cotizador/*" element={<RutaProtegida moduloRequerido="acceso_cotizador"><ModuloCotizador /></RutaProtegida>} />
+                        <Route path="/cotizador/*" element={<RutaProtegida moduloRequerido="acceso_cotizador"><ModuloCotizador /></RutaProtegida>} />
             <Route path="/reclutamiento/*" element={<RutaProtegida moduloRequerido="acceso_reclutamiento"><ModuloReclutamiento /></RutaProtegida>} />
             <Route path="/comercial/*" element={<RutaProtegida moduloRequerido="acceso_comercial"><ModuloComercial /></RutaProtegida>} />
 

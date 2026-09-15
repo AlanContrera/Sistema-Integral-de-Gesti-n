@@ -7,7 +7,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         # Exponemos los campos más importantes para el frontend
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name', 'rol', 'is_active', 'password',
-            'acceso_pagos', 'acceso_cotizador', 'acceso_reclutamiento', 'acceso_comercial'
+            'acceso_cotizador', 'acceso_reclutamiento', 'acceso_comercial'
         ]
         # La contraseña solo se puede escribir, nunca se envía en una respuesta (GET)
         extra_kwargs = {

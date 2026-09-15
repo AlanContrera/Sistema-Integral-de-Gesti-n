@@ -17,7 +17,6 @@ class Usuario(AbstractUser):
         default=Rol.USUARIO_ESTANDAR,
     )
 
-    acceso_pagos = models.BooleanField(default=False)
     acceso_cotizador = models.BooleanField(default=False)
     acceso_reclutamiento = models.BooleanField(default=False)
     acceso_comercial = models.BooleanField(default=False)

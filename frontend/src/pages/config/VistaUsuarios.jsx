@@ -9,7 +9,7 @@ const VistaUsuarios = () => {
 
     const [formData, setFormData] = useState({
         username: '', email: '', password: '', first_name: '', last_name: '', rol: 'usuario_estandar',
-        acceso_pagos: false, acceso_cotizador: false, acceso_reclutamiento: false, acceso_comercial: false
+        acceso_cotizador: false, acceso_reclutamiento: false, acceso_comercial: false
     });
 
     useEffect(() => { obtenerUsuarios(); }, []);
@@ -28,7 +28,7 @@ const VistaUsuarios = () => {
     const abrirModalCreacion = () => {
         setFormData({
             username: '', email: '', password: '', first_name: '', last_name: '', rol: 'usuario_estandar',
-            acceso_pagos: false, acceso_cotizador: false, acceso_reclutamiento: false, acceso_comercial: false
+            acceso_cotizador: false, acceso_reclutamiento: false, acceso_comercial: false
         });
         setUsuarioEditando(null);
         setShowModal(true);
@@ -37,7 +37,7 @@ const VistaUsuarios = () => {
     const abrirModalEdicion = (user) => {
         setFormData({
             username: user.username, email: user.email, password: '', first_name: user.first_name, last_name: user.last_name, rol: user.rol,
-            acceso_pagos: user.acceso_pagos, acceso_cotizador: user.acceso_cotizador,
+            acceso_cotizador: user.acceso_cotizador,
             acceso_reclutamiento: user.acceso_reclutamiento, acceso_comercial: user.acceso_comercial
         });
         setUsuarioEditando(user.id);
@@ -104,7 +104,6 @@ const VistaUsuarios = () => {
         }
 
         const modulos = [];
-        if (user.acceso_pagos) modulos.push('Pagos');
         if (user.acceso_cotizador) modulos.push('Cotizador');
         if (user.acceso_reclutamiento) modulos.push('Reclutamiento');
         if (user.acceso_comercial) modulos.push('Comercial');
@@ -217,8 +216,7 @@ const VistaUsuarios = () => {
                             <div style={{ marginTop: '10px' }}>
                                 <label style={{ ...formLabel, borderBottom: '1px solid #E5E7EB', paddingBottom: '8px', marginBottom: '12px' }}>MÓDULOS PERMITIDOS</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <label style={checkboxLabel}><input type="checkbox" name="acceso_pagos" checked={formData.acceso_pagos} onChange={handleChange} style={checkboxInput} /> Gestor de Pagos</label>
-                                    <label style={checkboxLabel}><input type="checkbox" name="acceso_cotizador" checked={formData.acceso_cotizador} onChange={handleChange} style={checkboxInput} /> Cotizador AI</label>
+                                                                        <label style={checkboxLabel}><input type="checkbox" name="acceso_cotizador" checked={formData.acceso_cotizador} onChange={handleChange} style={checkboxInput} /> Cotizador AI</label>
                                     <label style={checkboxLabel}><input type="checkbox" name="acceso_reclutamiento" checked={formData.acceso_reclutamiento} onChange={handleChange} style={checkboxInput} /> Reclutamiento</label>
                                     <label style={checkboxLabel}><input type="checkbox" name="acceso_comercial" checked={formData.acceso_comercial} onChange={handleChange} style={checkboxInput} /> Comercial</label>
                                 </div>

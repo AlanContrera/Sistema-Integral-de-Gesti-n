@@ -42,9 +42,6 @@ INSTALLED_APPS = [
     'django_celery_results',
 
     # Aplicaciones del proyecto
-    'apps.correos',
-    'apps.pagos',
-    'apps.comisiones',
     'apps.cotizador',
     'apps.usuarios',
         'apps.reclutamiento',
@@ -135,12 +132,6 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
 
-# --- IMAP (leidas desde .env, disponibles para las tareas) ---
-IMAP_SERVER = config('IMAP_SERVER')
-IMAP_PORT = config('IMAP_PORT', default=993, cast=int)
-IMAP_USER = config('IMAP_USER')
-IMAP_PASSWORD = config('IMAP_PASSWORD')
-IMAP_FOLDER = config('IMAP_FOLDER', default='INBOX')
 
 
 CELERY_BEAT_SCHEDULE = {
