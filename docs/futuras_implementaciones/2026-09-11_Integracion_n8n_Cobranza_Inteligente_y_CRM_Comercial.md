@@ -1,28 +1,42 @@
-# Integración de n8n, Cobranza Inteligente con IA y CRM Comercial
+---
+tags: [arquitectura, agentes, cobranza, crm, gemini, celery, django]
+fecha: 2026-09-15
+estado: Propuesta de Arquitectura e Implementación Futura (Revisión Agentes Nativos)
+autor: Arquitectura de Software
+modulo: Hub de Agentes Nativos, Cobranza Inteligente y CRM Comercial
+---
 
-**Fecha de Creación:** 2026-09-11  
-**Estado:** Propuesta de Arquitectura e Implementación Futura  
-**Módulos Afectados:** Módulo 5 (Cotizador y Facturación) y Módulo 7 (CRM Comercial)  
-**Tecnologías Involucradas:** n8n (Docker), Django REST Framework, Celery, PostgreSQL, Gemini Vision/AI, React (Vite).
+# Arquitectura de Agentes Nativos (Django + Celery + Gemini), Cobranza Inteligente y CRM Comercial
+
+**Fecha de Actualización:** 2026-09-15  
+**Estado:** Documento de Arquitectura Aprobado para Futuras Implementaciones  
+**Enfoque:** Agentes Especialistas Nativos en Python (Sin n8n ni Frameworks Multiagente Conversacionales)  
 
 ---
 
-## 1. Visión General y Objetivos
+## 1. Justificación de la Decisión Arquitectónica (Trade-Offs)
 
-Este documento especifica la arquitectura y diseño técnico para transformar el **Módulo de Cotizador** en un ecosistema integral de **Cobranza Inteligente y CRM Comercial**, utilizando **n8n** como orquestador de flujos automatizados e **Inteligencia Artificial (Gemini)** como motor analítico y de redacción.
+Durante el diseño inicial se evaluaron herramientas externas de automatización (como **n8n**) y frameworks multiagente conversacionales (como **CrewAI** o **AutoGen**). Tras una auditoría técnica profunda del stack existente y los requerimientos del sistema, **ambas opciones fueron descartadas en favor de un Hub de Agentes Nativos en Django (`backend/apps/agentes/`)**:
 
-### Objetivos Clave:
-1. **Control de Abonos y Parcialidades:** Gestionar cotizaciones que se liquidan en múltiples exhibiciones, con historial de pagos y saldos en tiempo real.
-2. **Auditoría IA Anti-Fraude de Comprobantes:** Detectar automáticamente transferencias reales (*Liquidadas*) vs comprobantes *En proceso*, *Programados* o manipulados.
-3. **Cobranza Proactiva y Empática:** Automatizar recordatorios personalizados adaptando el tono según el cliente y días de vencimiento.
-4. **Detección de Promesas de Pago:** Extraer fechas prometidas de las respuestas de los clientes para reprogramar alarmas sin intervención humana.
-5. **CRM y Salud del Cliente (Módulo 7):** Segmentar automáticamente los 162 clientes de la base de datos (Activos, En Riesgo, Dormidos, Prospectos) e impulsar su reactivación.
+### A. ¿Por qué se descartó n8n?
+1. **Sobrecarga de Infraestructura:** n8n requiere un contenedor Node.js permanente (500 MB – 1 GB de RAM), base de datos interna y mantenimiento adicional en el servidor.
+2. **"Split Brain" de Lógica de Negocio:** Dividiría las reglas financieras (saldos, abonos, cotizaciones) entre diagramas visuales en n8n y modelos en Django/PostgreSQL.
+3. **Seguridad y Control de Secretos:** Dificulta el cumplimiento de la política de cero credenciales expuestas en Git, al almacenar API keys en su propia base de datos.
+4. **Duplicidad:** El stack ya cuenta con **Celery**, **Celery Beat**, **Redis** y **PostgreSQL**. Cualquier cron, webhook o llamada HTTP se resuelve nativamente en Python con mayor velocidad, menor latencia y trazabilidad en Git.
+
+### B. ¿Por qué se descartaron los Multiagentes Conversacionales?
+1. **Falta de Determinismo en Finanzas:** En facturación, montos y conciliación bancaria se exige exactitud matemática. Poner a deliberar a varios LLMs entre sí genera riesgo de alucinación en cascada y resultados no reproducibles.
+2. **Latencia Excesiva:** Cada interacción entre agentes toma de 2 a 6 segundos. Un flujo multiagente conversacional promedia entre 20 y 40 segundos, frente a los **30 milisegundos** de un pipeline determinista en Python.
+3. **Costo de Inferencia:** Multiplica el consumo de tokens innecesariamente al recircular contextos entre agentes.
+4. **Imposibilidad de Testing Unitario:** No es viable aplicar pruebas automatizadas (`pytest`) con aserciones estrictas sobre diálogos estocásticos entre agentes.
+
+> [!TIP]
+> **Patrón Arquitectónico Adoptado:** **Agentes Especialistas Monotarea Orquestados por Código Determinista**.  
+> El "cerebro" orquestador y las reglas de negocio son código Python en Django y Celery. La Inteligencia Artificial (Gemini) actúa exclusivamente como motor de percepción (visión de comprobantes) y redacción contextual (mensajes empáticos), retornando siempre **JSON Estructurado con validación de esquema estricta (`response_schema`)**.
 
 ---
 
-## 2. Arquitectura de Integración con n8n
-
-n8n se integrará como un microservicio autónomo en la red Docker del sistema (`sig_network`), comunicándose con Django mediante Webhooks bidireccionales y endpoints seguros protegidos con API Key.
+## 2. Arquitectura Global del Sistema
 
 ```mermaid
 graph TD
@@ -30,65 +44,57 @@ graph TD
         UI[Bandeja Cotizaciones / CRM]
     end
 
-    subgraph Backend [Django Core & Celery]
+    subgraph DjangoBackend [Django Core & Celery Workers]
         API[API REST Django]
-        DB[(PostgreSQL)]
-        Worker[Celery Worker]
+        DB[(PostgreSQL 15)]
+        CeleryWorker[Celery Workers]
+        CeleryBeat[Celery Beat Scheduler]
     end
 
-    subgraph Automation [n8n Workflow Engine]
-        n8n[Servicio n8n Container]
-        AI[Agente Gemini AI]
+    subgraph HubAgentes [Hub de Agentes Nativos: apps.agentes]
+        Base[BaseAgent & GeminiClient]
+        Auditor[AuditorComprobantesAgent - Vision]
+        Cobrador[CobradorInteligenteAgent - NLP]
+        Promesas[ExtractorPromesasAgent - NLP]
+        Centinela[CentinelaOpsAgent - Diagnóstico]
+        Reporter[SintetizadorEjecutivoAgent - Reporte]
     end
 
-    subgraph External [Canales Externos]
-        Email[Servidor Correo IMAP/SMTP]
-        Msg[Telegram / WhatsApp Business]
+    subgraph CanalesSalida [Canales y Servicios Externos]
+        GeminiAPI[Google Gemini 2.0 / Flash API]
+        SMTP[Servidor SMTP por Empresa Emisora]
+        Telegram[Telegram Bot API / Alertas]
     end
 
-    UI --> API
+    UI -->|Acción / Subida| API
     API --> DB
-    Worker --> DB
+    API -->|Encolar Tarea| CeleryWorker
+    CeleryBeat -->|Crons Diarios / Horarios| CeleryWorker
 
-    Email -->|Respuesta de Cliente| n8n
-    n8n --> AI
-    AI -->|Validación / Redacción| n8n
-    n8n -->|Webhook Abono / Estado| API
-    API -->|Disparo Evento Vencimiento| n8n
-    n8n -->|Recordatorio / Resumen Diario| Msg
-```
-
-### Configuración en `docker-compose.yml`:
-```yaml
-  sig_n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
-    container_name: sig_n8n
-    restart: unless-stopped
-    ports:
-      - "5678:5678"
-    environment:
-      - N8N_HOST=localhost
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - NODE_ENV=production
-      - WEBHOOK_URL=http://localhost:5678/
-      - GENERIC_TIMEZONE=America/Mexico_City
-    volumes:
-      - n8n_data:/home/node/.n8n
-    networks:
-      - sig_network
+    CeleryWorker --> HubAgentes
+    HubAgentes -->|Inferencia Estructurada| GeminiAPI
+    GeminiAPI -->|JSON Validado| HubAgentes
+    HubAgentes -->|Actualizar Saldos / Estados| DB
+    HubAgentes -->|Despacho de Correos| SMTP
+    HubAgentes -->|Alertas Directas| Telegram
 ```
 
 ---
 
 ## 3. Módulo Cotizador: Pagos por Parcialidades y Abonos
 
-Para soportar cotizaciones que se liquidan en dos o más exhibiciones, se extenderá el esquema relacional en Django.
+Para soportar cotizaciones que se liquidan en dos o más exhibiciones sin recurrir a hojas de cálculo externas, se extenderá el esquema de datos en Django.
 
-### A. Modelo `AbonoCotizacion`
+### A. Modelo `AbonoCotizacion` (`backend/apps/cotizador/models.py`)
 ```python
+from django.db import models
+
 class AbonoCotizacion(models.Model):
-    cotizacion = models.ForeignKey('Cotizacion', on_delete=models.CASCADE, related_name='abonos')
+    cotizacion = models.ForeignKey(
+        'OperacionFacturacion', 
+        on_delete=models.CASCADE, 
+        related_name='abonos'
+    )
     monto_abonado = models.DecimalField(max_digits=12, decimal_places=2)
     fecha_pago = models.DateTimeField()
     banco_origen = models.CharField(max_length=100, blank=True, null=True)
@@ -96,95 +102,172 @@ class AbonoCotizacion(models.Model):
     clave_rastreo_spei = models.CharField(max_length=100, blank=True, null=True)
     comprobante_archivo = models.FileField(upload_to='comprobantes_abonos/%Y/%m/')
     
-    ESTATUS_VALIDACION = [
-        ('VERIFICADO', 'Verificado por IA y Conciliado'),
-        ('EN_REVISION', 'En Revisión Manual'),
-        ('RECHAZADO', 'Sospechoso o No Válido')
-    ]
-    estatus_validacion = models.CharField(max_length=20, choices=ESTATUS_VALIDACION, default='VERIFICADO')
+    class EstatusValidacion(models.TextChoices):
+        VERIFICADO = 'VERIFICADO', 'Verificado por IA y Conciliado'
+        EN_REVISION = 'EN_REVISION', 'En Revisión Manual'
+        RECHAZADO = 'RECHAZADO', 'Sospechoso o No Válido'
+
+    estatus_validacion = models.CharField(
+        max_length=20, 
+        choices=EstatusValidacion.choices, 
+        default=EstatusValidacion.VERIFICADO
+    )
     saldo_restante = models.DecimalField(max_digits=12, decimal_places=2)
+    observaciones_ia = models.TextField(blank=True, null=True)
     creado_el = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Abono de Cotización'
+        verbose_name_plural = 'Abonos de Cotizaciones'
+        ordering = ['-fecha_pago']
 ```
 
-### B. Extensiones en el Modelo `Cotizacion`
-* `monto_cobrado`: Acumulado de abonos recibidos.
+### B. Extensiones en el Modelo de Cotización
+* `monto_cobrado`: Acumulado calculado de abonos validados.
 * `saldo_pendiente`: `monto_total - monto_cobrado`.
-* `fecha_promesa_pago`: Fecha compromiso extraída de la comunicación con el cliente.
-* **Flujo de Estados de Pago:**
-  1. `Enviada (Esperando Pago)` (0% cobrado)
-  2. `Parcialmente Pagada` (Abono registrado, saldo pendiente > 0)
-  3. `Liquidada al 100%` (Saldo = 0, lista para emisión y timbrado de Factura CFDI)
+* `fecha_promesa_pago`: Fecha compromiso extraída del seguimiento con el cliente.
+* **Flujo de Estados de Cobranza:**
+  1. `Enviada (Pendiente de Pago)` (0% cobrado).
+  2. `Parcialmente Pagada` (Abonos registrados con saldo pendiente > 0).
+  3. `Liquidada al 100%` (Saldo = 0, habilitada para emisión y timbrado CFDI).
 
 ---
 
-## 4. Capacidades de Inteligencia Artificial (Gemini + n8n)
+## 4. Los 5 Agentes Especialistas Nativos (`backend/apps/agentes/`)
 
-### 1. Auditor Anti-Fraude de Comprobantes Bancarios
-* **Problema:** Clientes que envían comprobantes en estatus "En Proceso", transferencias programadas para días posteriores, imágenes recortadas o comprobantes de otros bancos.
-* **Solución IA:** Gemini Vision procesa el archivo adjunto y evalúa:
-  * Estatus de la transacción (*"Exitosa / Liquidada"* vs *"Programada / En proceso"*).
-  * Validación de coincidencia de la cuenta CLABE receptora con la de la Empresa Emisora de la cotización.
-  * Extracción de clave de rastreo SPEI para comprobación en Banxico si se requiere.
-* **Respuesta:** Si el comprobante no está en firme, n8n alerta al equipo comercial y bloquea el avance automático a factura.
+### Estructura de Archivos Propuesta:
+```
+backend/apps/agentes/
+├── __init__.py
+├── apps.py
+├── core/
+│   ├── __init__.py
+│   ├── base_agent.py          # Clase abstracta con gestión de tokens y reintentos
+│   └── gemini_client.py       # Cliente unificado con clave desde .env
+├── auditor_comprobantes.py    # Agente de Visión (Auditoría Anti-Fraude)
+├── cobrador_inteligente.py    # Agente de Redacción Contextual de Cobranza
+├── extractor_promesas.py      # Agente NLP para Detección de Compromisos de Pago
+├── centinela_ops.py           # Agente de Salud de Infraestructura (SMTP/Celery)
+├── sintetizador_ejecutivo.py  # Agente Matutino de Reporte a Telegram
+└── tasks.py                   # Orquestación asíncrona Celery
+```
 
-### 2. Redacción Inteligente de Cobranza (Cobranza Empática)
-En lugar de plantillas estáticas y agresivas, un nodo de IA en n8n redacta el mensaje adaptando el tono al historial del cliente:
-* **Fase Preventiva (2 días antes del vencimiento):** Tono de servicio y agradecimiento, compartiendo el desglose de la cotización para su programación semanal.
-* **Fase Vencida (3 a 5 días de retraso):** Tono cordial y colaborativo, consultando si requieren apoyo con datos de facturación o fecha estimada.
-* **Fase Crítica (+10 días):** Tono ejecutivo y formal, informando sobre la reprogramación de entregas o retención de timbrado.
+---
 
-### 3. Detector de Promesas de Pago en Respuestas
-* n8n analiza el cuerpo de los correos entrantes de los clientes cuando responden al hilo de la cotización.
-* Si el texto contiene expresiones como: *"Te deposito la mitad el próximo viernes"* o *"El 15 queda listo"*:
-  * La IA extrae la fecha exacta en formato `YYYY-MM-DD`.
-  * Llama al endpoint de Django `PATCH /api/cotizador/cotizaciones/{id}/promesa_pago/`.
-  * Actualiza la base de datos y **reprograma la alarma de cobranza** para el día siguiente a la fecha prometida, evitando molestar al cliente prematuramente.
+### Detalle de cada Agente:
 
-### 4. Resumen Ejecutivo Matutino de Cartera
-* Cron diario a las 8:30 AM ejecutado por n8n.
-* Consulta la API de Django y genera un reporte conciso enviado al canal de Dirección (Telegram / WhatsApp):
-  * Saldo total por cobrar.
-  * Clientes con pagos prometidos para hoy.
-  * Clientes en riesgo con más de 7 días de vencimiento.
-  * Total de ingresos cobrados el día anterior.
+#### 1. `AuditorComprobantesAgent` (Auditor Anti-Fraude de Transferencias)
+* **Disparador:** El cliente o el asesor sube un comprobante (PNG, JPG, PDF) a una cotización en la bandeja.
+* **Capacidad IA:** Gemini Vision analiza la imagen contra un `response_schema` estricto en JSON:
+  ```json
+  {
+    "banco_emisor": "BBVA",
+    "cuenta_beneficiaria_clabe": "012180001234567890",
+    "monto_detectado": 25400.00,
+    "fecha_transferencia": "2026-09-15 14:32:00",
+    "clave_rastreo": "202609154001404100",
+    "estatus_operacion": "EXITOSA",
+    "es_transferencia_programada": false,
+    "sospecha_alteracion": false
+  }
+  ```
+* **Lógica Determinista en Python:**
+  - Compara la `cuenta_beneficiaria_clabe` con la CLABE registrada en la `EmpresaEmisora` de la cotización.
+  - Si `es_transferencia_programada == True` o el estatus no es en firme, marca el abono en `EN_REVISION` y bloquea el avance a timbrado.
+  - Si los datos son consistentes, crea el registro `AbonoCotizacion`, descuenta el saldo y actualiza el estado de la cotización.
+
+#### 2. `CobradorInteligenteAgent` (Cobranza Empática y Contextual)
+* **Disparador:** Tarea nocturna de Celery Beat que detecta cotizaciones pendientes de pago próximas a vencer o con retraso.
+* **Capacidad IA:** Redacta un correo personalizado analizando el historial del cliente, evitando mensajes genéricos agresivos:
+  - **Fase Preventiva (2 días antes):** Recordatorio de cortesía con el desglose de importes y datos de cuenta para su programación bancaria semanal.
+  - **Fase Vencida (3 a 5 días de retraso):** Tono colaborativo, consultando si requieren apoyo con aclaraciones operativas o fecha tentativa.
+  - **Fase Crítica (+10 días):** Tono formal y ejecutivo, señalando la reprogramación de servicios o congelamiento de entregas.
+* **Lógica Determinista en Python:** Genera el borrador o realiza el envío mediante `enviar_cotizacion_task` utilizando el servidor SMTP oficial de la empresa emisora correspondiente.
+
+#### 3. `ExtractorPromesasAgent` (Detector de Fechas de Compromiso)
+* **Disparador:** Lectura de correos entrantes del cliente o registro de notas por el asesor.
+* **Capacidad IA:** Identifica expresiones temporales en lenguaje natural (*"te liquido la mitad el próximo viernes 19"*, *"queda a fin de quincena"*).
+* **Lógica Determinista en Python:**
+  - Extrae la fecha exacta en formato `YYYY-MM-DD`.
+  - Actualiza `fecha_promesa_pago` en la base de datos PostgreSQL.
+  - **Reprograma automáticamente las alarmas de cobranza**, evitando enviar correos automáticos al cliente antes de la fecha acordada.
+
+#### 4. `CentinelaOpsAgent` (Diagnóstico de Salud de Infraestructura)
+* **Disparador:** Cron cada hora en Celery Beat o cuando una tarea de correo lanza 2 reintentos fallidos (`MaxRetriesExceeded`).
+* **Lógica Determinista en Python:**
+  - Abre conexiones de prueba `socket` y `SMTP_SSL` a los hosts configurados en `EmpresaEmisora` (cPanel / Web Hosting).
+  - Consulta la longitud de la cola en Redis y la conectividad a PostgreSQL.
+* **Capacidad IA:** Si hay un error técnico complejo (ej. respuesta `550 Relay access denied` o bloqueo SPF/DKIM), el agente traduce el log técnico a un reporte ejecutivo en español claro.
+* **Salida:** Despacho de alerta directa al Telegram del administrador.
+
+#### 5. `SintetizadorEjecutivoAgent` (Reporte Matutino de Cartera)
+* **Disparador:** Cron diario a las 8:30 AM en Celery Beat.
+* **Lógica Determinista en Python:** Extrae agregaciones SQL de PostgreSQL:
+  - Saldo total pendiente de cobro por empresa emisora.
+  - Cobros registrados y validados en las últimas 24 horas.
+  - Lista de cotizaciones con promesas de pago para el día en curso.
+  - Clientes con más de 7 días de morosidad.
+* **Capacidad IA:** Condensa los datos numéricos en un mensaje ejecutivo de 4 párrafos optimizado para lectura en Smartphones.
+* **Salida:** Envío vía Telegram Bot API al canal de Dirección y Finanzas.
 
 ---
 
 ## 5. Módulo 7: Tablero CRM y Salud del Cliente
 
-Este componente transformará el catálogo de clientes en un motor comercial analítico sin necesidad de contratar herramientas externas (HubSpot, Salesforce).
+Este componente transformará el catálogo existente de clientes en un motor comercial analítico en tiempo real sin requerir software externo.
 
-### A. Métricas 360° por Cliente
-Para cada uno de los 162 clientes se calculará en tiempo real:
-* **LTV (Customer Lifetime Value):** Suma histórica total de facturas timbradas y pagadas.
-* **Frecuencia y Días sin Compra:** Fecha de la última compra y cálculo de días transcurridos.
-* **Tasa de Cierre:** Porcentaje de cotizaciones que se convirtieron en compras reales.
-* **Ticket Promedio:** Gasto medio por transacción.
+### A. Métricas 360° por Cliente (Calculadas en PostgreSQL)
+* **LTV (Customer Lifetime Value):** Suma acumulada histórica de todas las cotizaciones liquidadas y facturadas.
+* **Frecuencia y Días de Inactividad:** Días transcurridos desde la última compra o cotización solicitada.
+* **Tasa de Cierre (% Conversion):** Razón entre cotizaciones solicitadas vs cotizaciones efectivamente pagadas.
+* **Ticket Promedio:** Importe medio por transacción cerrada.
 
-### B. Matriz de Segmentación (Semáforo de Salud)
+### B. Matriz de Segmentación Comercial (Semáforo de Salud)
 
-| Estatus | Regla de Negocio | Acción Automatizada con n8n |
-| :--- | :--- | :--- |
-| 🟢 **Cliente Activo** | Compra en los últimos 30 días. | Mantenimiento y envío de novedades del catálogo. |
-| 🟡 **En Riesgo** | Entre 31 y 60 días sin actividad. | Alerta a ventas para llamada de seguimiento o cortesía. |
-| 🔴 **Dormido / Inactivo** | Más de 60 días sin cotizar ni comprar. | Campaña automatizada con IA para reactivación comercial. |
-| ⚪ **Prospecto Frío** | Registrado en catálogo con 0 compras. | Secuencia de presentación de servicios y contacto inicial. |
+| Estatus | Regla Operativa | Acción Automatizada con Agente Nativo |
+|---|---|---|
+| 🟢 **Cliente Activo** | Compra en los últimos 30 días. | Mantener en ciclo regular y notificar actualizaciones de catálogo. |
+| 🟡 **En Riesgo** | Entre 31 y 60 días sin actividad. | Tarea en Celery para sugerir al asesor una llamada de seguimiento comercial. |
+| 🔴 **Dormido / Inactivo** | Más de 60 días sin cotizar ni comprar. | Propuesta de correo de reactivación personalizada generada por IA. |
+| ⚪ **Prospecto Frío** | Registrado en catálogo con 0 cotizaciones ganadas. | Secuencia de contacto inicial y presentación de servicios. |
 
-### C. Flujo de Reactivación Comercial Autónoma
-1. n8n detecta clientes habituales que pasan a semáforo amarillo (30 días de inactividad).
-2. Genera una propuesta de saludo personalizada con Gemini:  
-   *"Hola [Contacto], tiene tiempo que no sabemos de ustedes en [Empresa]. ¿Tienen algún requerimiento o proyecto en puerta en el que podamos colaborar?"*
-3. Presenta la lista sugerida al asesor en la interfaz de React para autorización en 1-Clic antes de enviar.
+### C. Flujo de Reactivación Comercial Controlado
+1. Celery Beat identifica clientes que cambian de semáforo verde a amarillo (30 días de inactividad).
+2. El agente `CobradorInteligenteAgent` genera una sugerencia de mensaje adaptado al historial de lo que el cliente suele comprar.
+3. **Control Humano en React:** La propuesta aparece en una tarjeta de la vista comercial para que el asesor la revise y la despache en 1-clic, evitando envíos automáticos no supervisados.
 
 ---
 
-## 6. Hoja de Ruta para su Implementación
+## 6. Hoja de Ruta de Implementación Técnica
 
-1. **Fase I (Infraestructura):** Levantar el contenedor `sig_n8n` en `docker-compose.yml` y vincularlo a `sig_network`.
-2. **Fase II (Backend de Abonos):** Crear modelo `AbonoCotizacion`, migraciones en Django y endpoints de saldos y promesas de pago.
-3. **Fase III (Workflows n8n + Gemini):**
-   * Flujo de lectura de comprobantes y validación anti-fraude.
-   * Flujo de cobranza empática y promesas de pago.
-   * Flujo de reporte ejecutivo matutino.
-4. **Fase IV (Frontend Cotizador):** Incorporar barra de progreso de pago e historial de abonos en `BandejaCotizaciones.jsx`.
-5. **Fase V (Módulo 7 CRM):** Desarrollar la vista comercial con la matriz de segmentación y ficha 360° del cliente.
+```mermaid
+gantt
+    title Plan de Implementación: Agentes Nativos, Cobranza y CRM
+    dateFormat  YYYY-MM-DD
+    section Fase I: Backend Base
+    Creación app apps.agentes y BaseAgent        :done, f1, 2026-09-16, 2d
+    Cliente unificado Gemini con .env seguro    :done, f2, after f1, 1d
+    section Fase II: Parcialidades y Abonos
+    Modelo AbonoCotizacion y migraciones        :active, f3, after f2, 2d
+    Endpoints de saldos y carga de comprobantes :f4, after f3, 2d
+    section Fase III: Agentes Prioritarios
+    AuditorComprobantesAgent (Vision)           :f5, after f4, 3d
+    SintetizadorEjecutivoAgent (Telegram)       :f6, after f5, 2d
+    CentinelaOpsAgent (Salud SMTP/Celery)       :f7, after f6, 2d
+    section Fase IV: UI Frontend
+    Historial de Abonos en BandejaCotizaciones  :f8, after f7, 3d
+    Barra de progreso de pago en tarjetas/tablas:f9, after f8, 2d
+    section Fase V: Módulo 7 CRM
+    Tablero comercial y matriz semafórica       :f10, after f9, 4d
+    Ficha 360° del cliente con métricas LTV     :f11, after f10, 3d
+```
+
+---
+
+## 7. Enlaces Relacionados (Obsidian Second Brain)
+
+- [[Walkthrough_UI_UX_Cotizador]]
+- [[2026-08-25_Walkthrough_Arquitectura_de_Cotización_Facturación]]
+- [[2026-08-28_Walkthrough_Bandejas_Historial_y_Clientes]]
+- [[2026-09-07_Walkthrough_Catalogo_Relacional_Conceptos]]
+- [[2026-09-14_Walkthrough_Correccion_Vista_Previa_PDF_Bandeja]]
