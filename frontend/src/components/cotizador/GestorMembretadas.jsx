@@ -77,9 +77,6 @@ const GestorMembretadas = () => {
 
   return (
     <div style={{ fontFamily: "'Outfit', sans-serif" }}>
-      <h3 style={{ fontSize: '20px', color: '#1C1335', margin: '0 0 8px 0', fontWeight: '700' }}>Repositorio de Plantillas</h3>
-      <p style={{ color: '#C084FC', margin: '0 0 24px 0', fontSize: '15px' }}>Sube o elimina tus archivos PDF de diseño base.</p>
-
       {/* ZONA DE CARGA */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#F8FAFC', padding: '32px', borderRadius: '20px', border: '2px dashed #DDD6FE', marginBottom: '40px' }}>
 

@@ -510,10 +510,11 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
     // Estilos SaaS
     const styles = {
-        mainWrapper: { backgroundColor: '#F8FAFC', borderRadius: '24px', border: '1px solid #E2E8F0', padding: '32px', fontFamily: '"Inter", "Segoe UI", sans-serif', position: 'relative', paddingBottom: subTab === 'formulario' ? '120px' : '32px' },
+        mainWrapper: { backgroundColor: '#F8FAFC', borderRadius: '24px', border: '1px solid #E2E8F0', padding: '24px 32px', fontFamily: '"Inter", "Segoe UI", sans-serif', position: 'relative' },
         headerCard: { backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 20px -10px rgba(0,0,0,0.05)', marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' },
         label: { display: 'block', fontSize: '12px', fontWeight: '700', color: '#64748B', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' },
         input: { width: '100%', padding: '14px 16px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', fontSize: '15px', color: '#1E293B', outline: 'none', transition: 'all 0.2s' },
+        compactInput: { width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '13px', color: '#0F172A', outline: 'none', height: '38px', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s' },
         searchBox: { position: 'relative' },
         searchInputContainer: { display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '2px solid #E2E8F0', borderRadius: '12px', padding: '12px 16px', transition: 'border-color 0.2s' },
         searchInput: { border: 'none', outline: 'none', width: '100%', fontSize: '15px', marginLeft: '12px' },
@@ -525,16 +526,16 @@ export default function FormularioPreFactura({ empresas, clientes }) {
         configHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: '16px 24px', borderRadius: '16px', cursor: 'pointer', border: '1px solid #E2E8F0', marginBottom: mostrarConfigFiscal ? '16px' : '24px', transition: 'all 0.2s' },
         configBody: { backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E2E8F0', marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' },
         partidasCard: { backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px -10px rgba(0,0,0,0.05)' },
-        partidasHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #E2E8F0' },
-        btnOutline: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '10px', border: '1px solid #DDD6FE', backgroundColor: '#F3E8FF', color: '#9333EA', fontWeight: '600', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' },
+        partidasHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 24px', borderBottom: '1px solid #E2E8F0' },
+        btnOutline: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '10px', border: '1px solid #DDD6FE', backgroundColor: '#FAF5FF', color: '#9333EA', fontWeight: '600', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' },
         bigInput: { width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '15px', color: '#0F172A', outline: 'none' },
-        importeText: { fontSize: '20px', fontWeight: '700', color: '#1C1335', margin: '12px 0 0 0' },
-        stickyBar: { position: 'absolute', bottom: '0', left: '0', right: '0', backgroundColor: '#FFFFFF', padding: '20px 32px', borderTop: '1px solid #E2E8F0', borderRadius: '0 0 24px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 -10px 40px -10px rgba(0,0,0,0.08)' },
-        totalesBlock: { display: 'flex', gap: '32px', alignItems: 'center' },
+        importeText: { fontSize: '14px', fontWeight: '700', color: '#1C1335', margin: 0, fontVariantNumeric: 'tabular-nums' },
+        stickyBar: { position: 'sticky', bottom: '16px', zIndex: 30, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', padding: '16px 28px', border: '1px solid #DDD6FE', borderRadius: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 12px 30px -10px rgba(147, 51, 234, 0.18), 0 4px 12px rgba(0,0,0,0.04)', marginTop: '24px' },
+        totalesBlock: { display: 'flex', gap: '28px', alignItems: 'center' },
         totalItem: { display: 'flex', flexDirection: 'column' },
-        totalLabel: { fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' },
-        totalValue: { fontSize: '18px', fontWeight: '600', color: '#1E293B', marginTop: '4px' },
-        totalFinalValue: { fontSize: '22px', fontWeight: '800', color: '#9333EA', marginTop: '4px' }
+        totalLabel: { fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' },
+        totalValue: { fontSize: '17px', fontWeight: '700', color: '#1E293B', marginTop: '2px', fontVariantNumeric: 'tabular-nums' },
+        totalFinalValue: { fontSize: '22px', fontWeight: '800', color: '#9333EA', marginTop: '2px', fontVariantNumeric: 'tabular-nums' }
     };
 
     return (
@@ -719,7 +720,25 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                             <span style={{ fontSize: '15px', fontWeight: '600', color: '#1E293B' }}>Configuración Fiscal (Opcional)</span>
                             <span style={{ fontSize: '13px', color: '#64748B', backgroundColor: '#F1F5F9', padding: '2px 8px', borderRadius: '12px' }}>Pre-llenado</span>
                         </div>
-                        {mostrarConfigFiscal ? <ChevronUp size={20} color="#64748B" /> : <ChevronDown size={20} color="#64748B" />}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {!mostrarConfigFiscal && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', backgroundColor: '#FAF5FF', color: '#7E22CE', border: '1px solid #DDD6FE', padding: '3px 10px', borderRadius: '8px' }}>
+                                        Moneda: {parametros.moneda ? parametros.moneda.split(' - ')[0] : 'MXN'}
+                                    </span>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', backgroundColor: '#FAF5FF', color: '#7E22CE', border: '1px solid #DDD6FE', padding: '3px 10px', borderRadius: '8px' }}>
+                                        Método: {parametros.metodo_pago ? parametros.metodo_pago.split(' - ')[0] : 'PUE'}
+                                    </span>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', backgroundColor: '#FAF5FF', color: '#7E22CE', border: '1px solid #DDD6FE', padding: '3px 10px', borderRadius: '8px' }}>
+                                        Forma: {parametros.forma_pago ? parametros.forma_pago.split(' - ')[0] : '03'}
+                                    </span>
+                                    <span style={{ fontSize: '12px', fontWeight: '600', backgroundColor: '#FAF5FF', color: '#7E22CE', border: '1px solid #DDD6FE', padding: '3px 10px', borderRadius: '8px' }}>
+                                        Uso: {parametros.uso_cfdi ? parametros.uso_cfdi.split(' - ')[0] : 'G03'}
+                                    </span>
+                                </div>
+                            )}
+                            {mostrarConfigFiscal ? <ChevronUp size={20} color="#64748B" /> : <ChevronDown size={20} color="#64748B" />}
+                        </div>
                     </div>
 
                     {mostrarConfigFiscal && (
@@ -768,78 +787,159 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                     )}
 
 
-                    {/* --- SECCIÓN 3: PARTIDAS DINÁMICAS --- */}
+                    {/* --- SECCIÓN 3: PARTIDAS DINÁMICAS (ALTA DENSIDAD TABULAR) --- */}
                     <div style={styles.partidasCard}>
                         <div style={styles.partidasHeader}>
-                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#1C1335' }}>Conceptos a Facturar</h3>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#1C1335' }}>Conceptos a Facturar</h3>
+                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#9333EA', backgroundColor: '#FAF5FF', border: '1px solid #DDD6FE', padding: '2px 8px', borderRadius: '12px' }}>
+                                    {partidas.length} {partidas.length === 1 ? 'partida' : 'partidas'}
+                                </span>
+                            </div>
 
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                {/* TU BOTÓN ORIGINAL */}
-                                <button onClick={agregarPartida} style={styles.btnOutline} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E0E7FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F3E8FF'}>
+                                <button onClick={agregarPartida} style={styles.btnOutline} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3E8FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FAF5FF'}>
                                     <Plus size={16} /> Agregar Nueva Fila
                                 </button>
                             </div>
                         </div>
 
-                        <div>
-                            {partidas.map((p) => (
-                                <div key={p.id} style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', backgroundColor: '#FFFFFF' }}>
-                                    <div className="prefactura-partida-row-1" style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                                        <div>
-                                            <label style={styles.label}>Clave Prod Serv</label>
-                                            <input type="text" placeholder="Ej. 84111500" value={p.clave_prod || ''} onChange={(e) => actualizarPartida(p.id, 'clave_prod', e.target.value)} style={styles.bigInput} />
-                                        </div>
-                                        <div>
-                                            <label style={styles.label}>Cant.</label>
-                                            <input type="number" min="1" value={p.cantidad} onChange={(e) => actualizarPartida(p.id, 'cantidad', parseFloat(e.target.value) || 0)} style={{ ...styles.bigInput, textAlign: 'center' }} />
-                                        </div>
-                                        <div>
-                                            <label style={styles.label}>Clave Unidad</label>
-                                            <input type="text" placeholder="Ej. E48" value={p.clave_unidad || ''} onChange={(e) => actualizarPartida(p.id, 'clave_unidad', e.target.value)} style={styles.bigInput} />
-                                        </div>
-                                        <div>
-                                            <label style={styles.label}>Unidad</label>
-                                            <input type="text" placeholder="Ej. SERVICIO" value={p.unidad || ''} onChange={(e) => actualizarPartida(p.id, 'unidad', e.target.value)} style={styles.bigInput} />
-                                        </div>
-                                    </div>
+                        <div className="prefactura-partidas-table-wrap" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                            <div style={{ minWidth: '940px' }}>
+                                {/* ENCABEZADO TABULAR SUPERIOR */}
+                                <div className="prefactura-partidas-header-row" style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '110px 75px 85px 95px minmax(220px, 1.8fr) 130px 85px 120px 36px',
+                                    gap: '10px',
+                                    padding: '12px 20px',
+                                    backgroundColor: '#F8FAFC',
+                                    borderBottom: '1px solid #E2E8F0',
+                                    alignItems: 'center',
+                                    fontSize: '11px',
+                                    fontWeight: '700',
+                                    color: '#64748B',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                }}>
+                                    <div>Clave SAT</div>
+                                    <div style={{ textAlign: 'center' }}>Cant.</div>
+                                    <div>C. Unidad</div>
+                                    <div>Unidad</div>
+                                    <div>Descripción</div>
+                                    <div style={{ textAlign: 'right' }}>P. Unitario</div>
+                                    <div style={{ textAlign: 'center' }}>IVA</div>
+                                    <div style={{ textAlign: 'right' }}>Importe</div>
+                                    <div></div>
+                                </div>
 
-                                    <div className="prefactura-partida-row-2" style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 2fr) 1fr 140px 140px 40px', gap: '20px', alignItems: 'flex-start' }}>
+                                {/* FILAS DE CONCEPTOS COMPACTAS */}
+                                {partidas.map((p, index) => (
+                                    <div
+                                        key={p.id}
+                                        className="prefactura-partida-row"
+                                        style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '110px 75px 85px 95px minmax(220px, 1.8fr) 130px 85px 120px 36px',
+                                            gap: '10px',
+                                            padding: '10px 20px',
+                                            borderBottom: index === partidas.length - 1 ? 'none' : '1px solid #F1F5F9',
+                                            backgroundColor: '#FFFFFF',
+                                            alignItems: 'center',
+                                            transition: 'background-color 0.15s'
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FAF5FF'}
+                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                                    >
                                         <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                                <label style={styles.label}>Descripción</label>
-                                                {conceptosSugeridos.length > 0 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPartidaSeleccionadaParaCatalogo(p.id)}
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '6px',
-                                                            fontSize: '12px',
-                                                            padding: '4px 10px',
-                                                            borderRadius: '8px',
-                                                            border: '1px solid #C084FC',
-                                                            background: '#FAF5FF',
-                                                            color: '#9333EA',
-                                                            fontWeight: '700',
-                                                            cursor: 'pointer',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3E8FF'}
-                                                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FAF5FF'}
-                                                    >
-                                                        <FolderOpen size={14} /> Ver Catálogo ({conceptosSugeridos.length})
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <textarea rows="2" placeholder="Descripción del producto o servicio..." value={p.descripcion || ''} onChange={(e) => actualizarPartida(p.id, 'descripcion', e.target.value)} style={{ ...styles.bigInput, resize: 'vertical' }} />
+                                            <input
+                                                type="text"
+                                                placeholder="Ej. 84111500"
+                                                value={p.clave_prod || ''}
+                                                onChange={(e) => actualizarPartida(p.id, 'clave_prod', e.target.value)}
+                                                style={styles.compactInput}
+                                                aria-label="Clave Prod Serv"
+                                            />
                                         </div>
 
+                                        <div>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={p.cantidad}
+                                                onChange={(e) => actualizarPartida(p.id, 'cantidad', parseFloat(e.target.value) || 0)}
+                                                style={{ ...styles.compactInput, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
+                                                aria-label="Cantidad"
+                                            />
+                                        </div>
 
                                         <div>
-                                            <label style={styles.label}>Precio Unitario</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Ej. E48"
+                                                value={p.clave_unidad || ''}
+                                                onChange={(e) => actualizarPartida(p.id, 'clave_unidad', e.target.value)}
+                                                style={styles.compactInput}
+                                                aria-label="Clave Unidad"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <input
+                                                type="text"
+                                                placeholder="Ej. SERVICIO"
+                                                value={p.unidad || ''}
+                                                onChange={(e) => actualizarPartida(p.id, 'unidad', e.target.value)}
+                                                style={styles.compactInput}
+                                                aria-label="Unidad"
+                                            />
+                                        </div>
+
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="Descripción del producto o servicio..."
+                                                value={p.descripcion || ''}
+                                                onChange={(e) => actualizarPartida(p.id, 'descripcion', e.target.value)}
+                                                style={{
+                                                    ...styles.compactInput,
+                                                    paddingRight: conceptosSugeridos.length > 0 ? '90px' : '10px'
+                                                }}
+                                                aria-label="Descripción"
+                                            />
+                                            {conceptosSugeridos.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPartidaSeleccionadaParaCatalogo(p.id)}
+                                                    title={`Ver Catálogo (${conceptosSugeridos.length} conceptos sugeridos)`}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        right: '3px',
+                                                        top: '3px',
+                                                        bottom: '3px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        fontSize: '11px',
+                                                        padding: '0 8px',
+                                                        borderRadius: '6px',
+                                                        border: '1px solid #C084FC',
+                                                        background: '#FAF5FF',
+                                                        color: '#9333EA',
+                                                        fontWeight: '700',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.15s'
+                                                    }}
+                                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F3E8FF'}
+                                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FAF5FF'}
+                                                >
+                                                    <FolderOpen size={13} /> Catálogo
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div>
                                             <div style={{ position: 'relative' }}>
-                                                <span style={{ position: 'absolute', left: '14px', top: '15px', color: '#64748B', fontWeight: 'bold' }}>$</span>
+                                                <span style={{ position: 'absolute', left: '10px', top: '9px', color: '#94A3B8', fontWeight: '700', fontSize: '13px' }}>$</span>
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -847,31 +947,40 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                                     value={p.valor_unitario === 0 ? '' : p.valor_unitario}
                                                     onFocus={(e) => e.target.select()}
                                                     onChange={(e) => actualizarPartida(p.id, 'valor_unitario', e.target.value === '' ? '' : parseFloat(e.target.value) || 0)}
-                                                    style={{ ...styles.bigInput, paddingLeft: '30px' }}
+                                                    style={{ ...styles.compactInput, paddingLeft: '22px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
+                                                    aria-label="Precio Unitario"
                                                 />
                                             </div>
                                         </div>
+
                                         <div>
-                                            <label style={styles.label}>Impuesto</label>
-                                            <div style={{ ...styles.input, backgroundColor: '#F1F5F9', color: '#9333EA', fontWeight: '700', textAlign: 'center', border: '1px solid #E2E8F0', cursor: 'not-allowed' }}>
+                                            <div style={{ ...styles.compactInput, backgroundColor: '#FAF5FF', color: '#7E22CE', fontWeight: '700', textAlign: 'center', border: '1px solid #DDD6FE', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>
                                                 16% IVA
                                             </div>
                                         </div>
-                                        <div>
-                                            <label style={styles.label}>Importe</label>
-                                            <p style={styles.importeText}>
+
+                                        <div style={{ textAlign: 'right', paddingRight: '4px' }}>
+                                            <span style={{ fontSize: '14px', fontWeight: '700', color: '#1C1335', fontVariantNumeric: 'tabular-nums' }}>
                                                 ${(((parseFloat(p.cantidad) || 0) * (parseFloat(p.valor_unitario) || 0))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </p>
+                                            </span>
                                         </div>
 
-                                        <div style={{ paddingTop: '28px' }}>
-                                            <button onClick={() => eliminarPartida(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', padding: '8px', opacity: 0.7 }} title="Eliminar fila">
-                                                <Trash2 size={20} />
+                                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => eliminarPartida(p.id)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                                                title="Eliminar concepto"
+                                                aria-label="Eliminar concepto"
+                                                onMouseEnter={e => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                            >
+                                                <Trash2 size={17} />
                                             </button>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
 
@@ -914,30 +1023,37 @@ export default function FormularioPreFactura({ empresas, clientes }) {
             {/* ========================================================================= */}
             {subTab === 'historial' && (
                 <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
-                        <div>
-                            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#1C1335', margin: '0 0 4px 0' }}>
-                                Historial de Prefacturas Guardadas
-                            </h3>
-                            <p style={{ color: '#64748B', fontSize: '14px', margin: 0 }}>
-                                Consulta, recupera o descarga cualquiera de las prefacturas emitidas en el sistema.
-                            </p>
-                        </div>
-
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '10px', padding: '8px 14px' }}>
-                                <Search size={16} color="#94A3B8" />
+                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '12px', padding: '8px 14px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                <Search size={16} color="#64748B" />
                                 <input
                                     type="text"
-                                    placeholder="Buscar por Folio, Cliente..."
+                                    placeholder="Buscar por Folio, Cliente, Empresa..."
                                     value={busquedaHistorial}
                                     onChange={e => setBusquedaHistorial(e.target.value)}
-                                    style={{ border: 'none', outline: 'none', marginLeft: '8px', fontSize: '13px', width: '220px' }}
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                    aria-label="Buscar en historial"
+                                    style={{ border: 'none', outline: 'none', marginLeft: '8px', fontSize: '13px', width: '240px', color: '#1E293B' }}
                                 />
+                                {busquedaHistorial && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setBusquedaHistorial('')}
+                                        aria-label="Limpiar búsqueda"
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', display: 'flex', alignItems: 'center' }}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
                             </div>
                             <button
                                 onClick={fetchHistorial}
-                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 14px', borderRadius: '10px', background: '#FFFFFF', border: '1px solid #CBD5E1', color: '#475569', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                                aria-label="Actualizar historial"
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '12px', background: '#FFFFFF', border: '1px solid #CBD5E1', color: '#475569', cursor: 'pointer', fontWeight: '600', fontSize: '13px', transition: 'background-color 0.15s' }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}
                             >
                                 <RefreshCw size={16} /> Actualizar
                             </button>
@@ -978,36 +1094,36 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                         const badge = estadoLabels[pref.estado_factura] || { label: pref.estado_factura || 'Borrador', bg: '#F1F5F9', color: '#475569' };
 
                                         return (
-                                            <tr key={pref.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                                <td style={{ padding: '16px 20px' }}>
-                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 12px', backgroundColor: '#EFF6FF', color: '#2563EB', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
+                                            <tr key={pref.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.15s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FAF5FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                                <td style={{ padding: '14px 18px' }}>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 12px', backgroundColor: '#FAF5FF', color: '#7E22CE', border: '1px solid #DDD6FE', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
                                                         <FileText size={14} />
                                                         {pref.referencia_unica}
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '16px 20px', fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>
+                                                <td style={{ padding: '14px 18px', fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>
                                                     {pref.cliente}
                                                 </td>
 
-                                                <td style={{ padding: '16px 20px', color: '#475569', fontSize: '14px' }}>
+                                                <td style={{ padding: '14px 18px', color: '#475569', fontSize: '14px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                         <Building2 size={14} color="#94A3B8" />
                                                         {pref.empresa_emisora}
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '16px 20px', fontWeight: '700', color: '#1C1335', fontSize: '14px' }}>
+                                                <td style={{ padding: '14px 18px', fontWeight: '700', color: '#1C1335', fontSize: '14px', fontVariantNumeric: 'tabular-nums' }}>
                                                     ${parseFloat(pref.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </td>
 
-                                                <td style={{ padding: '16px 20px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '700', backgroundColor: badge.bg, color: badge.color }}>
                                                         {badge.label}
                                                     </span>
                                                 </td>
 
-                                                <td style={{ padding: '16px 20px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', fontWeight: '600' }}>
                                                         <User size={13} color="#9333EA" /> {pref.creado_por}
                                                     </div>
@@ -1016,7 +1132,7 @@ export default function FormularioPreFactura({ empresas, clientes }) {
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                                <td style={{ padding: '14px 18px', textAlign: 'right' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
                                                         {pref.estado_factura === 'NO_SOLICITADA' && !pref.cotizacion_enviada && (
                                                             <button
@@ -1052,8 +1168,8 @@ export default function FormularioPreFactura({ empresas, clientes }) {
 
                                     {historialFiltrado.length === 0 && (
                                         <tr>
-                                            <td colSpan="7" style={{ textAlign: 'center', padding: '50px', color: '#94A3B8' }}>
-                                                No se encontraron prefacturas registradas.
+                                            <td colSpan="7" style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
+                                                {busquedaHistorial ? 'No se encontraron prefacturas con ese criterio de búsqueda.' : 'No se encontraron prefacturas registradas.'}
                                             </td>
                                         </tr>
                                     )}

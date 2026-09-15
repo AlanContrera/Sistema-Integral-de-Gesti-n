@@ -59,6 +59,7 @@ export default function CatalogoConceptosModal({ isOpen, onClose, conceptos, onS
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Cerrar catálogo"
                         style={{
                             background: '#F1F5F9',
                             border: 'none',
@@ -81,16 +82,19 @@ export default function CatalogoConceptosModal({ isOpen, onClose, conceptos, onS
 
                 {/* Buscador interno */}
                 <div style={{ padding: '16px 28px', borderBottom: '1px solid #F8FAFC', backgroundColor: '#FFFFFF' }}>
-                    <div style={{ position: 'relative' }}>
-                        <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '12px' }} />
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
                         <input
                             type="text"
-                            placeholder="Buscar en los conceptos..."
+                            placeholder="Buscar en los conceptos autorizados..."
                             value={busqueda}
                             onChange={e => setBusqueda(e.target.value)}
+                            autoComplete="off"
+                            spellCheck={false}
+                            aria-label="Buscar conceptos autorizados"
                             style={{
                                 width: '100%',
-                                padding: '10px 14px 10px 38px',
+                                padding: '10px 36px 10px 38px',
                                 borderRadius: '12px',
                                 border: '1px solid #E2E8F0',
                                 fontSize: '14px',
@@ -98,6 +102,28 @@ export default function CatalogoConceptosModal({ isOpen, onClose, conceptos, onS
                                 boxSizing: 'border-box'
                             }}
                         />
+                        {busqueda && (
+                            <button
+                                type="button"
+                                onClick={() => setBusqueda('')}
+                                aria-label="Limpiar búsqueda"
+                                style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#94A3B8',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '2px'
+                                }}
+                            >
+                                <X size={15} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -160,8 +186,9 @@ export default function CatalogoConceptosModal({ isOpen, onClose, conceptos, onS
                                     <span style={{
                                         fontSize: '11px',
                                         fontWeight: '700',
-                                        backgroundColor: '#F1F5F9',
-                                        color: '#475569',
+                                        backgroundColor: '#FAF5FF',
+                                        color: '#7E22CE',
+                                        border: '1px solid #DDD6FE',
                                         padding: '3px 8px',
                                         borderRadius: '6px'
                                     }}>
@@ -170,8 +197,9 @@ export default function CatalogoConceptosModal({ isOpen, onClose, conceptos, onS
                                     <span style={{
                                         fontSize: '11px',
                                         fontWeight: '700',
-                                        backgroundColor: '#F1F5F9',
-                                        color: '#475569',
+                                        backgroundColor: '#FAF5FF',
+                                        color: '#7E22CE',
+                                        border: '1px solid #DDD6FE',
                                         padding: '3px 8px',
                                         borderRadius: '6px'
                                     }}>

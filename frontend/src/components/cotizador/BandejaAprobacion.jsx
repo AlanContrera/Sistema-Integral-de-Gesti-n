@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Download, Send, Search, CheckCircle2, Building2, FileText, FileSpreadsheet, Loader2, ArrowRight } from 'lucide-react';
+import { Eye, Download, Send, Search, CheckCircle2, Building2, FileText, FileSpreadsheet, Loader2, ArrowRight, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function BandejaAprobacion() {
@@ -54,12 +54,19 @@ export default function BandejaAprobacion() {
     const listaActiva = subTab === 'llegadas' ? llegadas : enviadas;
 
     const listaFiltrada = listaActiva.filter(op => {
-        const termino = busqueda.toLowerCase();
-        return (
-            (op.referencia || '').toLowerCase().includes(termino) ||
-            (op.cliente || '').toLowerCase().includes(termino) ||
-            (op.empresa_emisora || '').toLowerCase().includes(termino)
-        );
+        const termino = busqueda.toLowerCase().trim();
+        if (!termino) return true;
+        const referencia = (op.referencia || '').toLowerCase();
+        const cliente = (op.cliente || '').toLowerCase();
+        const empresa = (op.empresa_emisora || '').toLowerCase();
+        const fecha = (op.fecha || '').toLowerCase();
+        const total = (op.total ? String(op.total) : '').toLowerCase();
+
+        return referencia.includes(termino) ||
+            cliente.includes(termino) ||
+            empresa.includes(termino) ||
+            fecha.includes(termino) ||
+            total.includes(termino);
     });
 
     const handleAprobar = async (id, referencia, pdf_url, soloDescargar = false) => {
@@ -113,57 +120,107 @@ export default function BandejaAprobacion() {
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F8FAFC' }}>
-                <Loader2 size={40} className="animate-spin" color="#9333EA" />
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '350px', background: 'transparent' }}>
+                <Loader2 size={36} className="animate-spin" color="#9333EA" />
             </div>
         );
     }
 
     return (
-        <div style={{ padding: '40px', background: '#F8FAFC', minHeight: '100vh', fontFamily: "'Outfit', sans-serif" }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-
-                <div style={{ marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#1C1335', margin: '0 0 8px 0' }}></h1>
-                    <p style={{ color: '#64748B', fontSize: '16px', margin: 0 }}></p>
-                </div>
+        <div style={{ width: '100%', fontFamily: "'Outfit', sans-serif" }}>
+            <div style={{ width: '100%' }}>
 
                 {/* Sub-Tabs y Buscador */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', background: '#FFFFFF', padding: '8px 16px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                    <div style={{ display: 'flex', gap: '8px', backgroundColor: '#F1F5F9', padding: '6px', borderRadius: '14px', width: 'fit-content' }}>
                         <button
                             onClick={() => cambiarSubTab('llegadas')}
                             style={{
-                                padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px',
-                                background: subTab === 'llegadas' ? '#9333EA' : 'transparent',
-                                color: subTab === 'llegadas' ? '#FFFFFF' : '#64748B'
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 20px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontWeight: '700',
+                                fontSize: '14px',
+                                transition: 'all 0.2s',
+                                backgroundColor: subTab === 'llegadas' ? '#9333EA' : 'transparent',
+                                color: subTab === 'llegadas' ? '#FFFFFF' : '#64748B',
+                                boxShadow: subTab === 'llegadas' ? '0 4px 12px rgba(147, 51, 234, 0.2)' : 'none'
                             }}
                         >
-                            <ArrowRight size={16} /> Llegadas de MTY
-                            <span style={{ background: subTab === 'llegadas' ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: subTab === 'llegadas' ? '#FFF' : '#475569', padding: '2px 8px', borderRadius: '10px', fontSize: '12px' }}>{llegadas.length}</span>
+                            <ArrowRight size={16} />
+                            Llegadas de MTY
+                            <span style={{
+                                backgroundColor: subTab === 'llegadas' ? '#FFFFFF' : '#E2E8F0',
+                                color: subTab === 'llegadas' ? '#9333EA' : '#475569',
+                                padding: '2px 8px',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                fontWeight: '800'
+                            }}>
+                                {llegadas.length}
+                            </span>
                         </button>
+
                         <button
                             onClick={() => cambiarSubTab('enviadas')}
                             style={{
-                                padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px',
-                                background: subTab === 'enviadas' ? '#9333EA' : 'transparent',
-                                color: subTab === 'enviadas' ? '#FFFFFF' : '#64748B'
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 20px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontWeight: '700',
+                                fontSize: '14px',
+                                transition: 'all 0.2s',
+                                backgroundColor: subTab === 'enviadas' ? '#9333EA' : 'transparent',
+                                color: subTab === 'enviadas' ? '#FFFFFF' : '#64748B',
+                                boxShadow: subTab === 'enviadas' ? '0 4px 12px rgba(147, 51, 234, 0.2)' : 'none'
                             }}
                         >
-                            <CheckCircle2 size={16} /> Historial (Enviadas)
-                            <span style={{ background: subTab === 'enviadas' ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: subTab === 'enviadas' ? '#FFF' : '#475569', padding: '2px 8px', borderRadius: '10px', fontSize: '12px' }}>{enviadas.length}</span>
+                            <CheckCircle2 size={16} />
+                            Historial (Enviadas)
+                            <span style={{
+                                backgroundColor: subTab === 'enviadas' ? '#FFFFFF' : '#E2E8F0',
+                                color: subTab === 'enviadas' ? '#9333EA' : '#475569',
+                                padding: '2px 8px',
+                                borderRadius: '20px',
+                                fontSize: '12px',
+                                fontWeight: '800'
+                            }}>
+                                {enviadas.length}
+                            </span>
                         </button>
                     </div>
 
-                    <div style={{ position: 'relative', width: '300px' }}>
-                        <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                    {/* Buscador interactivo unificado */}
+                    <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '12px', padding: '8px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                        <Search size={18} color="#64748B" />
                         <input
                             type="text"
-                            placeholder="Buscar factura o cliente..."
+                            placeholder={subTab === 'llegadas' ? "Buscar llegada por referencia, cliente..." : "Buscar enviada por referencia, cliente..."}
                             value={busqueda}
                             onChange={(e) => setBusqueda(e.target.value)}
-                            style={{ width: '100%', padding: '10px 12px 10px 38px', borderRadius: '10px', border: '1px solid #E2E8F0', outline: 'none', fontSize: '14px', boxSizing: 'border-box' }}
+                            autoComplete="off"
+                            spellCheck={false}
+                            aria-label="Buscar facturas"
+                            style={{ border: 'none', outline: 'none', marginLeft: '10px', fontSize: '13px', width: '280px', color: '#1E293B' }}
                         />
+                        {busqueda && (
+                            <button
+                                type="button"
+                                onClick={() => setBusqueda('')}
+                                aria-label="Limpiar búsqueda"
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', display: 'flex', alignItems: 'center' }}
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -173,59 +230,59 @@ export default function BandejaAprobacion() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Referencia</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cliente / Emisor</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Importes</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Archivos</th>
-                                    <th style={{ padding: '16px 24px', fontSize: '13px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Acción</th>
+                                    <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Referencia</th>
+                                    <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cliente / Emisor</th>
+                                    <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Importes</th>
+                                    <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>Archivos</th>
+                                    <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {listaFiltrada.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>
-                                            No hay registros para mostrar en esta vista.
+                                        <td colSpan={5} style={{ padding: '60px', textAlign: 'center', color: '#94A3B8' }}>
+                                            {busqueda ? 'No se encontraron facturas con ese criterio de búsqueda.' : 'No hay registros para mostrar en esta vista.'}
                                         </td>
                                     </tr>
                                 ) : (
                                     listaFiltrada.map((op) => (
-                                        <tr key={op.id} style={{ borderBottom: '1px solid #E2E8F0', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ background: '#F3E8FF', color: '#9333EA', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', display: 'inline-block' }}>
+                                        <tr key={op.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = '#FAF5FF'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                            <td style={{ padding: '14px 18px' }}>
+                                                <div style={{ background: '#FAF5FF', color: '#7E22CE', border: '1px solid #DDD6FE', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: '700', display: 'inline-block' }}>
                                                     {op.referencia}
                                                 </div>
-                                                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '6px' }}>{op.fecha}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>{op.fecha}</div>
                                             </td>
 
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ fontWeight: '700', color: '#1E293B', fontSize: '15px' }}>{op.cliente}</div>
+                                            <td style={{ padding: '14px 18px' }}>
+                                                <div style={{ fontWeight: '700', color: '#1E293B', fontSize: '14px' }}>{op.cliente}</div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#64748B', marginTop: '4px' }}>
                                                     <Building2 size={12} /> {op.empresa_emisora}
                                                 </div>
                                                 {!op.tiene_correo && (
-                                                    <span style={{ display: 'inline-block', marginTop: '6px', fontSize: '11px', background: '#FEE2E2', color: '#EF4444', padding: '2px 6px', borderRadius: '6px', fontWeight: '600' }}>
+                                                    <span style={{ display: 'inline-block', marginTop: '4px', fontSize: '11px', background: '#FEE2E2', color: '#EF4444', padding: '2px 6px', borderRadius: '6px', fontWeight: '600' }}>
                                                         Sin Correo Registrado
                                                     </span>
                                                 )}
                                             </td>
 
-                                            <td style={{ padding: '20px 24px' }}>
-                                                <div style={{ fontSize: '12px', color: '#64748B' }}>Sub: ${parseFloat(op.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-                                                <div style={{ fontWeight: '800', color: '#059669', fontSize: '16px' }}>Tot: ${parseFloat(op.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                            <td style={{ padding: '14px 18px' }}>
+                                                <div style={{ fontSize: '12px', color: '#64748B', fontVariantNumeric: 'tabular-nums' }}>Sub: ${parseFloat(op.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                                <div style={{ fontWeight: '800', color: '#059669', fontSize: '15px', fontVariantNumeric: 'tabular-nums' }}>Tot: ${parseFloat(op.total).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                                             </td>
 
-                                            <td style={{ padding: '20px 24px', textAlign: 'center' }}>
+                                            <td style={{ padding: '14px 18px', textAlign: 'center' }}>
                                                 <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                                                    <a href={op.pdf_url} target="_blank" rel="noreferrer" title="Ver PDF" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', background: '#FFF1F2', color: '#E11D48', borderRadius: '10px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#FFE4E6'} onMouseLeave={e => e.currentTarget.style.background = '#FFF1F2'}>
-                                                        <FileText size={18} />
+                                                    <a href={op.pdf_url} target="_blank" rel="noreferrer" title="Ver PDF" aria-label="Ver PDF de la factura" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', background: '#FFF1F2', color: '#E11D48', borderRadius: '10px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#FFE4E6'} onMouseLeave={e => e.currentTarget.style.background = '#FFF1F2'}>
+                                                        <FileText size={17} />
                                                     </a>
-                                                    <a href={op.xml_url} target="_blank" rel="noreferrer" download title="Bajar XML" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', background: '#F0FDF4', color: '#16A34A', borderRadius: '10px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#DCFCE7'} onMouseLeave={e => e.currentTarget.style.background = '#F0FDF4'}>
-                                                        <FileSpreadsheet size={18} />
+                                                    <a href={op.xml_url} target="_blank" rel="noreferrer" download title="Bajar XML" aria-label="Descargar XML de la factura" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', background: '#F0FDF4', color: '#16A34A', borderRadius: '10px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#DCFCE7'} onMouseLeave={e => e.currentTarget.style.background = '#F0FDF4'}>
+                                                        <FileSpreadsheet size={17} />
                                                     </a>
                                                 </div>
                                             </td>
 
-                                            <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                                            <td style={{ padding: '14px 18px', textAlign: 'right' }}>
                                                 {subTab === 'llegadas' ? (
                                                     op.tiene_correo ? (
                                                         <button

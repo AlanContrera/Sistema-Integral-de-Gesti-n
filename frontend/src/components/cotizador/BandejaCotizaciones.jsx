@@ -17,7 +17,7 @@ export default function BandejaCotizaciones() {
     const [enviadas, setEnviadas] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const [busquedaEnviadas, setBusquedaEnviadas] = useState('');
+    const [busqueda, setBusqueda] = useState('');
 
     const [showModalExcel, setShowModalExcel] = useState(false);
 
@@ -28,8 +28,21 @@ export default function BandejaCotizaciones() {
         enviando: false
     });
 
+    const pendientesFiltradas = pendientes.filter(pref => {
+        const termino = busqueda.toLowerCase();
+        const folio = (pref.referencia_unica || '').toLowerCase();
+        const cliente = (pref.cliente || '').toLowerCase();
+        const empresa = (pref.empresa_emisora || '').toLowerCase();
+        const creadoPor = (pref.creado_por || '').toLowerCase();
+
+        return folio.includes(termino) ||
+            cliente.includes(termino) ||
+            empresa.includes(termino) ||
+            creadoPor.includes(termino);
+    });
+
     const enviadasFiltradas = enviadas.filter(cot => {
-        const termino = busquedaEnviadas.toLowerCase();
+        const termino = busqueda.toLowerCase();
         const folio = (cot.referencia_unica || '').toLowerCase();
         const folioOrigen = (cot.folio_prefactura || '').toLowerCase();
         const cliente = (cot.cliente || '').toLowerCase();
@@ -230,14 +243,8 @@ export default function BandejaCotizaciones() {
         <div className="bandeja-cotizaciones-container" style={{ backgroundColor: 'transparent', width: '100%', fontFamily: "'Inter', sans-serif" }}>
             <Toaster position="top-right" />
 
-            {/* Cabecera Principal */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#0F172A', margin: 0 }}></h1>
-                    <p style={{ color: '#64748B', margin: '8px 0 0 0', fontSize: '15px' }}>
-
-                    </p>
-                </div>
+            {/* Barra de Herramientas Superior */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <button
                         onClick={fetchData}
@@ -342,19 +349,30 @@ export default function BandejaCotizaciones() {
                     </button>
                 </div>
 
-                {/* Buscador interactivo solo en pestaña Enviadas */}
-                {subTab === 'enviadas' && (
-                    <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '12px', padding: '8px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                        <Search size={18} color="#64748B" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por folio, cliente, empresa o remitente..."
-                            value={busquedaEnviadas}
-                            onChange={(e) => setBusquedaEnviadas(e.target.value)}
-                            style={{ border: 'none', outline: 'none', marginLeft: '10px', fontSize: '13px', width: '320px', color: '#1E293B' }}
-                        />
-                    </div>
-                )}
+                {/* Buscador interactivo unificado */}
+                <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '12px', padding: '8px 16px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                    <Search size={18} color="#64748B" />
+                    <input
+                        type="text"
+                        placeholder={subTab === 'por_enviar' ? "Buscar pendiente por folio, cliente..." : "Buscar por folio, cliente, empresa..."}
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        autoComplete="off"
+                        spellCheck={false}
+                        aria-label="Buscar cotizaciones"
+                        style={{ border: 'none', outline: 'none', marginLeft: '10px', fontSize: '13px', width: '280px', color: '#1E293B' }}
+                    />
+                    {busqueda && (
+                        <button
+                            type="button"
+                            onClick={() => setBusqueda('')}
+                            aria-label="Limpiar búsqueda"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '2px', display: 'flex', alignItems: 'center' }}
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
+                </div>
             </div>
 
 
@@ -377,7 +395,7 @@ export default function BandejaCotizaciones() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pendientes.map((pref) => {
+                                    {pendientesFiltradas.map((pref) => {
                                         const fechaLocal = pref.fecha_creacion
                                             ? new Date(pref.fecha_creacion).toLocaleString('es-MX', {
                                                 day: '2-digit', month: '2-digit', year: 'numeric',
@@ -386,25 +404,25 @@ export default function BandejaCotizaciones() {
                                             : 'Sin fecha';
 
                                         return (
-                                            <tr key={pref.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                                <td style={{ padding: '20px 24px' }}>
-                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#EFF6FF', color: '#2563EB', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
+                                            <tr key={pref.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.15s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FAF5FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                                <td style={{ padding: '14px 18px' }}>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#FAF5FF', color: '#7E22CE', border: '1px solid #DDD6FE', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
                                                         <FileText size={14} />
                                                         {pref.referencia_unica}
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '20px 24px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>{pref.cliente}</div>
                                                 </td>
 
-                                                <td style={{ padding: '20px 24px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '14px' }}>
                                                         <Building size={14} color="#94A3B8" /> {pref.empresa_emisora}
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '20px 24px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', marginBottom: '6px', fontWeight: '600' }}>
                                                         <User size={14} color="#9333EA" /> {pref.creado_por}
                                                     </div>
@@ -413,21 +431,27 @@ export default function BandejaCotizaciones() {
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '20px 24px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                                         <button
                                                             onClick={() => handlePreview(pref.datos_formulario, pref.pdf_url)}
                                                             title="Vista Previa PDF"
-                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                            aria-label="Vista Previa PDF"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                                                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FAF5FF'; e.currentTarget.style.borderColor = '#DDD6FE'; e.currentTarget.style.color = '#9333EA'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#64748B'; }}
                                                         >
-                                                            <Eye size={18} />
+                                                            <Eye size={17} />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDownload(pref.datos_formulario, pref.referencia_unica, pref.pdf_url)}
                                                             title="Descargar Borrador PDF"
-                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                            aria-label="Descargar Borrador PDF"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                                                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FAF5FF'; e.currentTarget.style.borderColor = '#DDD6FE'; e.currentTarget.style.color = '#9333EA'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#64748B'; }}
                                                         >
-                                                            <Download size={18} />
+                                                            <Download size={17} />
                                                         </button>
 
                                                         {/* Evaluamos si tiene correo válido. Si tiene, mostramos Enviar. Si no, Descargar Oficial */}
@@ -435,17 +459,23 @@ export default function BandejaCotizaciones() {
                                                             <button
                                                                 onClick={() => handleGenerarEnviar(pref.id)}
                                                                 title="Generar Cotización Oficial (Heredar Folio) y Enviar"
-                                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#9333EA', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                                                                aria-label="Generar Cotización Oficial y Enviar"
+                                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#9333EA', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer', transition: 'background-color 0.15s' }}
+                                                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#7E22CE'}
+                                                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#9333EA'}
                                                             >
-                                                                <Send size={16} /> Enviar
+                                                                <Send size={15} /> Enviar
                                                             </button>
                                                         ) : (
                                                             <button
                                                                 onClick={() => handleGenerarDescargar(pref.id)}
                                                                 title="Generar Cotización Oficial y Descargar"
-                                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#64748B', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                                                                aria-label="Generar Cotización Oficial y Descargar"
+                                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px', height: '36px', borderRadius: '8px', background: '#475569', border: 'none', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer', transition: 'background-color 0.15s' }}
+                                                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#334155'}
+                                                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#475569'}
                                                             >
-                                                                <Download size={16} /> Descargar
+                                                                <Download size={15} /> Descargar
                                                             </button>
                                                         )}
 
@@ -455,10 +485,10 @@ export default function BandejaCotizaciones() {
                                         );
                                     })}
 
-                                    {pendientes.length === 0 && (
+                                    {pendientesFiltradas.length === 0 && (
                                         <tr>
                                             <td colSpan="5" style={{ textAlign: 'center', padding: '60px', color: '#94A3B8' }}>
-                                                No hay cotizaciones pendientes por enviar.
+                                                {busqueda ? 'No se encontraron cotizaciones por enviar con ese criterio.' : 'No hay cotizaciones pendientes por enviar.'}
                                             </td>
                                         </tr>
                                     )}
@@ -488,31 +518,31 @@ export default function BandejaCotizaciones() {
                                             : 'Sin fecha';
 
                                         return (
-                                            <tr key={cot.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                                                <td style={{ padding: '20px 24px' }}>
-                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#ECFDF5', color: "#9333EA", borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
-                                                        <CheckCircle2 size={14} />
+                                            <tr key={cot.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.15s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FAF5FF'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                                                <td style={{ padding: '14px 18px' }}>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#F5F3FF', color: '#6D28D9', border: '1px solid #DDD6FE', borderRadius: '20px', fontSize: '13px', fontWeight: '700' }}>
+                                                        <CheckCircle2 size={14} color="#7C3AED" />
                                                         {cot.referencia_unica}
                                                     </div>
                                                     {cot.folio_prefactura && cot.folio_prefactura !== 'N/A' && (
                                                         <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-                                                            Origen: <span style={{ fontWeight: '600' }}>{cot.folio_prefactura}</span>
+                                                            Origen: <span style={{ fontWeight: '600', color: '#475569' }}>{cot.folio_prefactura}</span>
                                                         </div>
                                                     )}
                                                 </td>
 
-                                                <td style={{ padding: '20px 24px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '14px' }}>{cot.cliente}</div>
                                                 </td>
 
-                                                <td style={{ padding: '20px 24px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '14px' }}>
                                                         <Building size={14} color="#94A3B8" /> {cot.empresa_emisora}
                                                     </div>
                                                 </td>
 
                                                 {/* Columna Quien la Envio */}
-                                                <td style={{ padding: '20px 24px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0F172A', fontSize: '13px', marginBottom: '6px', fontWeight: '600' }}>
                                                         <User size={14} color="#9333EA" /> {cot.enviado_por}
                                                     </div>
@@ -521,29 +551,38 @@ export default function BandejaCotizaciones() {
                                                     </div>
                                                 </td>
 
-                                                <td style={{ padding: '20px 24px' }}>
+                                                <td style={{ padding: '14px 18px' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                                         <button
                                                             onClick={() => handlePreview(cot.datos_formulario, cot.pdf_url)}
                                                             title="Vista Previa PDF Oficial"
-                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                            aria-label="Vista Previa PDF Oficial"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                                                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FAF5FF'; e.currentTarget.style.borderColor = '#DDD6FE'; e.currentTarget.style.color = '#9333EA'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#64748B'; }}
                                                         >
-                                                            <Eye size={18} />
+                                                            <Eye size={17} />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDownload(cot.datos_formulario, cot.referencia_unica, cot.pdf_url)}
                                                             title="Descargar PDF Oficial"
-                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                            aria-label="Descargar PDF Oficial"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                                                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FAF5FF'; e.currentTarget.style.borderColor = '#DDD6FE'; e.currentTarget.style.color = '#9333EA'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#64748B'; }}
                                                         >
-                                                            <Download size={18} />
+                                                            <Download size={17} />
                                                         </button>
 
                                                         <button
                                                             onClick={() => abrirModalReenvio(cot)}
                                                             title="Reenviar por Correo"
-                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FAF5FF', border: '1px solid #DDD6FE', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                                            aria-label="Reenviar por Correo"
+                                                            style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#FAF5FF', border: '1px solid #DDD6FE', color: '#9333EA', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                                                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F3E8FF'; e.currentTarget.style.borderColor = '#C084FC'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#FAF5FF'; e.currentTarget.style.borderColor = '#DDD6FE'; }}
                                                         >
-                                                            <Send size={16} />
+                                                            <Send size={15} />
                                                         </button>
 
 
